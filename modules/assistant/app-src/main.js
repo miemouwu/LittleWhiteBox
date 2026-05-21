@@ -1,26 +1,21 @@
-import { OpenAICompatibleAdapter } from './adapters/openai-compatible.js';
-import { OpenAIResponsesAdapter } from './adapters/openai-responses.js';
-import { AnthropicAdapter } from './adapters/anthropic.js';
-import { GoogleAdapter } from './adapters/google.js';
-import { SillyTavernOpenAICompatibleAdapter } from './adapters/sillytavern-openai-compatible.js';
 import {
     TOOL_DEFINITIONS,
     TOOL_NAMES,
     formatToolResultDisplay,
 } from './tooling.js';
 import { createAssistantRuntime } from './runtime.js';
+import { buildCurrentPlansContextText } from '../../agent-core/current-plans.js';
+import { mergeThoughtBlocks } from '../../agent-core/runtime/protocol.js';
+import {
+    createAgentAdapter,
+} from '../../agent-core/provider-config.js';
 import { buildWorkspaceUserContextTextForState } from './context/current-context.js';
-import { buildCurrentPlansContextText } from './context/current-plans.js';
 import { normalizeMemoryFiles } from './memory/memory-files.js';
 import {
     DEFAULT_PRESET_NAME,
-    buildDefaultPreset,
-    cloneDefaultModelConfigs,
     normalizeJsApiPermission,
-    normalizePermissionMode,
     normalizeAssistantConfig,
-    normalizePresetName,
-} from '../shared/config.js';
+} from '../../agent-core/config.js';
 import {
     normalizeSlashCommand,
     normalizeSlashSkillTrigger,
@@ -50,7 +45,8 @@ import {
     WORKSPACE_KERNEL_VERSION,
     WORKSPACE_MESSAGE_TYPES,
 } from '../shared/workspace-protocol.js';
-import { createPlanLedger } from '../shared/plan-ledger.js';
+import { createPlanLedger } from '../../agent-core/plan-ledger.js';
+import { plansTable as assistantPlansTable } from './state/session-db.js';
 
 const SOURCE = 'xb-assistant-app';
 const ROOT_ID = 'xb-assistant-root';
@@ -70,31 +66,7 @@ const TOAST_DURATION_MAX_MS = 4200;
 const CONFIG_SAVE_TIMEOUT_MS = 3000;
 const CONFIG_SAVE_RESULT_MS = 1800;
 const CONTEXT_STATS_RENDER_THROTTLE_MS = 600;
-const currentPlanContextLedger = createPlanLedger();
-const TOOL_MODE_OPTIONS = [
-    { value: 'native', label: '原生 Tool Calling' },
-    { value: 'tagged-json', label: 'Tagged JSON 兼容模式' },
-];
-const REASONING_EFFORT_OPTIONS = [
-    { value: 'low', label: '低' },
-    { value: 'medium', label: '中' },
-    { value: 'high', label: '高' },
-];
-const PROVIDER_OPTIONS = [
-    { value: 'openai-responses', label: 'OpenAI Responses' },
-    { value: 'openai-compatible', label: 'OpenAI-Compatible' },
-    { value: 'sillytavern-openai-compatible', label: 'SillyTavern OpenAI-Compatible' },
-    { value: 'anthropic', label: 'Anthropic' },
-    { value: 'google', label: 'Google AI' },
-];
-const PERMISSION_MODE_OPTIONS = [
-    { value: 'default', label: '默认权限' },
-    { value: 'full', label: '完全权限' },
-];
-const JS_API_PERMISSION_OPTIONS = [
-    { value: 'deny', label: '禁止' },
-    { value: 'allow', label: '允许' },
-];
+const currentPlanContextLedger = createPlanLedger({ plansTable: assistantPlansTable });
 const state = {
     config: null,
     configDraft: null,
@@ -894,30 +866,8 @@ function buildJsApiApprovalResult(args = {}, approved, requestKind = 'unknown') 
     };
 }
 
-function normalizeReasoningEffort(value) {
-    return REASONING_EFFORT_OPTIONS.some((item) => item.value === value) ? value : 'medium';
-}
-
 function normalizeThoughtBlocks(thoughts) {
-    if (!Array.isArray(thoughts)) return [];
-    const seen = new Set();
-    return thoughts
-        .map((item) => {
-            if (!item || typeof item !== 'object') return null;
-            const text = String(item.text || '').trim();
-            if (!text) return null;
-            return {
-                label: String(item.label || '思考块').trim() || '思考块',
-                text,
-            };
-        })
-        .filter(Boolean)
-        .filter((item) => {
-            const key = `${item.label}\u0000${item.text}`;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
+    return mergeThoughtBlocks(thoughts);
 }
 
 function showToast(text) {
@@ -1030,32 +980,6 @@ function isAbortError(error) {
         || message.includes('aborted');
 }
 
-function getProviderLabel(provider) {
-    return PROVIDER_OPTIONS.find((item) => item.value === provider)?.label || provider;
-}
-
-function getPullState(provider) {
-    return state.pullStateByProvider[provider] || { status: 'idle', message: '' };
-}
-
-function setPullState(provider, nextState) {
-    state.pullStateByProvider = {
-        ...state.pullStateByProvider,
-        [provider]: nextState,
-    };
-}
-
-function setProviderModels(provider, models) {
-    state.modelOptionsByProvider = {
-        ...state.modelOptionsByProvider,
-        [provider]: Array.isArray(models) ? models : [],
-    };
-}
-
-function getProviderModels(provider) {
-    return Array.isArray(state.modelOptionsByProvider[provider]) ? state.modelOptionsByProvider[provider] : [];
-}
-
 const attachmentsManager = createAttachmentsManager({
     state,
     showToast,
@@ -1159,31 +1083,17 @@ function describeError(error) {
 
 const settingsPanel = createSettingsPanel({
     state,
-    post,
     render,
     showToast,
-    beginConfigSave,
-    requestConfigFormSync,
     createRequestId,
     describeError,
-    getPullState,
-    setPullState,
-    setProviderModels,
-    getProviderModels,
-    getProviderLabel,
-    normalizeJsApiPermission,
-    normalizePermissionMode,
-    normalizeReasoningEffort,
-    normalizeAssistantConfig,
-    normalizePresetName,
-    buildDefaultPreset,
-    cloneDefaultModelConfigs,
-    defaultPresetName: DEFAULT_PRESET_NAME,
-    requestTimeoutMs: REQUEST_TIMEOUT_MS,
-    toolModeOptions: TOOL_MODE_OPTIONS,
-    jsApiPermissionOptions: JS_API_PERMISSION_OPTIONS,
-    permissionModeOptions: PERMISSION_MODE_OPTIONS,
-    reasoningEffortOptions: REASONING_EFFORT_OPTIONS,
+    saveConfig: ({ requestId, payload }) => {
+        beginConfigSave(requestId);
+        post('xb-assistant:save-config', payload);
+    },
+    getRuntimeSummaryText: ({ draft, provider, pullState, providerLabel }) => state.runtime
+        ? `预设「${draft.currentPresetName || DEFAULT_PRESET_NAME}」 · ${providerLabel} · 已索引 ${state.runtime.indexedFileCount || 0} 个前端源码文件${pullState.message ? ` · ${pullState.message}` : ''}`
+        : (pullState.message || ''),
 });
 
 const {
@@ -1227,23 +1137,9 @@ const {
 
 function createAdapter() {
     const providerConfig = getActiveProviderConfig();
-    if (!providerConfig.apiKey && providerConfig.provider !== 'sillytavern-openai-compatible') {
-        throw new Error('请先在小白助手里填写当前提供商的 API Key。');
-    }
-
-    switch (providerConfig.provider) {
-        case 'sillytavern-openai-compatible':
-            return new SillyTavernOpenAICompatibleAdapter(providerConfig);
-        case 'openai-responses':
-            return new OpenAIResponsesAdapter(providerConfig);
-        case 'anthropic':
-            return new AnthropicAdapter(providerConfig);
-        case 'google':
-            return new GoogleAdapter(providerConfig);
-        case 'openai-compatible':
-        default:
-            return new OpenAICompatibleAdapter(providerConfig);
-    }
+    return createAgentAdapter(providerConfig, {
+        missingApiKeyMessage: '请先在小白助手里填写当前提供商的 API Key。',
+    });
 }
 
 function getInjectedSystemPrompt() {
@@ -2181,6 +2077,14 @@ window.addEventListener('message', (event) => {
             ensureSkillSelection();
         }
         applyConfig(data.payload?.config || {});
+        return;
+    }
+
+    if (data.type === 'xb-assistant:open-settings') {
+        if (state.sidebarCollapsed) {
+            state.sidebarCollapsed = false;
+            render();
+        }
         return;
     }
 

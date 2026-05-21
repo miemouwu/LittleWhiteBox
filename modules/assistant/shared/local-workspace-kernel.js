@@ -1,4 +1,4 @@
-import { getPathExtension, isSupportedPublicTextPath } from './public-text-file-types.js';
+import { getPathExtension, isSupportedPublicTextPath } from '../../agent-core/tools/text-file-types.js';
 
 export const LOCAL_SOURCE_PREFIX = 'local/';
 export const LOCAL_SOURCE_FILE_KIND = 'session-local-source';

@@ -5,7 +5,7 @@ import { TOOL_DEFINITIONS, TOOL_NAMES } from '../app-src/tooling.js';
 import {
     createDelegateRunner,
     filterDelegateToolDefinitions,
-} from '../app-src/runtime/delegate-runner.js';
+} from '../../agent-core/runtime/delegate-runner.js';
 
 function safeJsonParse(text, fallback = {}) {
     try {
@@ -79,6 +79,28 @@ test('DelegateRun completes from a direct model answer', async () => {
     assert.match(seenTask.messages[0].content, /子任务执行规则/);
     assert.match(seenTask.messages[1].content, /\[Task\]/);
     assert.equal(seenTask.tools.some((tool) => tool.function?.name === TOOL_NAMES.DELEGATE_RUN), false);
+});
+
+test('DelegateRun does not impose a separate context cap', async () => {
+    let seenUserPrompt = '';
+    const adapter = {
+        chat: async (task) => {
+            seenUserPrompt = task.messages[1].content;
+            return {
+                text: '长上下文已收到。',
+                toolCalls: [],
+            };
+        },
+    };
+    const runner = makeRunner(adapter);
+    const tail = 'LONG_CONTEXT_TAIL';
+    const result = await runner.runDelegate({
+        task: '检查长上下文',
+        context: `${'x'.repeat(12000)}${tail}`,
+    }, { controller: new AbortController() });
+
+    assert.equal(result.ok, true);
+    assert.match(seenUserPrompt, new RegExp(tail));
 });
 
 test('DelegateRun strips main orchestration guidance from child system prompt', async () => {

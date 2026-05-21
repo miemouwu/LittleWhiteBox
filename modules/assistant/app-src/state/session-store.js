@@ -1,11 +1,11 @@
-import db, { metaTable, messagesTable, sessionsTable } from './session-db.js';
-import { createPlanLedger } from '../../shared/plan-ledger.js';
+import { createPlanLedger } from '../../../agent-core/plan-ledger.js';
+import db, { metaTable, messagesTable, plansTable, sessionsTable } from './session-db.js';
 import { normalizeLocalSources } from '../workspace/local-sources.js';
 
 const LEGACY_SESSION_ID = 'default';
 const CURRENT_SESSION_META_KEY = 'currentSessionId';
 let writeQueue = Promise.resolve();
-const planLedger = createPlanLedger();
+const planLedger = createPlanLedger({ plansTable });
 
 function createAssistantSessionId() {
     return `asst-session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

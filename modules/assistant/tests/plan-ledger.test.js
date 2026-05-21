@@ -2,8 +2,8 @@ import 'fake-indexeddb/auto';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const { createPlanLedger } = await import('../shared/plan-ledger.js');
-const { default: db } = await import('../shared/session-db.js');
+const { createPlanLedger } = await import('../../agent-core/plan-ledger.js');
+const { default: db, plansTable } = await import('../shared/session-db.js');
 
 async function resetDb() {
     await db.delete();
@@ -22,6 +22,7 @@ function createDeterministicLedger() {
             time += 1;
             return time;
         },
+        plansTable,
     });
 }
 

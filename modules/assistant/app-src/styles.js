@@ -1010,6 +1010,74 @@ export function injectAssistantStyles(rootId) {
         .xb-assistant-codeblock pre {
             padding-top: 34px;
         }
+        .xb-markdown-html-block {
+            display: grid;
+            gap: 10px;
+            margin: 0 0 0.8em;
+            padding: 12px;
+            border: 1px solid rgba(27, 55, 88, 0.16);
+            border-radius: 12px;
+            background: rgba(247, 250, 253, 0.88);
+        }
+        .xb-markdown-html-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .xb-markdown-html-title {
+            display: grid;
+            gap: 2px;
+            color: #203249;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .xb-markdown-html-title span {
+            color: #68778a;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .xb-markdown-html-actions {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+        .xb-markdown-html-actions button {
+            padding: 5px 9px;
+            border: 1px solid rgba(27, 55, 88, 0.14);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #304862;
+            font: 600 12px/1.1 "Microsoft YaHei", sans-serif;
+            cursor: pointer;
+        }
+        .xb-markdown-html-actions button.is-active {
+            background: rgba(27, 55, 88, 0.10);
+            color: #203249;
+        }
+        .xb-markdown-html-body {
+            min-width: 0;
+        }
+        .xb-markdown-html-code {
+            max-height: 320px;
+            overflow: auto;
+            margin: 0;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: rgba(20, 32, 51, 0.06);
+            white-space: pre-wrap;
+            word-break: break-all;
+            font: 12px/1.55 "Cascadia Code", "Consolas", monospace;
+        }
+        .xb-markdown-html-preview {
+            width: 100%;
+            height: 320px;
+            box-sizing: border-box;
+            border: 1px solid rgba(27, 55, 88, 0.14);
+            border-radius: 10px;
+            background: #fff;
+        }
         .xb-assistant-markdown pre code {
             padding: 0;
             background: transparent;

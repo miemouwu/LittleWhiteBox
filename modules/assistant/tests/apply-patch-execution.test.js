@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseApplyPatch } from '../shared/apply-patch.js';
-import { buildPatchFailureResult, runPatchValidationAndApply } from '../shared/apply-patch-execution.js';
+import { parseApplyPatch } from '../../agent-core/tools/apply-patch.js';
+import { buildPatchFailureResult, runPatchValidationAndApply } from '../../agent-core/tools/apply-patch-execution.js';
 
 function createState(files = {}) {
     return Object.entries(files).map(([path, content]) => ({

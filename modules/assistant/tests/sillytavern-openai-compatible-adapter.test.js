@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SillyTavernOpenAICompatibleAdapter } from '../app-src/adapters/sillytavern-openai-compatible.js';
+import { SillyTavernOpenAICompatibleAdapter } from '../../agent-core/adapters/sillytavern-openai-compatible.js';
 import {
     HOST_CHAT_COMPLETIONS_GENERATE_ENDPOINT,
     HOST_CHAT_COMPLETIONS_STATUS_ENDPOINT,

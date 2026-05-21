@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { GoogleAdapter } from '../app-src/adapters/google.js';
+import { GoogleAdapter } from '../../agent-core/adapters/google.js';
 
 test('google adapter preserves visible text alongside tool calls in non-streaming responses', async () => {
     const adapter = new GoogleAdapter({

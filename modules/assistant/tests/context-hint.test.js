@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { buildWorkspaceUserContextTextForState } from '../app-src/context/current-context.js';
-import { buildCurrentPlansContextText, formatCurrentPlansContextText } from '../app-src/context/current-plans.js';
+import { buildCurrentPlansContextText, formatCurrentPlansContextText } from '../../agent-core/current-plans.js';
 import { collectContextHintItems } from '../app-src/ui/app-chrome.js';
 
 test('collectContextHintItems shows workspace line context without selected text', () => {

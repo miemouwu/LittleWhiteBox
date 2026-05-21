@@ -12,8 +12,8 @@ import { AssistantStorage } from "../../core/server-storage.js";
 import { createAssistantHostWindow } from "./assistant-host-window.js";
 import { TOOL_NAMES } from "./app-src/tooling.js";
 import { normalizeSlashSkillTrigger } from "./app-src/slash-command-policy.js";
-import { applyPatchUpdateToText, parseApplyPatch } from "./shared/apply-patch.js";
-import { buildPatchFailureResult, runPatchValidationAndApply } from "./shared/apply-patch-execution.js";
+import { applyPatchUpdateToText, parseApplyPatch } from "../agent-core/tools/apply-patch.js";
+import { buildPatchFailureResult, runPatchValidationAndApply } from "../agent-core/tools/apply-patch-execution.js";
 import { createLocalSourcesToolRuntime } from "./shared/local-sources-tool-runtime.js";
 import {
     LOOKUP_SCOPE_PROJECT,
@@ -31,8 +31,10 @@ import {
     normalizePermissionMode,
     normalizeAssistantSettings,
     normalizePresetName,
-} from "./shared/config.js";
-import { getPathExtension, isSupportedPublicTextPath } from "./shared/public-text-file-types.js";
+} from "../agent-core/config.js";
+import { createPlanLedger, isPlanToolName } from "../agent-core/plan-ledger.js";
+import { getPathExtension, isSupportedPublicTextPath } from "../agent-core/tools/text-file-types.js";
+import { plansTable as assistantPlansTable } from "./shared/session-db.js";
 import {
     findLocalDirectoryByPath as kernelFindLocalDirectoryByPath,
     findLocalSourceFileByPath as kernelFindLocalSourceFileByPath,
@@ -57,7 +59,6 @@ import {
     buildWorkspaceOpMeta,
     isWorkspaceMutationTool,
 } from "./shared/workspace-protocol.js";
-import { createPlanLedger, isPlanToolName } from "./shared/plan-ledger.js";
 
 const MODULE_ID = 'assistant';
 const OVERLAY_ID = 'xiaobaix-assistant-overlay';
@@ -111,7 +112,9 @@ let settingsLoaded = false;
 let localSourcesCache = [];
 let editorContextCache = null;
 let localSourcesToolRuntime = null;
-const planLedger = createPlanLedger();
+let assistantFrameReady = false;
+let pendingOpenSettingsReveal = false;
+const planLedger = createPlanLedger({ plansTable: assistantPlansTable });
 
 function summarizeLocalSourcesForDebug(localSources) {
     const normalizedSources = normalizeLocalSourcesSnapshot(localSources);
@@ -3512,10 +3515,58 @@ function openAssistant() {
     window.addEventListener('message', handleIframeMessage);
 }
 
+async function pushAssistantConfigToIframe() {
+    if (!assistantFrameReady) return false;
+    const iframe = getAssistantHostWindow().getIframe();
+    if (!iframe?.contentWindow) return false;
+    await loadAssistantSettings();
+    const config = buildRuntimeConfig();
+    const runtimePayload = await buildAssistantRuntimePayload();
+    const workspaceState = getLocalSourcesToolRuntime().getWorkspaceState();
+    postToIframe(iframe, {
+        type: 'xb-assistant:config',
+        payload: {
+            hostRequestHeaders: getRequestHeaders(),
+            config,
+            runtime: {
+                ...runtimePayload,
+                workspace: {
+                    ...(runtimePayload.workspace || {}),
+                    version: workspaceState.version,
+                    kernelVersion: workspaceState.kernelVersion,
+                },
+            },
+        },
+    });
+    return true;
+}
+
+function revealAssistantSettings() {
+    if (!assistantFrameReady) return false;
+    const iframe = getAssistantHostWindow().getIframe();
+    if (!iframe?.contentWindow) return false;
+    postToIframe(iframe, {
+        type: 'xb-assistant:open-settings',
+        payload: {},
+    });
+    pendingOpenSettingsReveal = false;
+    return true;
+}
+
+function openAssistantSettings() {
+    pendingOpenSettingsReveal = true;
+    openAssistant();
+    if (assistantFrameReady) {
+        revealAssistantSettings();
+    }
+}
+
 function closeAssistant() {
     window.removeEventListener('message', handleIframeMessage);
     getAssistantHostWindow().close();
     getLocalSourcesToolRuntime().clearLocalSources();
+    assistantFrameReady = false;
+    pendingOpenSettingsReveal = false;
 }
 
 async function handleIframeMessage(event) {
@@ -3527,26 +3578,12 @@ async function handleIframeMessage(event) {
 
     switch (type) {
         case 'xb-assistant:ready': {
-            await loadAssistantSettings();
-            const config = buildRuntimeConfig();
-            const runtimePayload = await buildAssistantRuntimePayload();
-            const workspaceState = getLocalSourcesToolRuntime().getWorkspaceState();
-            postToIframe(iframe, {
-                type: 'xb-assistant:config',
-                payload: {
-                    hostRequestHeaders: getRequestHeaders(),
-                    config,
-                    runtime: {
-                        ...runtimePayload,
-                        workspace: {
-                            ...(runtimePayload.workspace || {}),
-                            version: workspaceState.version,
-                            kernelVersion: workspaceState.kernelVersion,
-                        },
-                    },
-                },
-            });
+            assistantFrameReady = true;
+            await pushAssistantConfigToIframe();
             postEditorContextToIframe();
+            if (pendingOpenSettingsReveal) {
+                revealAssistantSettings();
+            }
             break;
         }
         case 'xb-assistant:close':
@@ -3578,6 +3615,7 @@ async function handleIframeMessage(event) {
                         config: buildRuntimeConfig(),
                     },
                 });
+                window.xiaobaixEbook?.refreshConfig?.();
             } else {
                 postToIframe(iframe, {
                     type: CONFIG_SAVE_ERROR,
@@ -3711,9 +3749,10 @@ export async function initAssistant() {
     await loadAssistantSettings();
     document.addEventListener('xb-assistant:editor-context', handleAssistantEditorContextEvent);
     window.xiaobaixAssistant = {
-        openSettings: openAssistant,
+        openSettings: openAssistantSettings,
         closeSettings: closeAssistant,
         getSettings: () => ({ ...getAssistantSettings() }),
+        refreshConfig: () => void pushAssistantConfigToIframe(),
         setEditorContext: (payload) => setAssistantEditorContext(payload),
         clearEditorContext: () => clearAssistantEditorContext(),
     };

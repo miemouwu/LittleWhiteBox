@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { applyPatchUpdateToText, parseApplyPatch } from '../shared/apply-patch.js';
+import { applyPatchUpdateToText, parseApplyPatch } from '../../agent-core/tools/apply-patch.js';
 
 function parsePatchDocument(lines) {
     return parseApplyPatch([

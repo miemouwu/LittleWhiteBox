@@ -1,4 +1,5 @@
 const DESKTOP_CHROME_HEIGHT = 36;
+const ASSISTANT_OVERLAY_Z_INDEX = 100001;
 
 export function createAssistantHostWindow(options) {
     const {
@@ -167,7 +168,12 @@ export function createAssistantHostWindow(options) {
     }
 
     function open() {
-        if (document.getElementById(overlayId)) return false;
+        const existingOverlay = document.getElementById(overlayId);
+        if (existingOverlay) {
+            overlay = existingOverlay;
+            overlay.style.zIndex = String(ASSISTANT_OVERLAY_Z_INDEX);
+            return true;
+        }
         ensureMinimizedAssistantStyles();
 
         overlay = document.createElement('div');
@@ -180,7 +186,7 @@ export function createAssistantHostWindow(options) {
             height: ${window.innerHeight}px;
             padding: 0;
             box-sizing: border-box;
-            z-index: 99999;
+            z-index: ${ASSISTANT_OVERLAY_Z_INDEX};
             overflow: hidden;
             pointer-events: none;
         `;

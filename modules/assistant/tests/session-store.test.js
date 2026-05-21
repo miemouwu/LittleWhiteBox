@@ -6,9 +6,10 @@ const { createSessionStore } = await import('../app-src/state/session-store.js')
 const {
     default: db,
     messagesTable,
+    plansTable,
     sessionsTable,
 } = await import('../shared/session-db.js');
-const { createPlanLedger } = await import('../shared/plan-ledger.js');
+const { createPlanLedger } = await import('../../agent-core/plan-ledger.js');
 
 async function resetDb() {
     await db.delete();
@@ -82,6 +83,7 @@ test('clearSession rotates assistantSessionId and clears old plans', async () =>
     const ledger = createPlanLedger({
         createId: () => 'plan-old',
         now: () => 100,
+        plansTable,
     });
 
     await store.restoreSession();

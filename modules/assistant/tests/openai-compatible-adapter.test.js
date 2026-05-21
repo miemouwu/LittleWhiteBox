@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { OpenAICompatibleAdapter } from '../app-src/adapters/openai-compatible.js';
+import { OpenAICompatibleAdapter } from '../../agent-core/adapters/openai-compatible.js';
 
 function createSseResponse(events = [], delimiter = '\n\n') {
     const payload = events.map((event) => `data: ${JSON.stringify(event)}${delimiter}`).join('') + `data: [DONE]${delimiter}`;
@@ -17,6 +17,42 @@ function createSseResponse(events = [], delimiter = '\n\n') {
         text: async () => payload,
     };
 }
+
+test('openai-compatible adapter omits tool fields for pure text requests', async () => {
+    const adapter = new OpenAICompatibleAdapter({
+        apiKey: 'test-key',
+        baseUrl: 'https://example.com/openai-compatible',
+        model: 'compat-test',
+    });
+
+    let requestBody = null;
+    adapter.client.chat.completions.create = async (body) => {
+        requestBody = body;
+        return {
+            choices: [{
+                finish_reason: 'stop',
+                message: {
+                    role: 'assistant',
+                    content: '纯文本完成。',
+                },
+            }],
+            model: 'compat-test',
+        };
+    };
+
+    const result = await adapter.chat({
+        messages: [{
+            role: 'user',
+            content: '只做总结，不要工具。',
+        }],
+        tools: [],
+        toolChoice: 'none',
+    });
+
+    assert.equal(result.text, '纯文本完成。');
+    assert.equal(Object.hasOwn(requestBody, 'tools'), false);
+    assert.equal(Object.hasOwn(requestBody, 'tool_choice'), false);
+});
 
 test('openai-compatible adapter keeps streaming enabled in reasoning mode and preserves raw assistant payload', async () => {
     const adapter = new OpenAICompatibleAdapter({

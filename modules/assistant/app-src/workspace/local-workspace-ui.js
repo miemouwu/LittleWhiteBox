@@ -10,7 +10,7 @@ import { python } from '@codemirror/lang-python';
 import { yaml } from '@codemirror/lang-yaml';
 import { indentWithTab } from '@codemirror/commands';
 import { keymap } from '@codemirror/view';
-import { getPathExtension } from '../../shared/public-text-file-types.js';
+import { getPathExtension } from '../../../agent-core/tools/text-file-types.js';
 import { buildCodeRows, buildDiffRows } from './local-workspace-diff.js';
 
 const workspaceEditorTheme = EditorView.theme({

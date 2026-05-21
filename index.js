@@ -32,6 +32,7 @@ import "./modules/story-outline/story-outline.js";
 import { initTts, cleanupTts } from "./modules/tts/tts.js";
 import { initEnaPlanner, cleanupEnaPlanner } from "./modules/ena-planner/ena-planner.js";
 import { initAssistant, cleanupAssistant } from "./modules/assistant/assistant.js";
+import { initEbook, cleanupEbook } from "./modules/ebook/ebook.js";
 
 extension_settings[EXT_ID] = extension_settings[EXT_ID] || {
     enabled: true,
@@ -524,6 +525,11 @@ function syncFeatureActionButtons() {
         assistantButton.disabled = !isXiaobaixEnabled;
         assistantButton.classList.toggle('disabled-action', !isXiaobaixEnabled);
     }
+    const ebookButton = document.getElementById('xiaobaix_ebook_open_settings');
+    if (ebookButton) {
+        ebookButton.disabled = !isXiaobaixEnabled;
+        ebookButton.classList.toggle('disabled-action', !isXiaobaixEnabled);
+    }
 
     const drawButton = document.getElementById('xiaobaix_draw_open_settings');
     if (drawButton) {
@@ -552,6 +558,7 @@ async function toggleAllFeatures(enabled) {
             { condition: extension_settings[EXT_ID].variablesCore?.enabled, init: initVariablesCore },
             { condition: extension_settings[EXT_ID].tts?.enabled, init: initTts },
             { condition: extension_settings[EXT_ID].enaPlanner?.enabled, init: initEnaPlanner },
+            { condition: true, init: initEbook },
             { condition: true, init: initStreamingGeneration },
             { condition: true, init: initButtonCollapse }
         ];
@@ -597,6 +604,7 @@ async function toggleAllFeatures(enabled) {
         try { cleanupTts(); } catch (e) { }
         try { cleanupEnaPlanner(); } catch (e) { }
         try { cleanupAssistant(); } catch (e) { }
+        try { cleanupEbook(); } catch (e) { }
         try { clearBlobCaches(); } catch (e) { }
         toggleSettingsControls(false);
         try { window.cleanupWorldbookHostBridge && window.cleanupWorldbookHostBridge(); document.getElementById('xb-worldbook')?.remove(); } catch (e) { }
@@ -750,6 +758,18 @@ async function setupSettings() {
                 window.xiaobaixAssistant.openSettings();
             } else {
                 toastr.warning('小白助手初始化失败');
+            }
+        });
+
+        $("#xiaobaix_ebook_open_settings").on("click", async function () {
+            if (!isXiaobaixEnabled) return;
+            if (!window.xiaobaixEbook?.open) {
+                await initEbook();
+            }
+            if (window.xiaobaixEbook?.open) {
+                window.xiaobaixEbook.open();
+            } else {
+                toastr.warning('电纸书初始化失败');
             }
         });
 
@@ -949,6 +969,7 @@ jQuery(async () => {
                 { condition: settings.variablesCore?.enabled, init: initVariablesCore },
                 { condition: settings.tts?.enabled, init: initTts },
                 { condition: settings.enaPlanner?.enabled, init: initEnaPlanner },
+                { condition: true, init: initEbook },
                 { condition: true, init: initStreamingGeneration },
                 { condition: true, init: initButtonCollapse }
             ];

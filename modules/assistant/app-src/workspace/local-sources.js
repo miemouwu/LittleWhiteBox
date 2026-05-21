@@ -1,5 +1,5 @@
 import { zipSync, strToU8 } from '../../../../libs/fflate.mjs';
-import { isSupportedPublicTextPath } from '../../shared/public-text-file-types.js';
+import { isSupportedPublicTextPath } from '../../../agent-core/tools/text-file-types.js';
 import {
     buildLocalFileRecord as kernelBuildLocalFileRecord,
     collectSourceDirectoryPaths as kernelCollectSourceDirectoryPaths,

@@ -1,3 +1,5 @@
+import { buildMarkdownFragment, enhancePathLinks } from '../../../agent-core/ui/message-markdown.js';
+
 export function createChatUi(deps) {
     const {
         state,
@@ -11,57 +13,12 @@ export function createChatUi(deps) {
 
     let chatScrollTicking = false;
     let chatScrollHideTimer = null;
-    let markdownConverter = null;
-    let markdownConverterSource = null;
     let renderCache = {
         kind: '',
         units: [],
     };
     const openToolBatchKeys = new Set();
     const toolDisplayPreviewCache = new WeakMap();
-
-    function escapeHtml(text) {
-        return String(text || '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    }
-
-    function renderMarkdown(text) {
-        const raw = String(text || '').trim();
-        if (!raw) return '';
-
-        try {
-            const showdownLib = globalThis.parent?.showdown || globalThis.showdown;
-            const DOMPurifyLib = globalThis.parent?.DOMPurify || globalThis.DOMPurify;
-            if (showdownLib?.Converter && DOMPurifyLib?.sanitize) {
-                if (!markdownConverter || markdownConverterSource !== showdownLib) {
-                    markdownConverterSource = showdownLib;
-                    markdownConverter = new showdownLib.Converter({
-                        simpleLineBreaks: true,
-                        strikethrough: true,
-                        tables: true,
-                        tasklists: true,
-                        ghCodeBlocks: true,
-                        simplifiedAutoLink: true,
-                        openLinksInNewWindow: true,
-                        emoji: false,
-                    });
-                }
-                const html = markdownConverter.makeHtml(raw);
-                return DOMPurifyLib.sanitize(html, {
-                    USE_PROFILES: { html: true },
-                    FORBID_TAGS: ['style', 'script'],
-                });
-            }
-        } catch {
-            // Fall back to escaped plain text below.
-        }
-
-        return escapeHtml(raw).replace(/\n/g, '<br>');
-    }
 
     async function copyText(text) {
         const normalized = String(text || '');
@@ -94,99 +51,14 @@ export function createChatUi(deps) {
         }
     }
 
-    function enhanceMarkdownCodeBlocks(doc) {
-        Array.from(doc.body.querySelectorAll('pre')).forEach((pre) => {
-            if (pre.closest('.xb-assistant-codeblock')) return;
-
-            const wrapper = doc.createElement('div');
-            wrapper.className = 'xb-assistant-codeblock';
-            const copyButton = doc.createElement('button');
-            copyButton.type = 'button';
-            copyButton.className = 'xb-assistant-code-copy';
-            copyButton.textContent = '⧉';
-            copyButton.title = '复制代码';
-            copyButton.setAttribute('aria-label', '复制代码');
-            copyButton.addEventListener('click', async () => {
-                const codeText = pre.querySelector('code')?.textContent || pre.textContent || '';
-                const copied = await copyText(codeText);
-                copyButton.textContent = copied ? '✓' : '!';
-                copyButton.title = copied ? '已复制' : '复制失败';
-                setTimeout(() => {
-                    copyButton.textContent = '⧉';
-                    copyButton.title = '复制代码';
-                }, 1200);
-            });
-
-            pre.parentNode?.insertBefore(wrapper, pre);
-            wrapper.append(copyButton, pre);
-        });
-    }
-
-    function enhanceLocalPathLinks(rootNode) {
-        if (!rootNode || typeof onLocalPathClick !== 'function') return;
-        const walker = document.createTreeWalker(rootNode, NodeFilter.SHOW_TEXT);
-        const textNodes = [];
-
-        while (walker.nextNode()) {
-            const node = walker.currentNode;
-            if (!node?.nodeValue || !String(node.nodeValue).includes('local/')) continue;
-            const parent = node.parentElement;
-            if (parent?.closest?.('button, a, textarea, input')) continue;
-            textNodes.push(node);
-        }
-
-        const pathRegex = /local\/[^\s`"'<>，。；：！？（）()[\]{}]+/g;
-        textNodes.forEach((node) => {
-            const text = String(node.nodeValue || '');
-            let match = null;
-            let lastIndex = 0;
-            const fragment = document.createDocumentFragment();
-            let replaced = false;
-            pathRegex.lastIndex = 0;
-
-            while ((match = pathRegex.exec(text)) !== null) {
-                replaced = true;
-                if (match.index > lastIndex) {
-                    fragment.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
-                }
-                const matchedPath = match[0];
-
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'xb-assistant-local-path-link';
-                button.textContent = matchedPath;
-                button.addEventListener('click', () => {
-                    onLocalPathClick(matchedPath);
-                });
-                fragment.appendChild(button);
-                lastIndex = match.index + matchedPath.length;
-            }
-
-            if (!replaced) return;
-            if (lastIndex < text.length) {
-                fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
-            }
-            node.parentNode?.replaceChild(fragment, node);
-        });
-    }
-
-    function buildSanitizedHtmlFragment(html) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(`<body>${String(html || '')}</body>`, 'text/html');
-        enhanceMarkdownCodeBlocks(doc);
-        const fragment = document.createDocumentFragment();
-        while (doc.body.firstChild) {
-            fragment.appendChild(doc.body.firstChild);
-        }
-        enhanceLocalPathLinks(fragment);
-        return fragment;
-    }
-
     function buildInteractivePre(text, className = '') {
         const pre = document.createElement('pre');
         pre.className = className;
         pre.textContent = String(text || '');
-        enhanceLocalPathLinks(pre);
+        enhancePathLinks(pre, {
+            onPathClick: onLocalPathClick,
+            linkClassName: 'xb-assistant-local-path-link',
+        });
         return pre;
     }
 
@@ -345,7 +217,12 @@ export function createChatUi(deps) {
         if (assistantContentText) {
             const content = document.createElement('div');
             content.className = 'xb-assistant-content xb-assistant-markdown';
-            content.appendChild(buildSanitizedHtmlFragment(renderMarkdown(assistantContentText)));
+            content.appendChild(buildMarkdownFragment(assistantContentText, {
+                onPathClick: onLocalPathClick,
+                codeBlockClassName: 'xb-assistant-codeblock',
+                codeCopyClassName: 'xb-assistant-code-copy',
+                linkClassName: 'xb-assistant-local-path-link',
+            }));
             bubble.appendChild(content);
         }
         return bubble;
@@ -653,7 +530,12 @@ export function createChatUi(deps) {
             if (thoughtDetails) {
                 bubble.appendChild(thoughtDetails);
             }
-            content.appendChild(buildSanitizedHtmlFragment(renderMarkdown(bodyText)));
+            content.appendChild(buildMarkdownFragment(bodyText, {
+                onPathClick: onLocalPathClick,
+                codeBlockClassName: 'xb-assistant-codeblock',
+                codeCopyClassName: 'xb-assistant-code-copy',
+                linkClassName: 'xb-assistant-local-path-link',
+            }));
             bubble.appendChild(content);
         } else if (thoughtDetails) {
             bubble.appendChild(thoughtDetails);

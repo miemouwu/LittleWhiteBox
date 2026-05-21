@@ -2,3 +2,4 @@ libs/**
 **/libs/**
 **/*.min.js
 modules/assistant/dist/**
+modules/ebook/dist/**

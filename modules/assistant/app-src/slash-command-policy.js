@@ -1,4 +1,4 @@
-import { normalizePermissionMode } from '../shared/config.js';
+import { normalizePermissionMode } from '../../agent-core/config.js';
 
 export function normalizeSlashCommand(command) {
     const normalized = String(command || '').trim();

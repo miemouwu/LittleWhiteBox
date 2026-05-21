@@ -74,6 +74,7 @@ LittleWhiteBox/
 ├── settings.html                           # 主设置页（模块开关/UI入口）
 ├── style.css                               # 全局样式
 ├── vite.assistant.config.mjs               # 助手模块 Vite 构建配置
+├── vite.ebook.config.mjs                   # 电纸书 App Vite 构建配置
 │
 ├── scripts/                               # 构建与检查脚本
 │   ├── build-assistant-file-manifest.mjs   # 助手文件清单构建脚本
@@ -138,6 +139,23 @@ LittleWhiteBox/
 │   ├── message-preview.js                  # 消息预览
 │   ├── streaming-generation.js             # 流式生成能力
 │   │
+│   ├── agent-core/                         # 多 Agent App 共用的无 UI 核心能力
+│   │   ├── README.md                       # agent-core 边界：什么能共享、什么不能进 core
+│   │   ├── config.js                       # 终端 Agent 模型配置、预设与默认值标准化
+│   │   ├── provider-config.js              # provider 列表、label、reasoning、adapter factory
+│   │   ├── ui/
+│   │   │   ├── settings-markup.js          # 多 Agent App 共用的 API 配置表单 markup
+│   │   │   └── settings-panel.js           # 多 Agent App 共用的 API 配置表单逻辑
+│   │   ├── current-plans.js                # `[Current plans]` 提示词前缀构造
+│   │   ├── plan-ledger.js                  # `PlanCreate/Update/List/Get` 账本规则；具体 App 显式传 plansTable
+│   │   ├── runtime/
+│   │   │   └── delegate-runner.js          # `DelegateRun` 同步子任务执行器
+│   │   ├── tools/                          # 无 App 作用域的通用工具原语
+│   │   │   ├── apply-patch.js              # patch 语法解析与文本级应用
+│   │   │   ├── apply-patch-execution.js    # patch 验证/执行骨架；具体文件作用域由调用方提供
+│   │   │   └── text-file-types.js          # 可读文本扩展名判断
+│   │   └── adapters/                       # OpenAI / Anthropic / Google / ST 后端 provider 适配器
+│   │
 │   ├── debug-panel/                       # 调试面板功能
 │   │   ├── debug-panel.html                # 调试面板 UI
 │   │   └── debug-panel.js                  # 调试面板逻辑
@@ -156,6 +174,34 @@ LittleWhiteBox/
 │   │   ├── fw-prompt.js                    # 提示词构造
 │   │   ├── fw-voice.js                     # 语音常量/指南
 │   │   └── fw-voice-runtime.js             # 语音运行时（合成/播放互斥）
+│   │
+│   ├── ebook/                             # 小白电纸书 App：书架、书本入口、创作台、章节阅读器
+│   │   ├── ebook.html                      # 电纸书 iframe 入口，加载 dist/ebook-app.js
+│   │   ├── ebook.js                        # 宿主 overlay 与 iframe 消息分发
+│   │   ├── host/                           # 电纸书 host 侧辅助：Agent 配置转发、聊天/角色/总结/世界书素材导入
+│   │   ├── app-src/                        # 电纸书 iframe App 源码；main.js 只做装配入口
+│   │   │   ├── main.js                     # 创建 hostBridge + ebookApp 并启动，不承载业务逻辑
+│   │   │   ├── ebook-app.js                # App 生命周期装配：state、controller、runner、renderer
+│   │   │   ├── book-controller.js          # 书籍/文件选择、保存、新建、素材导入
+│   │   │   ├── host-bridge.js              # iframe 与宿主消息桥、配置接收、host request 管理
+│   │   │   ├── agent-runner.js             # 电纸书主 Agent 与只读 Delegate 工具循环
+│   │   │   ├── renderer.js                 # 三栏 UI HTML 渲染
+│   │   │   ├── ui-bindings.js              # DOM 事件绑定到 controller / agentRunner
+│   │   │   ├── provider-config.js          # 复用小白助手模型配置并创建适配器
+│   │   │   ├── prompts.js                  # 电纸书主 Agent / Delegate 提示词与快捷动作提示
+│   │   │   ├── state.js                    # 电纸书 iframe 本地状态初始结构
+│   │   │   ├── constants.js                # 电纸书 iframe/host source、rootId、host request 超时常量
+│   │   │   ├── styles.js                   # 电纸书 iframe 样式注入
+│   │   │   ├── text-metrics.js             # 写作字数、行数与估算 token 统计
+│   │   │   └── text-utils.js               # iframe 文本转义与 JSON 安全工具
+│   │   ├── shared/                         # 书籍 IndexedDB、book/... 路径校验、作品工具运行时
+│   │   │   ├── book-tools.js               # 作品工具 facade：文件工具、Plan、Delegate 路由
+│   │   │   ├── book-file-tools.js          # LS/Glob/Grep/Read/Write/apply_patch/Move/Delete 实现
+│   │   │   ├── tool-definitions.js         # 电纸书工具 schema 与工具调用摘要
+│   │   │   ├── book-paths.js               # book/... 路径规范化与越界拒绝
+│   │   │   └── ebook-db.js                 # LittleWhiteBox_Ebook IndexedDB 书籍、文件、Plan 表
+│   │   ├── tests/                          # 电纸书作品工具与隔离测试
+│   │   └── dist/                           # Vite 构建产物；提交时保留，lint 忽略
 │   │
 │   ├── draw/                              # AI 画图大模块：共享层 + Provider
 │   │   ├── shared/                        # 跨 Provider 共享能力
@@ -325,7 +371,7 @@ LittleWhiteBox/
 │       │   │   ├── app-chrome.js           # 顶层 chrome、toolbar、上下文提示
 │       │   │   ├── app-shell.js            # 顶层应用壳 markup
 │       │   │   ├── chat-ui.js              # 聊天气泡、工具批次、审批块等 UI
-│       │   │   └── settings-panel.js       # 设置面板 UI 与配置同步
+│       │   │   └── settings-panel.js       # 迁移壳：re-export `modules/agent-core/ui/settings-panel.js`
 │       │   └── workspace/                 # 本地工作区树、diff、编辑器与导入管理
 │       │       ├── local-sources.js        # 工作区来源管理、导入与归档
 │       │       ├── local-workspace-diff.js # 文本 diff 视图辅助
@@ -335,15 +381,15 @@ LittleWhiteBox/
 │       │   └── assistant-app.js            # 构建产物（Vite 打包）
 │       ├── runtime-src/                   # 助手 JS API 运行时代码生成源
 │       │   └── jsapi-runtime.js            # JS API 分析 / 校验运行时源文件
-│       ├── shared/                        # 助手模块内部共享配置、持久化 schema、workspace kernel 与 plan 账本
-│       │   ├── apply-patch.js              # `local/` 补丁解析与文本级应用
-│       │   ├── apply-patch-execution.js    # 补丁验证/执行与失败结果整形
-│       │   ├── config.js                   # 助手配置标准化、预设与默认值
+│       ├── shared/                        # 助手模块内部共享：持久化 schema、workspace kernel、迁移壳
+│       │   ├── apply-patch.js              # 迁移壳：re-export `modules/agent-core/tools/apply-patch.js`
+│       │   ├── apply-patch-execution.js    # 迁移壳：re-export `modules/agent-core/tools/apply-patch-execution.js`
+│       │   ├── config.js                   # 迁移壳：re-export `modules/agent-core/config.js`
 │       │   ├── local-sources-tool-runtime.js # `local/` 工具运行时与 workspace 同步
 │       │   ├── local-workspace-kernel.js   # workspace 文件树/移动/删除等核心逻辑
 │       │   ├── lookup-scope.js             # project vs local 检索范围规则
-│       │   ├── plan-ledger.js              # 当前 session 的计划账本与 `Plan*` 规则
-│       │   ├── public-text-file-types.js   # 可读文本类型判断
+│       │   ├── plan-ledger.js              # 迁移壳：re-export `modules/agent-core/plan-ledger.js`
+│       │   ├── public-text-file-types.js   # 迁移壳：re-export `modules/agent-core/tools/text-file-types.js`
 │       │   ├── session-db.js               # Dexie schema：sessions/messages/meta/plans
 │       │   ├── workspace-mutation-policy.js # workspace 变更策略
 │       │   └── workspace-protocol.js       # host/iframe workspace 消息协议
@@ -370,12 +416,12 @@ LittleWhiteBox/
 - `app-src/state/session-store.js` + `shared/session-db.js`
   真实助手 session 持久化。清空对话时会切到新 `assistantSessionId`，计划账本也跟着切。
 - `app-src/context/current-context.js` + `current-plans.js`
-  提示词前缀构造层，分别负责 `[Current context]` 和 `[Current plans]`。
-- `shared/plan-ledger.js`
+  提示词前缀构造层；`[Current context]` 属于助手工作区，`[Current plans]` 来自 `modules/agent-core/current-plans.js`。
+- `modules/agent-core/plan-ledger.js`
   `PlanCreate / PlanUpdate / PlanList / PlanGet` 的统一账本规则；只管状态，不管执行。
-- `app-src/runtime.js` + `app-src/runtime/delegate-runner.js`
-  工具主循环与子任务执行层。`DelegateRun` 在这里同步跑子会话，不是 host 普通工具。
-- `app-src/adapters/*`
+- `app-src/runtime.js` + `modules/agent-core/runtime/delegate-runner.js`
+  工具主循环与子任务执行层。`DelegateRun` 在 agent-core 中同步跑子会话，不是 host 普通工具。
+- `modules/agent-core/adapters/*`
   provider 适配层。把统一 runtime 请求翻译成 OpenAI / Anthropic / Google / ST 后端等不同通道。
 
 ### 参考资料

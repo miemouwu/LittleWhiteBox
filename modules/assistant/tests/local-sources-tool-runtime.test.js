@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseApplyPatch } from '../shared/apply-patch.js';
-import { runPatchValidationAndApply } from '../shared/apply-patch-execution.js';
+import { parseApplyPatch } from '../../agent-core/tools/apply-patch.js';
+import { runPatchValidationAndApply } from '../../agent-core/tools/apply-patch-execution.js';
 import { normalizeLocalDirectoryPath } from '../shared/local-workspace-kernel.js';
 import { createLocalSourcesToolRuntime } from '../shared/local-sources-tool-runtime.js';
 import { INTERNAL_WORKSPACE_TOOL_NAMES } from '../shared/workspace-protocol.js';

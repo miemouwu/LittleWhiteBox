@@ -1,7 +1,13 @@
 import { analyzeJavaScriptApiRequest } from '../runtime-src/jsapi-runtime.js';
+import { createDelegateRunner } from '../../agent-core/runtime/delegate-runner.js';
+import {
+    buildProviderMessagesFromHistory,
+    filterThoughtsForTurn,
+    hasVisibleText,
+    resolveResultToolCalls,
+} from '../../agent-core/runtime/protocol.js';
 import { createApprovalController } from './runtime/approvals.js';
 import { createContextStatsController } from './runtime/context-stats.js';
-import { createDelegateRunner } from './runtime/delegate-runner.js';
 import { createHostToolRequestController } from './runtime/host-tool-requests.js';
 import { createHistoryCompactionController, splitMessagesIntoTurns } from './runtime/history-compaction.js';
 import { createStreamingMessageController } from './runtime/streaming-messages.js';
@@ -142,10 +148,6 @@ export function createAssistantRuntime(deps) {
         };
     }
 
-    function hasVisibleAssistantText(text) {
-        return typeof text === 'string' && text.trim().length > 0;
-    }
-
     function dropStreamingAssistantMessage(message) {
         if (!message) return;
         const index = state.messages.indexOf(message);
@@ -153,31 +155,6 @@ export function createAssistantRuntime(deps) {
         state.messages.splice(index, 1);
         persistSession();
         render();
-    }
-
-    function extractGoogleProviderToolCalls(providerPayload) {
-        const parts = Array.isArray(providerPayload?.googleContent?.parts)
-            ? providerPayload.googleContent.parts
-            : [];
-        return parts
-            .filter((part) => part?.functionCall?.name)
-            .map((part, index) => ({
-                id: String(part.functionCall.id || `google-tool-${index + 1}`),
-                name: String(part.functionCall.name || ''),
-                arguments: JSON.stringify(part.functionCall.args || {}),
-            }))
-            .filter((toolCall) => toolCall.name);
-    }
-
-    function resolveResultToolCalls(result, providerConfig = {}) {
-        if (Array.isArray(result?.toolCalls) && result.toolCalls.length) {
-            return result.toolCalls;
-        }
-        const provider = String(result?.provider || providerConfig?.provider || '').toLowerCase();
-        if (provider !== 'google') {
-            return [];
-        }
-        return extractGoogleProviderToolCalls(result?.providerPayload);
     }
 
     function trimForSummary(text, limit = 1800) {
@@ -201,16 +178,9 @@ export function createAssistantRuntime(deps) {
     }
 
     function filterThoughtsForCurrentTurn(thoughts = [], currentMessage = null) {
-        const normalized = normalizeThoughtBlocks(thoughts);
-        if (!normalized.length) return normalized;
-        const existingKeys = new Set();
-        getCurrentTurnMessages().forEach((message) => {
-            if (message === currentMessage || message?.role !== 'assistant') return;
-            normalizeThoughtBlocks(message.thoughts).forEach((item) => {
-                existingKeys.add(`${item.label}\u0000${item.text}`);
-            });
+        return filterThoughtsForTurn(thoughts, getCurrentTurnMessages(), {
+            currentMessage,
         });
-        return normalized.filter((item) => !existingKeys.has(`${item.label}\u0000${item.text}`));
     }
     const {
         buildContextMeterLabel,
@@ -311,47 +281,13 @@ export function createAssistantRuntime(deps) {
                     ? String(getEphemeralUserContextText() || '').trim()
                     : ''
             );
-        for (const message of baseMessages) {
-            if (message?.approvalRequest) {
-                continue;
-            }
-            if (message.role === 'assistant' && Array.isArray(message.toolCalls) && message.toolCalls.length) {
-                messages.push({
-                    role: 'assistant',
-                    content: message.content || '',
-                    providerPayload: message.providerPayload,
-                    tool_calls: message.toolCalls.map((toolCall) => ({
-                        id: toolCall.id,
-                        type: 'function',
-                        function: {
-                            name: toolCall.name,
-                            arguments: toolCall.arguments,
-                        },
-                    })),
-                });
-                continue;
-            }
-
-            if (message.role === 'tool') {
-                messages.push({
-                    role: 'tool',
-                    tool_call_id: message.toolCallId,
-                    content: message.content,
-                });
-                continue;
-            }
-
-            messages.push({
-                role: message.role,
-                providerPayload: message.providerPayload,
-                content: message.role === 'user'
-                    ? buildUserContentParts({
-                        ...message,
-                        contextPrefix: message === latestUserMessage ? ephemeralUserContextText : '',
-                    })
-                    : message.content,
-            });
-        }
+        messages.push(...buildProviderMessagesFromHistory(baseMessages, {
+            includeMessage: (message) => !message?.approvalRequest,
+            buildUserContent: (message) => buildUserContentParts({
+                ...message,
+                contextPrefix: message === latestUserMessage ? ephemeralUserContextText : '',
+            }),
+        }));
         return messages;
     }
 
@@ -807,7 +743,7 @@ export function createAssistantRuntime(deps) {
             }
 
             pendingToolResponses = null;
-            if (!hasVisibleAssistantText(result.text) && sawToolExecution && !finalAnswerReminderSent) {
+            if (!hasVisibleText(result.text) && sawToolExecution && !finalAnswerReminderSent) {
                 finalAnswerReminderSent = true;
                 const finalAnswerReminderText = '你已经拿到了本轮全部工具结果。现在不要再调用任何工具，直接用自然语言给出最终答复。';
                 if (adapter?.supportsSessionToolLoop) {

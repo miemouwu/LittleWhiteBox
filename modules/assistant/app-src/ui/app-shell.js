@@ -1,3 +1,5 @@
+import { buildAgentSettingsPanelMarkup } from '../../../agent-core/ui/settings-markup.js';
+
 export function buildAppMarkup(state) {
     const markup = `
         <div class="xb-assistant-shell ${state.sidebarCollapsed ? 'sidebar-collapsed' : ''}">
@@ -12,82 +14,13 @@ export function buildAppMarkup(state) {
                 <div class="xb-assistant-sidebar-content" ${state.sidebarCollapsed ? 'hidden' : ''}>
                     <div class="xb-assistant-brand">
                     </div>
-                    <section class="xb-assistant-config">
-                    <label>
-                        <span>已存预设</span>
-                        <select id="xb-assistant-preset-select"></select>
-                    </label>
-                    <label>
-                        <span>预设名称</span>
-                        <input id="xb-assistant-preset-name" type="text" placeholder="例如：OpenAI 测试号" />
-                    </label>
-                    <label>
-                        <span>Provider</span>
-                        <select id="xb-assistant-provider">
-                            <option value="openai-responses">OpenAI Responses</option>
-                            <option value="openai-compatible">OpenAI-compatible</option>
-                            <option value="sillytavern-openai-compatible">SillyTavern OpenAI-compatible</option>
-                            <option value="anthropic">Anthropic</option>
-                            <option value="google">Google AI</option>
-                        </select>
-                    </label>
-                    <label>
-                        <span>Base URL</span>
-                        <input id="xb-assistant-base-url" type="text" />
-                    </label>
-                    <label>
-                        <span>API Key</span>
-                        <div class="xb-assistant-inline-input">
-                            <input id="xb-assistant-api-key" type="password" />
-                            <button id="xb-assistant-toggle-key" type="button" class="secondary ghost">显示</button>
-                        </div>
-                    </label>
-                    <label>
-                        <span>Model</span>
-                        <input id="xb-assistant-model" type="text" />
-                    </label>
-                    <div class="xb-assistant-inline-input xb-assistant-model-row">
-                        <label class="xb-assistant-grow">
-                            <span>已拉取模型</span>
-                            <select id="xb-assistant-model-pulled">
-                                <option value="">手动填写</option>
-                            </select>
-                        </label>
-                        <button id="xb-assistant-pull-models" type="button" class="secondary">拉取模型</button>
-                    </div>
-                    <label id="xb-assistant-tool-mode-wrap">
-                        <span>Tool 调用格式</span>
-                        <select id="xb-assistant-tool-mode"></select>
-                    </label>
-                    <label>
-                        <span>斜杠命令权限</span>
-                        <select id="xb-assistant-permission-mode"></select>
-                    </label>
-                    <label>
-                        <span>JavaScript API 权限</span>
-                        <select id="xb-assistant-jsapi-permission"></select>
-                    </label>
-                    <label class="xb-assistant-checkbox-row">
-                        <span>
-                            Reasoning参数
-                            <small>需 API 支持，否则报错</small>
-                        </span>
-                        <span class="xb-assistant-checkbox-control">
-                            <input id="xb-assistant-reasoning-enabled" type="checkbox" />
-                            <span>开启</span>
-                        </span>
-                    </label>
-                    <label id="xb-assistant-reasoning-effort-wrap">
-                        <span>思考强度</span>
-                        <select id="xb-assistant-reasoning-effort"></select>
-                    </label>
-                    <div class="xb-assistant-actions">
-                        <button id="xb-assistant-save" type="button">保存配置</button>
-                        <button id="xb-assistant-delete-preset" type="button" class="secondary">删除配置</button>
-                    </div>
-                    <div class="xb-assistant-runtime" id="xb-assistant-runtime"></div>
-                    <div class="xb-assistant-toast xb-assistant-toast-inline" id="xb-assistant-toast" aria-live="polite"></div>
-                    </section>
+                    ${buildAgentSettingsPanelMarkup({
+                        configSave: state.configSave,
+                        inlineToastText: state.toast,
+                        isBusy: state.isBusy,
+                        canDeletePreset: (state.config?.presetNames || []).length > 1,
+                        runtimeText: '',
+                    })}
                 </div>
             </aside>
             <div class="xb-assistant-mobile-backdrop" id="xb-assistant-mobile-backdrop" ${state.sidebarCollapsed ? 'hidden' : ''}></div>

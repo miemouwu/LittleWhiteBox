@@ -3,23 +3,23 @@ import assert from 'node:assert/strict';
 
 import {
     DEFAULT_JSAPI_PERMISSION,
-    normalizeAssistantConfig,
-    normalizeAssistantSettings,
-} from '../shared/config.js';
+    normalizeAgentConfig,
+    normalizeAgentSettings,
+} from '../../agent-core/config.js';
 
 test('assistant settings default jsApiPermission to deny', () => {
-    const settings = normalizeAssistantSettings({});
-    const config = normalizeAssistantConfig({});
+    const settings = normalizeAgentSettings({});
+    const config = normalizeAgentConfig({});
 
     assert.equal(settings.jsApiPermission, DEFAULT_JSAPI_PERMISSION);
     assert.equal(config.jsApiPermission, DEFAULT_JSAPI_PERMISSION);
 });
 
 test('assistant config preserves explicit jsApiPermission', () => {
-    const settings = normalizeAssistantSettings({
+    const settings = normalizeAgentSettings({
         jsApiPermission: 'allow',
     });
-    const config = normalizeAssistantConfig({
+    const config = normalizeAgentConfig({
         jsApiPermission: 'allow',
     });
 
