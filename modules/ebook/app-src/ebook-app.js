@@ -158,10 +158,15 @@ export function createEbookApp(options = {}) {
         };
     }
 
-    function restoreScrollState(root, snapshot) {
-        if (!snapshot) return;
-        const node = root?.querySelector?.(snapshot.selector);
+    function restoreScrollState(root, snapshot, defaultSelector = null) {
+        const selector = snapshot?.selector || defaultSelector;
+        if (!selector) return;
+        const node = root?.querySelector?.(selector);
         if (!node) return;
+        if (!snapshot) {
+            node.scrollTop = node.scrollHeight;
+            return;
+        }
         node.scrollTop = snapshot.nearBottom
             ? node.scrollHeight
             : Math.min(snapshot.scrollTop, node.scrollHeight);
@@ -172,6 +177,7 @@ export function createEbookApp(options = {}) {
         if (!root) return;
         const agentScroll = captureScrollState(root, '.xb-agent-main');
         const settingsScroll = captureScrollState(root, '.xb-ebook-settings-body');
+        const wasSettingsOpen = state.isSettingsOpen;
         const providerConfig = getActiveProviderConfig();
         // Dynamic values are escaped by renderer helpers before interpolation.
         // eslint-disable-next-line no-unsanitized/property
@@ -202,8 +208,15 @@ export function createEbookApp(options = {}) {
             clearConversation: conversationStore.clearConversation,
             showToast,
         });
-        restoreScrollState(root, agentScroll);
-        restoreScrollState(root, settingsScroll);
+        if (!wasSettingsOpen || !state.isSettingsOpen) {
+            restoreScrollState(root, agentScroll, '.xb-agent-main');
+        }
+        if (state.isSettingsOpen) {
+            const settingsBody = root.querySelector('.xb-ebook-settings-body');
+            if (settingsBody) settingsBody.scrollTop = 0;
+        } else {
+            restoreScrollState(root, settingsScroll);
+        }
     }
 
     bookController = createBookController({

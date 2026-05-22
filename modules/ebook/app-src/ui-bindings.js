@@ -326,4 +326,51 @@ export function bindEbookEvents(options = {}) {
         input.value = '';
         void agentRunner.runAgent(buildActionPrompt('custom', { text, selectedPath: state.selectedPath }));
     });
+
+    // 上下导航按钮（抄小白助手）
+    let agentScrollHideTimer = null;
+    const agentMain = root.querySelector('.xb-agent-main');
+    const scrollTopBtn = root.querySelector('#xb-agent-scroll-top');
+    const scrollBottomBtn = root.querySelector('#xb-agent-scroll-bottom');
+    const scrollHelpers = root.querySelector('#xb-agent-scroll-helpers');
+
+    function scrollAgentToBottom(container) {
+        if (!container) return;
+        const apply = () => { container.scrollTop = container.scrollHeight; };
+        apply();
+        requestAnimationFrame(() => { apply(); requestAnimationFrame(apply); });
+    }
+
+    function updateAgentScrollButtonsVisibility() {
+        if (!agentMain || !scrollTopBtn || !scrollBottomBtn) return;
+        const threshold = 80;
+        const st = agentMain.scrollTop;
+        const sh = agentMain.scrollHeight;
+        const ch = agentMain.clientHeight;
+        scrollTopBtn.classList.toggle('visible', st > threshold);
+        scrollBottomBtn.classList.toggle('visible', sh - st - ch > threshold);
+    }
+
+    function showScrollHelpers() { scrollHelpers?.classList.add('active'); }
+    function hideScrollHelpers() { scrollHelpers?.classList.remove('active'); }
+    function scheduleHideScrollHelpers() {
+        if (agentScrollHideTimer) clearTimeout(agentScrollHideTimer);
+        agentScrollHideTimer = setTimeout(() => { hideScrollHelpers(); agentScrollHideTimer = null; }, 1500);
+    }
+
+    agentMain?.addEventListener('scroll', () => {
+        showScrollHelpers();
+        updateAgentScrollButtonsVisibility();
+        scheduleHideScrollHelpers();
+    });
+
+    scrollTopBtn?.addEventListener('click', () => {
+        agentMain?.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    scrollBottomBtn?.addEventListener('click', () => {
+        scrollAgentToBottom(agentMain);
+    });
+
+    updateAgentScrollButtonsVisibility();
 }

@@ -78,9 +78,11 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         .xb-library-empty { padding: 28px; border-radius: 22px; background: rgba(255,255,255,.48); }
         .xb-ebook-shell { height: 100%; display: grid; grid-template-columns: 260px minmax(0, 1fr); overflow: hidden; background: rgba(255, 249, 237, .78); }
         .xb-studio-workbench { min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr); overflow: hidden; }
-        .xb-sidebar, .xb-agent { min-width: 0; padding: 20px; overflow: hidden; backdrop-filter: blur(18px); }
-        .xb-sidebar { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px; border-right: 1px solid var(--line); background: rgba(83, 57, 36, .08); }
-        .xb-agent { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; border-left: 1px solid var(--line); background: rgba(255, 244, 222, .72); }
+        .xb-sidebar, .xb-agent, .xb-editor { min-width: 0; overflow: hidden; backdrop-filter: blur(18px); background: rgba(83, 57, 36, .06); }
+        .xb-sidebar, .xb-agent { padding: 20px; }
+        .xb-sidebar { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px; border-right: 1px solid var(--line); }
+        .xb-agent { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; border-left: 1px solid var(--line); }
+        .xb-editor { display: grid; grid-template-rows: auto minmax(0, 1fr); }
         .xb-brand, .xb-panel-head, .xb-editor-head, .xb-agent-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .xb-brand { min-width: 0; }
         .xb-brand .xb-title-row { width: 100%; }
@@ -303,12 +305,13 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         .xb-file { display: grid; gap: 2px; font-size: 13px; }
         .xb-file-main { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .xb-file small { color: var(--muted); font-size: 10px; font-family: "Cascadia Code", "Consolas", monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .xb-editor { min-width: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--paper); }
-        .xb-editor-head { padding: 18px 22px; border-bottom: 1px solid var(--line); background: linear-gradient(180deg, rgba(255,255,255,.52), rgba(255,255,255,.16)); }
+        .xb-editor { min-width: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+        .xb-editor-head { padding: 20px 22px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .xb-editor-foot { padding: 8px 22px; border-top: 1px solid var(--line); }
         .xb-path { font-weight: 800; color: var(--accent-dark); }
         .xb-meta, .xb-agent-head p, .xb-tool small, .xb-empty, .xb-agent-empty, .xb-agent-note { color: var(--muted); font-size: 12px; }
         .xb-editor-actions { display: flex; gap: 8px; }
-        .xb-editor-actions button { padding: 8px 12px; }
+        .xb-editor-actions button { padding: 7px 12px; border-radius: 999px; font-size: 12px; }
         .xb-editor-body { min-height: 0; padding: 22px; overflow: hidden; display: grid; grid-template-rows: minmax(0, 1fr); gap: 14px; }
         .xb-home {
             min-height: 0;
@@ -475,13 +478,9 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             resize: none;
             border: none;
             outline: none;
-            border-radius: 22px;
+            border-radius: 0;
             padding: 28px;
-            background:
-                linear-gradient(90deg, rgba(173, 90, 43, .05) 0 1px, transparent 1px 100%),
-                linear-gradient(#fffdf7, #fffaf0);
-            background-size: 28px 100%, auto;
-            box-shadow: inset 0 0 0 1px rgba(78, 55, 31, .10), var(--shadow);
+            background: transparent;
             color: var(--ink);
             font: 16px/1.85 "LXGW WenKai", "ZCOOL XiaoWei", "Noto Serif SC", serif;
         }
@@ -589,15 +588,16 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             min-width: 86px;
             max-width: 100%;
             margin: 0;
-            padding: 6px 10px;
+            padding: 7px 10px;
             border-radius: 999px;
             background: rgba(89, 116, 74, .10);
             color: var(--green);
             font-size: 12px;
             font-weight: 800;
+            line-height: 1;
         }
         .xb-agent-toolbar button {
-            padding: 6px 12px;
+            padding: 7px 12px;
             border-radius: 999px;
             font-size: 12px;
             font-weight: 800;
@@ -645,7 +645,48 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         .xb-actions-panel[open] { display: grid; gap: 8px; }
         .xb-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .xb-actions button { text-align: center; color: var(--accent-dark); font-weight: 700; }
-        .xb-agent-main { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+        .xb-agent-main { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; height: 100%; }
+        .xb-agent-chat-wrap { position: relative; min-height: 0; overflow: hidden; }
+        .xb-agent-scroll-helpers {
+            position: absolute;
+            top: 12%;
+            right: 8px;
+            bottom: 12%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .xb-agent-scroll-helpers.active { opacity: 1; }
+        .xb-agent-scroll-btn {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.92);
+            color: var(--accent-dark);
+            cursor: pointer;
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0.8) translateX(8px);
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(80, 48, 24, 0.08);
+            font: inherit;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .xb-agent-scroll-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1) translateX(0);
+        }
+        .xb-agent-scroll-btn:hover {
+            background: rgba(255, 255, 255, 0.98);
+            transform: scale(1.08) translateX(0);
+        }
+        .xb-agent-scroll-btn:active { transform: scale(0.96) translateX(0); }
         .xb-agent-log { min-height: 0; display: flex; flex-direction: column; gap: 10px; }
         .xb-agent-memory { color: var(--muted); font-size: 12px; border-bottom: 1px solid var(--line); padding: 0 0 8px; }
         .xb-msg { border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; background: rgba(255,255,255,.48); }
@@ -976,7 +1017,7 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             font-size: 18px;
         }
         .xb-agent-form button.is-busy { background: var(--accent-dark); }
-        .xb-toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 10px 16px; border-radius: 999px; background: rgba(35, 27, 20, .88); color: #fff8ed; box-shadow: var(--shadow); }
+        .xb-toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); padding: 10px 16px; border-radius: 999px; background: rgba(35, 27, 20, .88); color: #fff8ed; box-shadow: var(--shadow); z-index: 100; }
         @keyframes xb-ebook-pulse {
             0% { box-shadow: 0 0 0 0 rgba(173, 90, 43, .32); }
             70% { box-shadow: 0 0 0 8px rgba(173, 90, 43, 0); }

@@ -496,7 +496,7 @@ function renderMessages(state = {}) {
                 })}
                 ${isEditing ? `
                     <div class="xb-msg-editor-wrap">
-                        <textarea class="xb-msg-editor" data-message-editor="${messageIndex}">${escapeHtml(content)}</textarea>
+                        <textarea class="xb-msg-editor" data-message-editor="${messageIndex}" rows="${Math.min(Math.max(content.split('\n').length, 4), 14)}">${escapeHtml(content)}</textarea>
                     </div>
                 ` : (content ? `<div class="xb-msg-content xb-msg-markdown xb-assistant-markdown">${renderMessageMarkdownHtml(content)}</div>` : '')}
             </div>
@@ -652,10 +652,7 @@ function renderStudioShell(options = {}) {
             <section class="xb-studio-workbench">
                 <main class="xb-editor">
                     <header class="xb-editor-head">
-                        <div>
-                            <div class="xb-path">${escapeHtml(formatFileTitle(state.selectedPath || 'book/chapters/001.md'))}</div>
-                            <div class="xb-meta" id="xb-editor-meta">${dirty ? '有未保存修改' : '已保存到书库'} · ${renderDraftStats(state)}</div>
-                        </div>
+                        <div class="xb-path">${escapeHtml(formatFileTitle(state.selectedPath || 'book/chapters/001.md'))}</div>
                         <div class="xb-editor-actions">
                             <button id="xb-reader-link">阅读器</button>
                             <button id="xb-library-link">书架</button>
@@ -665,6 +662,9 @@ function renderStudioShell(options = {}) {
                     <div class="xb-editor-body">
                         <textarea id="xb-editor-text" spellcheck="false" ${state.isBusy ? 'disabled' : ''}>${escapeHtml(state.editorContent)}</textarea>
                     </div>
+                    <footer class="xb-editor-foot">
+                        <div class="xb-meta" id="xb-editor-meta">${dirty ? '有未保存修改' : '已保存到书库'} · ${renderDraftStats(state)}</div>
+                    </footer>
                 </main>
                 <aside class="xb-agent">
                     <header class="xb-agent-head">
@@ -675,19 +675,25 @@ function renderStudioShell(options = {}) {
                             <button id="xb-agent-close" type="button">退出</button>
                         </div>
                     </header>
-                    <div class="xb-agent-main${state.isBusy ? ' is-busy' : ''}">
-                        <details class="xb-actions-panel">
-                            <summary>快捷动作</summary>
-                            <div class="xb-actions">
-                                <button data-action="outline" ${agentActionAttr}>草拟大纲</button>
-                                <button data-action="next-chapter" ${agentActionAttr}>续写草稿</button>
-                                <button data-action="review" ${agentActionAttr}>审一遍</button>
-                                <button data-action="revise" ${agentActionAttr}>按意见改稿</button>
-                                <button data-action="organize" ${agentActionAttr}>整理资料</button>
-                            </div>
-                        </details>
-                        ${state.isBusy ? renderToolTrace(state) : ''}
-                        <div class="xb-agent-log">${renderMessages(state)}</div>
+                    <div class="xb-agent-chat-wrap">
+                        <div class="xb-agent-main${state.isBusy ? ' is-busy' : ''}">
+                            <details class="xb-actions-panel">
+                                <summary>快捷动作</summary>
+                                <div class="xb-actions">
+                                    <button data-action="outline" ${agentActionAttr}>草拟大纲</button>
+                                    <button data-action="next-chapter" ${agentActionAttr}>续写草稿</button>
+                                    <button data-action="review" ${agentActionAttr}>审一遍</button>
+                                    <button data-action="revise" ${agentActionAttr}>按意见改稿</button>
+                                    <button data-action="organize" ${agentActionAttr}>整理资料</button>
+                                </div>
+                            </details>
+                            ${state.isBusy ? renderToolTrace(state) : ''}
+                            <div class="xb-agent-log">${renderMessages(state)}</div>
+                        </div>
+                        <div class="xb-agent-scroll-helpers" id="xb-agent-scroll-helpers">
+                            <button id="xb-agent-scroll-top" type="button" class="xb-agent-scroll-btn" title="回到顶部" aria-label="回到顶部">▲</button>
+                            <button id="xb-agent-scroll-bottom" type="button" class="xb-agent-scroll-btn" title="回到底部" aria-label="回到底部">▼</button>
+                        </div>
                     </div>
                     <form id="xb-agent-form" class="xb-agent-form">
                         <div class="xb-agent-compose-row">
