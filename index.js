@@ -33,14 +33,6 @@ import { initTts, cleanupTts } from "./modules/tts/tts.js";
 import { initEnaPlanner, cleanupEnaPlanner } from "./modules/ena-planner/ena-planner.js";
 import { initAssistant, cleanupAssistant } from "./modules/assistant/assistant.js";
 import { initEbook, cleanupEbook } from "./modules/ebook/ebook.js";
-import { updateLittleWhiteBoxExtension } from "./modules/update/update-service.js";
-import {
-    performExtensionUpdateCheck,
-    removeAllUpdateNotices,
-    resetLittleWhiteBoxUpdateCheck,
-    showLittleWhiteBoxUpdateDialog,
-    updateExtensionHeaderWithUpdateNotice,
-} from "./modules/update/update-ui.js";
 
 extension_settings[EXT_ID] = extension_settings[EXT_ID] || {
     enabled: true,
@@ -215,18 +207,83 @@ function cleanupDeprecatedData() {
 
 let isXiaobaixEnabled = settings.enabled;
 let moduleCleanupFunctions = new Map();
+let updateModulesPromise = null;
+
+function loadUpdateModules() {
+    if (!updateModulesPromise) {
+        updateModulesPromise = Promise.all([
+            import("./modules/update/update-service.js"),
+            import("./modules/update/update-ui.js"),
+        ]).then(([service, ui]) => ({ ...service, ...ui })).catch((error) => {
+            updateModulesPromise = null;
+            throw error;
+        });
+    }
+    return updateModulesPromise;
+}
+
+async function callUpdateModule(exportName, fallbackValue, args = [], errorMessage = '') {
+    try {
+        const modules = await loadUpdateModules();
+        const fn = modules?.[exportName];
+        if (typeof fn !== 'function') {
+            throw new Error(`Missing update module export: ${exportName}`);
+        }
+        return await fn(...args);
+    } catch (error) {
+        console.error('[LittleWhiteBox] 更新模块加载失败:', error);
+        if (errorMessage) {
+            globalThis.toastr?.error?.(errorMessage, 'LittleWhiteBox update failed');
+        }
+        return fallbackValue;
+    }
+}
+
+async function updateLittleWhiteBoxExtension() {
+    return await callUpdateModule(
+        'updateLittleWhiteBoxExtension',
+        false,
+        [],
+        '更新模块加载失败，请刷新页面或手动更新 LittleWhiteBox。',
+    );
+}
+
+async function showLittleWhiteBoxUpdateDialog() {
+    return await callUpdateModule(
+        'showLittleWhiteBoxUpdateDialog',
+        false,
+        [],
+        '更新说明模块加载失败，请刷新页面或手动更新 LittleWhiteBox。',
+    );
+}
+
+async function performExtensionUpdateCheck() {
+    return await callUpdateModule('performExtensionUpdateCheck', false);
+}
+
+async function resetLittleWhiteBoxUpdateCheck() {
+    return await callUpdateModule('resetLittleWhiteBoxUpdateCheck', false);
+}
+
+async function updateExtensionHeaderWithUpdateNotice() {
+    return await callUpdateModule('updateExtensionHeaderWithUpdateNotice', false);
+}
+
+async function removeAllUpdateNotices() {
+    return await callUpdateModule('removeAllUpdateNotices', false);
+}
 
 window.isXiaobaixEnabled = isXiaobaixEnabled;
 setupDrawGenerateInterceptor({ shouldStrip: () => isXiaobaixEnabled });
 window.testLittleWhiteBoxUpdate = async () => {
-    resetLittleWhiteBoxUpdateCheck();
+    await resetLittleWhiteBoxUpdateCheck();
     await performExtensionUpdateCheck();
 };
-window.testUpdateUI = () => {
-    updateExtensionHeaderWithUpdateNotice();
+window.testUpdateUI = async () => {
+    await updateExtensionHeaderWithUpdateNotice();
 };
-window.testRemoveUpdateUI = () => {
-    removeAllUpdateNotices();
+window.testRemoveUpdateUI = async () => {
+    await removeAllUpdateNotices();
 };
 
 function registerModuleCleanup(moduleName, cleanupFunction) {

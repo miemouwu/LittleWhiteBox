@@ -29,6 +29,29 @@ function isFile(filePath) {
     }
 }
 
+function hasExactPathCase(filePath) {
+    const resolvedPath = path.resolve(filePath);
+    const { root } = path.parse(resolvedPath);
+    const relativePath = path.relative(root, resolvedPath);
+    let currentPath = root;
+
+    for (const segment of relativePath.split(path.sep).filter(Boolean)) {
+        let entries = [];
+        try {
+            entries = fs.readdirSync(currentPath);
+        } catch {
+            return false;
+        }
+
+        if (!entries.includes(segment)) {
+            return false;
+        }
+        currentPath = path.join(currentPath, segment);
+    }
+
+    return true;
+}
+
 function resolveExistingImport(fromFile, specifier) {
     const cleanSpecifier = stripResourceSuffix(specifier);
     const basePath = path.resolve(path.dirname(fromFile), cleanSpecifier);
@@ -150,12 +173,20 @@ function checkFile(filePath) {
     const problems = [];
 
     for (const { specifier, loc } of collectRelativeSpecifiers(ast)) {
-        if (resolveExistingImport(filePath, specifier)) continue;
-
         const relativePath = toPosix(path.relative(ROOT_DIR, filePath));
         const line = loc?.start?.line ?? 1;
         const column = (loc?.start?.column ?? 0) + 1;
-        problems.push(`${relativePath}:${line}:${column} missing relative import "${specifier}"`);
+        const resolvedImport = resolveExistingImport(filePath, specifier);
+
+        if (!resolvedImport) {
+            problems.push(`${relativePath}:${line}:${column} missing relative import "${specifier}"`);
+            continue;
+        }
+
+        if (!hasExactPathCase(resolvedImport)) {
+            const resolvedRelativePath = toPosix(path.relative(ROOT_DIR, resolvedImport));
+            problems.push(`${relativePath}:${line}:${column} import path case mismatch "${specifier}" -> "${resolvedRelativePath}"`);
+        }
     }
 
     return problems;
