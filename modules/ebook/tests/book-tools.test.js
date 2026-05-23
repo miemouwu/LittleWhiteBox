@@ -87,6 +87,73 @@ test('Book tools reject paths outside the current book namespace', async () => {
     assert.equal(root.entries.some((entry) => entry.path === 'book/reviews/'), true);
 });
 
+test('Book runtime exposes Tavily web search only when configured', async () => {
+    await resetDb();
+    const book = await createBook('联网资料测试');
+    const runtimeWithoutSearch = createBookToolRuntime({ bookId: book.id });
+    assert.equal(
+        runtimeWithoutSearch.getToolDefinitions().some((definition) => definition.function?.name === EBOOK_TOOL_NAMES.WEB_SEARCH),
+        false,
+    );
+
+    const originalFetch = globalThis.fetch;
+    const requests = [];
+    globalThis.fetch = async (url, options = {}) => {
+        requests.push({
+            url: String(url),
+            body: options.body,
+        });
+        return {
+            ok: true,
+            status: 200,
+            async json() {
+                return {
+                    results: [
+                        {
+                            title: 'Kyoto Machiya Guide',
+                            url: 'https://example.com/machiya',
+                            content: 'Traditional machiya usually have a narrow frontage and deep plan.',
+                            score: 0.91,
+                        },
+                    ],
+                };
+            },
+        };
+    };
+
+    try {
+        const runtime = createBookToolRuntime({
+            bookId: book.id,
+            searchConfig: {
+                tavilyApiKey: 'ebook-tavily-key',
+                tavilyBaseUrl: 'https://api.tavily.com/',
+            },
+        });
+        assert.equal(
+            runtime.getToolDefinitions().some((definition) => definition.function?.name === EBOOK_TOOL_NAMES.WEB_SEARCH),
+            true,
+        );
+
+        const result = await runtime.execute(EBOOK_TOOL_NAMES.WEB_SEARCH, {
+            query: 'Kyoto machiya layout',
+            maxResults: 3,
+        });
+
+        assert.equal(result.ok, true);
+        assert.equal(result.query, 'Kyoto machiya layout');
+        assert.equal(result.count, 1);
+        assert.equal(requests.length, 1);
+        assert.equal(requests[0].url, 'https://api.tavily.com/search');
+
+        const requestBody = JSON.parse(requests[0].body);
+        assert.equal(requestBody.api_key, 'ebook-tavily-key');
+        assert.equal(requestBody.query, 'Kyoto machiya layout');
+        assert.equal(requestBody.max_results, 3);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test('Book context budget defaults stay aligned with assistant', () => {
     assert.equal(EBOOK_MAX_CONTEXT_TOKENS, 188000);
     assert.equal(EBOOK_SUMMARY_TRIGGER_TOKENS, 158000);
@@ -1942,10 +2009,14 @@ test('Ebook settings open as an in-app shared config panel instead of jumping to
     assert.match(html, /分身 API/);
     assert.match(html, /id="xb-assistant-preset-select"/);
     assert.match(html, /id="xb-assistant-provider"/);
+    assert.match(html, /id="xb-assistant-tavily-api-key"/);
+    assert.match(html, /id="xb-assistant-tavily-base-url"/);
     assert.match(html, /id="xb-assistant-delegate-preset-select"/);
     assert.match(html, /id="xb-assistant-delegate-provider"/);
     assert.match(html, /id="xb-assistant-delegate-base-url"/);
     assert.match(html, /id="xb-assistant-delegate-model"/);
+    assert.match(html, /id="xb-assistant-delegate-tavily-api-key"/);
+    assert.match(html, /id="xb-assistant-delegate-tavily-base-url"/);
     assert.match(html, /id="xb-assistant-delegate-tool-mode"/);
     assert.match(html, /id="xb-assistant-delegate-pull-models"/);
     assert.match(html, /id="xb-assistant-save"/);

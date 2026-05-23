@@ -4,6 +4,7 @@ import { OpenAICompatibleAdapter } from './adapters/openai-compatible.js';
 import { OpenAIResponsesAdapter } from './adapters/openai-responses.js';
 import { SillyTavernOpenAICompatibleAdapter } from './adapters/sillytavern-openai-compatible.js';
 import { DEFAULT_PRESET_NAME, buildDefaultPreset, cloneDefaultModelConfigs, normalizeAgentConfig, normalizePresetName } from './config.js';
+import { normalizeTavilyApiKey, normalizeTavilyBaseUrl } from './tavily-search.js';
 
 export const AGENT_REQUEST_TIMEOUT_MS = 180000;
 
@@ -59,6 +60,8 @@ export function resolveActiveProviderConfig(configValue = {}, options = {}) {
             baseUrl: String(providerConfig.baseUrl || ''),
             model: String(providerConfig.model || ''),
             apiKey: String(providerConfig.apiKey || ''),
+            tavilyApiKey: normalizeTavilyApiKey(config.delegateConfig?.tavilyApiKey),
+            tavilyBaseUrl: normalizeTavilyBaseUrl(config.delegateConfig?.tavilyBaseUrl),
             temperature: Number(providerConfig.temperature ?? 0.2),
             maxTokens: provider === 'anthropic' ? 32000 : null,
             timeoutMs: Number(options.timeoutMs) || AGENT_REQUEST_TIMEOUT_MS,
@@ -86,6 +89,8 @@ export function resolveActiveProviderConfig(configValue = {}, options = {}) {
         baseUrl: String(providerConfig.baseUrl || ''),
         model: String(providerConfig.model || ''),
         apiKey: String(providerConfig.apiKey || ''),
+        tavilyApiKey: normalizeTavilyApiKey(currentPreset.tavilyApiKey || config.tavilyApiKey),
+        tavilyBaseUrl: normalizeTavilyBaseUrl(currentPreset.tavilyBaseUrl || config.tavilyBaseUrl),
         temperature: Number(providerConfig.temperature ?? 0.2),
         maxTokens: provider === 'anthropic' ? 32000 : null,
         timeoutMs: Number(options.timeoutMs) || AGENT_REQUEST_TIMEOUT_MS,

@@ -1,8 +1,11 @@
+import { TAVILY_TOOL_NAME } from '../../agent-core/tavily-search.js';
+
 export const EBOOK_TOOL_NAMES = Object.freeze({
     LS: 'LS',
     GLOB: 'Glob',
     GREP: 'Grep',
     READ: 'Read',
+    WEB_SEARCH: TAVILY_TOOL_NAME,
     WRITE: 'Write',
     APPLY_PATCH: 'apply_patch',
     DELETE: 'Delete',
@@ -17,6 +20,7 @@ export const EBOOK_TOOL_NAMES = Object.freeze({
 
 export function getEbookToolDefinitions(options = {}) {
     const readOnly = !!options.readOnly;
+    const webSearchEnabled = !!options.webSearchEnabled;
     const definitions = [
         {
             type: 'function',
@@ -108,6 +112,29 @@ export function getEbookToolDefinitions(options = {}) {
             },
         },
     ];
+
+    if (webSearchEnabled) {
+        definitions.push({
+            type: 'function',
+            function: {
+                name: EBOOK_TOOL_NAMES.WEB_SEARCH,
+                description: [
+                    '用 Tavily 联网搜索现实资料、公开文档或时间敏感信息。',
+                    '适合查真实地点、历史背景、机构、职业细节、生活常识、年代事实、公开资料或外部参考，不适合替代对当前书稿文件的阅读。',
+                    '搜索词尽量具体，先查事实，再把结果用于写作、设定或审稿判断。',
+                ].join('\n'),
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        query: { type: 'string', description: '聚焦且具体的搜索词，例如 `1997 香港警队警衔` 或 `京都祗园町屋结构`。' },
+                        maxResults: { type: 'number', description: '可选，最多返回多少条结果。默认 5，最大 8。' },
+                    },
+                    required: ['query'],
+                    additionalProperties: false,
+                },
+            },
+        });
+    }
 
     if (!readOnly) {
         definitions.push(
@@ -341,6 +368,8 @@ export function describeEbookToolCall(name = '', args = {}) {
             return `搜索作品 ${args.pattern || ''}`.trim();
         case EBOOK_TOOL_NAMES.READ:
             return `读取 ${args.filePath || args.path || ''}`.trim();
+        case EBOOK_TOOL_NAMES.WEB_SEARCH:
+            return `联网查资料 ${args.query || ''}`.trim();
         case EBOOK_TOOL_NAMES.WRITE:
             return `写入 ${args.path || args.filePath || ''}`.trim();
         case EBOOK_TOOL_NAMES.APPLY_PATCH:

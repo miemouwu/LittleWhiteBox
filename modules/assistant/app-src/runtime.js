@@ -1,5 +1,6 @@
 import { analyzeJavaScriptApiRequest } from '../runtime-src/jsapi-runtime.js';
 import { createDelegateRunner } from '../../agent-core/runtime/delegate-runner.js';
+import { runTavilySearchTool } from '../../agent-core/tavily-search.js';
 import {
     buildProviderMessagesFromHistory,
     filterThoughtsForTurn,
@@ -95,9 +96,9 @@ export function createAssistantRuntime(deps) {
         TOOL_NAMES,
     } = deps;
 
-    function resolveToolDefinitions() {
+    function resolveToolDefinitions(options = {}) {
         if (typeof getToolDefinitions === 'function') {
-            return getToolDefinitions();
+            return getToolDefinitions(options);
         }
         return TOOL_DEFINITIONS;
     }
@@ -417,13 +418,14 @@ export function createAssistantRuntime(deps) {
                 getActiveProviderConfig,
                 getDelegateProviderConfig,
                 getSystemPrompt: resolveSystemPrompt,
-                resolveToolDefinitions,
+                resolveToolDefinitions: () => resolveToolDefinitions({ role: 'delegate' }),
                 safeJsonParse,
                 isAbortError,
                 TOOL_NAMES,
                 executeToolCall: async (toolCall, parsedArguments, run) => await executeAssistantToolCall(toolCall, parsedArguments, run, {
                     allowDelegate: false,
                     trackToolErrors: false,
+                    role: 'delegate',
                 }),
             });
         }
@@ -528,6 +530,14 @@ export function createAssistantRuntime(deps) {
                     } else {
                         toolResult = await runDelegateTool(parsedArguments, run);
                     }
+                } else if (toolCall.name === TOOL_NAMES.WEB_SEARCH) {
+                    const providerConfig = options.role === 'delegate'
+                        ? getDelegateProviderConfig?.(run)
+                        : getActiveProviderConfig();
+                    toolResult = await runTavilySearchTool(providerConfig || {}, parsedArguments, {
+                        signal: run.controller.signal,
+                        isAbortError,
+                    });
                 } else {
                     toolResult = await callHostTool(toolCall.name, parsedArguments, {
                         runId: run.id,
@@ -635,7 +645,7 @@ export function createAssistantRuntime(deps) {
             try {
                 const requestTask = {
                     systemPrompt: resolveSystemPrompt(),
-                    tools: resolveToolDefinitions(),
+                    tools: resolveToolDefinitions({ role: 'main' }),
                     toolChoice: 'auto',
                     temperature: providerConfig.temperature,
                     maxTokens: providerConfig.maxTokens,

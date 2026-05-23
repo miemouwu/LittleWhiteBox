@@ -16,6 +16,7 @@ import {
     normalizeJsApiPermission,
     normalizeAssistantConfig,
 } from '../../agent-core/config.js';
+import { isTavilyConfigured } from '../../agent-core/tavily-search.js';
 import {
     normalizeSlashCommand,
     normalizeSlashSkillTrigger,
@@ -1107,11 +1108,16 @@ function isJsApiPermissionEnabled() {
     return normalizeJsApiPermission(state.config?.jsApiPermission) === 'allow';
 }
 
-function getEnabledToolDefinitions() {
-    if (isJsApiPermissionEnabled()) {
-        return TOOL_DEFINITIONS;
+function getEnabledToolDefinitions(options = {}) {
+    const role = options.role === 'delegate' ? 'delegate' : 'main';
+    let definitions = isJsApiPermissionEnabled()
+        ? TOOL_DEFINITIONS
+        : TOOL_DEFINITIONS.filter((tool) => tool?.function?.name !== TOOL_NAMES.RUN_JAVASCRIPT_API);
+    const providerConfig = getActiveProviderConfig(role === 'delegate' ? { role: 'delegate' } : {});
+    if (!isTavilyConfigured(providerConfig)) {
+        definitions = definitions.filter((tool) => tool?.function?.name !== TOOL_NAMES.WEB_SEARCH);
     }
-    return TOOL_DEFINITIONS.filter((tool) => tool?.function?.name !== TOOL_NAMES.RUN_JAVASCRIPT_API);
+    return definitions;
 }
 
 const chatUi = createChatUi({

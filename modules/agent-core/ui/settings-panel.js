@@ -18,6 +18,7 @@ import {
     getProviderLabel,
     normalizeReasoningEffort,
 } from '../provider-config.js';
+import { DEFAULT_TAVILY_BASE_URL, normalizeTavilyBaseUrl } from '../tavily-search.js';
 
 const MODEL_FILTERS = {
     chat: {
@@ -346,6 +347,8 @@ export function createAgentSettingsPanel(deps = {}) {
             delegateReasoningEnabled: Boolean(delegateProviderConfig.reasoningEnabled),
             delegateReasoningEffort: normalizeReasoningEffort(delegateProviderConfig.reasoningEffort),
             delegateToolMode: delegateProviderConfig.toolMode || 'native',
+            delegateTavilyApiKey: String(sourcePreset.tavilyApiKey || ''),
+            delegateTavilyBaseUrl: normalizeTavilyBaseUrl(sourcePreset.tavilyBaseUrl || DEFAULT_TAVILY_BASE_URL),
         };
     }
 
@@ -370,6 +373,8 @@ export function createAgentSettingsPanel(deps = {}) {
             reasoningEnabled: Boolean(providerConfig.reasoningEnabled),
             reasoningEffort: normalizeReasoningEffort(providerConfig.reasoningEffort),
             toolMode: providerConfig.toolMode || 'native',
+            tavilyApiKey: String(sourcePreset.tavilyApiKey || ''),
+            tavilyBaseUrl: normalizeTavilyBaseUrl(sourcePreset.tavilyBaseUrl || DEFAULT_TAVILY_BASE_URL),
             permissionMode: normalizePermissionMode(sourcePreset.permissionMode),
             jsApiPermission: normalizeJsApiPermission(sourceConfig?.jsApiPermission),
             ...delegateDraft,
@@ -398,6 +403,8 @@ export function createAgentSettingsPanel(deps = {}) {
             reasoningEnabled: root.querySelector('#xb-assistant-reasoning-enabled')?.checked || false,
             reasoningEffort: normalizeReasoningEffort(root.querySelector('#xb-assistant-reasoning-effort')?.value),
             toolMode: (root.querySelector('#xb-assistant-tool-mode')?.value || draft.toolMode || 'native'),
+            tavilyApiKey: root.querySelector('#xb-assistant-tavily-api-key')?.value.trim() || '',
+            tavilyBaseUrl: normalizeTavilyBaseUrl(root.querySelector('#xb-assistant-tavily-base-url')?.value.trim() || draft.tavilyBaseUrl || DEFAULT_TAVILY_BASE_URL),
             permissionMode: normalizePermissionMode(root.querySelector('#xb-assistant-permission-mode')?.value || draft.permissionMode),
             jsApiPermission: normalizeJsApiPermission(root.querySelector('#xb-assistant-jsapi-permission')?.value || draft.jsApiPermission),
             delegatePresetName: resolveExistingPresetName(root.querySelector('#xb-assistant-delegate-preset-select')?.value || draft.delegatePresetName, draft.currentPresetName),
@@ -409,6 +416,8 @@ export function createAgentSettingsPanel(deps = {}) {
             delegateReasoningEnabled: root.querySelector('#xb-assistant-delegate-reasoning-enabled')?.checked || false,
             delegateReasoningEffort: normalizeReasoningEffort(root.querySelector('#xb-assistant-delegate-reasoning-effort')?.value || draft.delegateReasoningEffort),
             delegateToolMode: root.querySelector('#xb-assistant-delegate-tool-mode')?.value || draft.delegateToolMode || 'native',
+            delegateTavilyApiKey: root.querySelector('#xb-assistant-delegate-tavily-api-key')?.value.trim() || '',
+            delegateTavilyBaseUrl: normalizeTavilyBaseUrl(root.querySelector('#xb-assistant-delegate-tavily-base-url')?.value.trim() || draft.delegateTavilyBaseUrl || DEFAULT_TAVILY_BASE_URL),
         };
     }
 
@@ -457,6 +466,8 @@ export function createAgentSettingsPanel(deps = {}) {
         const modelConfigs = normalizeModelConfigs(draft.delegateModelConfigs || {});
         return {
             provider,
+            tavilyApiKey: String(draft.delegateTavilyApiKey || ''),
+            tavilyBaseUrl: normalizeTavilyBaseUrl(draft.delegateTavilyBaseUrl || DEFAULT_TAVILY_BASE_URL),
             modelConfigs: {
                 ...modelConfigs,
                 [provider]: {
@@ -473,6 +484,8 @@ export function createAgentSettingsPanel(deps = {}) {
             baseUrl: draft.baseUrl || '',
             model: draft.model || '',
             apiKey: draft.apiKey || '',
+            tavilyApiKey: draft.tavilyApiKey || '',
+            tavilyBaseUrl: normalizeTavilyBaseUrl(draft.tavilyBaseUrl || DEFAULT_TAVILY_BASE_URL),
             temperature: Number(draft.temperature ?? 0.2),
             maxTokens: resolveRuntimeMaxTokens(draft),
             timeoutMs: AGENT_REQUEST_TIMEOUT_MS,
@@ -488,6 +501,8 @@ export function createAgentSettingsPanel(deps = {}) {
             baseUrl: draft.delegateBaseUrl || '',
             model: draft.delegateModel || '',
             apiKey: draft.delegateApiKey || '',
+            tavilyApiKey: draft.delegateTavilyApiKey || '',
+            tavilyBaseUrl: normalizeTavilyBaseUrl(draft.delegateTavilyBaseUrl || DEFAULT_TAVILY_BASE_URL),
             temperature: Number(draft.delegateTemperature ?? 0.2),
             maxTokens: draft.delegateProvider === 'anthropic' ? 32000 : null,
             timeoutMs: AGENT_REQUEST_TIMEOUT_MS,
@@ -562,6 +577,10 @@ export function createAgentSettingsPanel(deps = {}) {
         const delegateBaseUrlInput = root.querySelector('#xb-assistant-delegate-base-url');
         const delegateModelInput = root.querySelector('#xb-assistant-delegate-model');
         const delegateApiKeyInput = root.querySelector('#xb-assistant-delegate-api-key');
+        const tavilyApiKeyInput = root.querySelector('#xb-assistant-tavily-api-key');
+        const tavilyBaseUrlInput = root.querySelector('#xb-assistant-tavily-base-url');
+        const delegateTavilyApiKeyInput = root.querySelector('#xb-assistant-delegate-tavily-api-key');
+        const delegateTavilyBaseUrlInput = root.querySelector('#xb-assistant-delegate-tavily-base-url');
         const delegatePulledSelect = root.querySelector('#xb-assistant-delegate-model-pulled');
         const delegateToolModeWrap = root.querySelector('#xb-assistant-delegate-tool-mode-wrap');
         const delegateToolModeSelect = root.querySelector('#xb-assistant-delegate-tool-mode');
@@ -585,6 +604,8 @@ export function createAgentSettingsPanel(deps = {}) {
         root.querySelector('#xb-assistant-base-url').value = draft.baseUrl || '';
         root.querySelector('#xb-assistant-model').value = draft.model || '';
         root.querySelector('#xb-assistant-api-key').value = draft.apiKey || '';
+        if (tavilyApiKeyInput) tavilyApiKeyInput.value = draft.tavilyApiKey || '';
+        if (tavilyBaseUrlInput) tavilyBaseUrlInput.value = draft.tavilyBaseUrl || DEFAULT_TAVILY_BASE_URL;
         toolModeWrap.style.display = (provider === 'openai-compatible' || provider === 'sillytavern-openai-compatible') ? '' : 'none';
         refillSelect(toolModeSelect, TOOL_MODE_OPTIONS);
         toolModeSelect.value = draft.toolMode || 'native';
@@ -606,6 +627,8 @@ export function createAgentSettingsPanel(deps = {}) {
         if (delegateBaseUrlInput) delegateBaseUrlInput.value = draft.delegateBaseUrl || '';
         if (delegateModelInput) delegateModelInput.value = draft.delegateModel || '';
         if (delegateApiKeyInput) delegateApiKeyInput.value = draft.delegateApiKey || '';
+        if (delegateTavilyApiKeyInput) delegateTavilyApiKeyInput.value = draft.delegateTavilyApiKey || '';
+        if (delegateTavilyBaseUrlInput) delegateTavilyBaseUrlInput.value = draft.delegateTavilyBaseUrl || DEFAULT_TAVILY_BASE_URL;
         if (delegateToolModeWrap) {
             delegateToolModeWrap.style.display = (delegateProvider === 'openai-compatible' || delegateProvider === 'sillytavern-openai-compatible') ? '' : 'none';
         }
@@ -650,6 +673,14 @@ export function createAgentSettingsPanel(deps = {}) {
         }
     }
 
+    function bindInputVisibilityToggle(root, buttonSelector, inputSelector) {
+        root.querySelector(buttonSelector)?.addEventListener('click', () => {
+            const input = root.querySelector(inputSelector);
+            if (!input) return;
+            input.type = input.type === 'password' ? 'text' : 'password';
+        });
+    }
+
     function saveConfigFromForm(root) {
         const draft = syncConfigDraft(root);
         const nextPresetName = normalizePresetName(draft.presetDraftName);
@@ -659,6 +690,8 @@ export function createAgentSettingsPanel(deps = {}) {
             ...currentPreset,
             provider: draft.provider,
             permissionMode: normalizePermissionMode(draft.permissionMode),
+            tavilyApiKey: String(draft.tavilyApiKey || ''),
+            tavilyBaseUrl: normalizeTavilyBaseUrl(draft.tavilyBaseUrl || DEFAULT_TAVILY_BASE_URL),
             modelConfigs: {
                 ...(currentPreset.modelConfigs || cloneDefaultModelConfigs()),
                 [draft.provider]: {
@@ -780,6 +813,14 @@ export function createAgentSettingsPanel(deps = {}) {
             syncConfigDraft(root);
         });
 
+        root.querySelector('#xb-assistant-tavily-api-key')?.addEventListener('input', () => {
+            syncConfigDraft(root);
+        });
+
+        root.querySelector('#xb-assistant-tavily-base-url')?.addEventListener('input', () => {
+            syncConfigDraft(root);
+        });
+
         root.querySelector('#xb-assistant-model-pulled').addEventListener('change', (event) => {
             const value = event.currentTarget.value;
             if (!value) return;
@@ -787,11 +828,8 @@ export function createAgentSettingsPanel(deps = {}) {
             syncConfigDraft(root);
         });
 
-        root.querySelector('#xb-assistant-toggle-key').addEventListener('click', () => {
-            const keyInput = root.querySelector('#xb-assistant-api-key');
-            if (!keyInput) return;
-            keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
-        });
+        bindInputVisibilityToggle(root, '#xb-assistant-toggle-key', '#xb-assistant-api-key');
+        bindInputVisibilityToggle(root, '#xb-assistant-toggle-tavily-key', '#xb-assistant-tavily-api-key');
 
         root.querySelector('#xb-assistant-delegate-provider')?.addEventListener('change', (event) => {
             ensureConfigDraft();
@@ -815,6 +853,14 @@ export function createAgentSettingsPanel(deps = {}) {
             syncConfigDraft(root);
         });
 
+        root.querySelector('#xb-assistant-delegate-tavily-api-key')?.addEventListener('input', () => {
+            syncConfigDraft(root);
+        });
+
+        root.querySelector('#xb-assistant-delegate-tavily-base-url')?.addEventListener('input', () => {
+            syncConfigDraft(root);
+        });
+
         root.querySelector('#xb-assistant-delegate-model-pulled')?.addEventListener('change', (event) => {
             const value = event.currentTarget.value;
             if (!value) return;
@@ -823,11 +869,8 @@ export function createAgentSettingsPanel(deps = {}) {
             syncConfigDraft(root);
         });
 
-        root.querySelector('#xb-assistant-delegate-toggle-key')?.addEventListener('click', () => {
-            const keyInput = root.querySelector('#xb-assistant-delegate-api-key');
-            if (!keyInput) return;
-            keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
-        });
+        bindInputVisibilityToggle(root, '#xb-assistant-delegate-toggle-key', '#xb-assistant-delegate-api-key');
+        bindInputVisibilityToggle(root, '#xb-assistant-delegate-toggle-tavily-key', '#xb-assistant-delegate-tavily-api-key');
 
         root.querySelector('#xb-assistant-reasoning-enabled').addEventListener('change', () => {
             syncConfigDraft(root);

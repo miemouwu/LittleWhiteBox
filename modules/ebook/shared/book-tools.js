@@ -1,4 +1,5 @@
 import { createPlanLedger } from '../../agent-core/plan-ledger.js';
+import { isTavilyConfigured, runTavilySearchTool } from '../../agent-core/tavily-search.js';
 import { ebookPlansTable, listBookFiles, renameBook } from './ebook-db.js';
 import { createBookFileToolHandlers, collectDirectoryEntries } from './book-file-tools.js';
 import {
@@ -41,6 +42,9 @@ export function createBookToolRuntime(options = {}) {
     const getBookId = typeof options.getBookId === 'function' ? options.getBookId : () => options.bookId;
     const onFilesChanged = typeof options.onFilesChanged === 'function' ? options.onFilesChanged : null;
     const runDelegate = typeof options.runDelegate === 'function' ? options.runDelegate : null;
+    const getSearchConfig = typeof options.getSearchConfig === 'function'
+        ? options.getSearchConfig
+        : () => options.searchConfig || {};
     const readOnly = !!options.readOnly;
 
     async function currentBookId() {
@@ -75,6 +79,11 @@ export function createBookToolRuntime(options = {}) {
                 return await fileTools.executeGrep(args);
             case EBOOK_TOOL_NAMES.READ:
                 return await fileTools.executeRead(args);
+            case EBOOK_TOOL_NAMES.WEB_SEARCH:
+                return await runTavilySearchTool(getSearchConfig(), args, {
+                    signal: options.signal,
+                    isAbortError: options.isAbortError,
+                });
             case EBOOK_TOOL_NAMES.WRITE:
                 return await fileTools.executeWrite(args);
             case EBOOK_TOOL_NAMES.APPLY_PATCH:
@@ -117,7 +126,10 @@ export function createBookToolRuntime(options = {}) {
     return {
         execute,
         getFiles,
-        getToolDefinitions: () => getEbookToolDefinitions({ readOnly }),
+        getToolDefinitions: () => getEbookToolDefinitions({
+            readOnly,
+            webSearchEnabled: isTavilyConfigured(getSearchConfig()),
+        }),
     };
 }
 

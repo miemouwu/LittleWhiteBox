@@ -34,6 +34,14 @@ test('Read exposes tail as the only extra range shortcut', () => {
     assert.doesNotMatch(JSON.stringify(definition.function.parameters.properties), /mode|from/i);
 });
 
+test('web search tool exposes a focused Tavily schema', () => {
+    const definition = TOOL_DEFINITIONS.find((entry) => entry.function?.name === TOOL_NAMES.WEB_SEARCH);
+    assert(definition);
+    assert.deepEqual(Object.keys(definition.function.parameters.properties), ['query', 'maxResults']);
+    assert.deepEqual(definition.function.parameters.required, ['query']);
+    assert.match(String(definition.function.description || ''), /Tavily/i);
+});
+
 test('plan tools expose strict state-only schemas', () => {
     const planTools = [
         TOOL_NAMES.PLAN_CREATE,
@@ -208,6 +216,31 @@ test('formatToolResultDisplay summarizes delegate tool results', () => {
     assert.match(display.summary, /工具调用：1/);
     assert.match(display.details, /完成检查，没有发现问题/);
     assert.match(display.details, /Read/);
+});
+
+test('formatToolResultDisplay summarizes web search results', () => {
+    const display = formatToolResultDisplay({
+        toolName: TOOL_NAMES.WEB_SEARCH,
+        content: JSON.stringify({
+            ok: true,
+            query: '京都町屋结构',
+            maxResults: 3,
+            count: 1,
+            results: [
+                {
+                    title: 'Kyoto Machiya Guide',
+                    url: 'https://example.com/machiya',
+                    content: 'Traditional machiya usually have a narrow frontage and deep plan.',
+                    score: 0.91,
+                },
+            ],
+        }),
+    });
+
+    assert.match(display.summary, /已联网搜索：京都町屋结构/);
+    assert.match(display.summary, /结果数：1/);
+    assert.match(display.details, /Kyoto Machiya Guide/);
+    assert.match(display.details, /Traditional machiya/);
 });
 
 test('formatToolResultDisplay summarizes streamed read previews without fake total lines', () => {

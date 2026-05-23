@@ -10,6 +10,7 @@ import {
     normalizeToolCalls,
     resolveResultToolCalls,
 } from '../../agent-core/runtime/protocol.js';
+import { buildTavilySearchTracePayload, isTavilyConfigured } from '../../agent-core/tavily-search.js';
 import { upsertBookFile } from '../shared/ebook-db.js';
 import {
     EBOOK_TOOL_NAMES,
@@ -66,6 +67,8 @@ export function buildEbookProviderMessagesFromHistory(messages = []) {
 }
 
 function buildToolTraceEntry(toolCall = {}, args = {}, result = {}) {
+    const isDelegate = toolCall.name === EBOOK_TOOL_NAMES.DELEGATE_RUN;
+    const isWebSearch = toolCall.name === EBOOK_TOOL_NAMES.WEB_SEARCH;
     return {
         id: String(toolCall.id || ''),
         name: toolCall.name,
@@ -73,6 +76,11 @@ function buildToolTraceEntry(toolCall = {}, args = {}, result = {}) {
         title: describeEbookToolCall(toolCall.name, args),
         ok: !(result && typeof result === 'object' && result.ok === false),
         summary: formatEbookToolResult(result),
+        payload: isDelegate
+            ? buildDelegateTracePayload(args)
+            : isWebSearch
+                ? buildTavilySearchTracePayload(result)
+                : [],
     };
 }
 
@@ -91,6 +99,7 @@ function buildDelegateTracePayload(args = {}) {
 
 function buildRunningToolTraceEntry(toolCall = {}, args = {}, round = 0) {
     const isDelegate = toolCall.name === EBOOK_TOOL_NAMES.DELEGATE_RUN;
+    const isWebSearch = toolCall.name === EBOOK_TOOL_NAMES.WEB_SEARCH;
     return {
         id: String(toolCall.id || ''),
         name: toolCall.name,
@@ -99,8 +108,16 @@ function buildRunningToolTraceEntry(toolCall = {}, args = {}, round = 0) {
         ok: true,
         status: 'running',
         startedAt: Date.now(),
-        summary: isDelegate ? '审稿分身工作中，等待返回。' : '工具运行中，等待返回。',
-        payload: isDelegate ? buildDelegateTracePayload(args) : [],
+        summary: isDelegate
+            ? '审稿分身工作中，等待返回。'
+            : isWebSearch
+                ? '联网搜索中，等待返回。'
+                : '工具运行中，等待返回。',
+        payload: isDelegate
+            ? buildDelegateTracePayload(args)
+            : isWebSearch
+                ? buildTavilySearchTracePayload({ query: args.query })
+                : [],
     };
 }
 
@@ -188,7 +205,10 @@ export function createEbookAgentRunner(deps = {}) {
         executeToolCall: async (toolCall, args, parentRun = {}) => {
             const runtime = createBookToolRuntime({
                 getBookId: () => parentRun.bookId || state.book?.id,
+                getSearchConfig: () => getActiveProviderConfig({ role: 'delegate' }),
+                signal: parentRun?.controller?.signal,
                 readOnly: true,
+                isAbortError,
             });
             try {
                 return await runtime.execute(toolCall.name, args);
@@ -200,7 +220,10 @@ export function createEbookAgentRunner(deps = {}) {
         getActiveProviderConfig,
         getDelegateProviderConfig: () => getActiveProviderConfig({ role: 'delegate' }),
         getSystemPrompt: () => EBOOK_DELEGATE_PROMPT,
-        resolveToolDefinitions: () => getEbookToolDefinitions({ readOnly: true }),
+        resolveToolDefinitions: () => getEbookToolDefinitions({
+            readOnly: true,
+            webSearchEnabled: isTavilyConfigured(getActiveProviderConfig({ role: 'delegate' })),
+        }),
         safeJsonParse,
         isAbortError,
         TOOL_NAMES: EBOOK_TOOL_NAMES,
@@ -301,9 +324,12 @@ export function createEbookAgentRunner(deps = {}) {
             const runtime = createBookToolRuntime({
                 getBookId: () => runBookId,
                 onFilesChanged: refreshBooksAndFiles,
+                getSearchConfig: () => providerConfig,
+                signal: controller.signal,
+                isAbortError,
                 runDelegate: async (args) => await runDelegate(args, { controller, bookId: runBookId, book: runBook }),
             });
-            const tools = getEbookToolDefinitions();
+            const tools = runtime.getToolDefinitions();
             const allowedToolNames = new Set(tools.map((definition) => definition.function.name));
             let sawToolExecution = false;
             let finalAnswerReminderSent = false;

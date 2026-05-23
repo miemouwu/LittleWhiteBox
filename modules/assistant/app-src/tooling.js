@@ -1,3 +1,5 @@
+import { formatTavilySearchResults, TAVILY_TOOL_NAME } from '../../agent-core/tavily-search.js';
+
 // ============================================================
 // 工具名称常量
 // ============================================================
@@ -6,6 +8,7 @@ export const TOOL_NAMES = {
     GLOB: 'Glob',
     GREP: 'Grep',
     READ: 'Read',
+    WEB_SEARCH: TAVILY_TOOL_NAME,
     WRITE: 'Write',
     APPLY_PATCH: 'apply_patch',
     DELETE: 'Delete',
@@ -137,6 +140,26 @@ export const TOOL_DEFINITIONS = [
                     tail: { type: 'number', description: 'Optional number of final file lines to return. Use by itself; cannot be combined with offset, limit, startLine, or endLine.' },
                 },
                 required: ['filePath'],
+                additionalProperties: false,
+            },
+        },
+    },
+    {
+        type: 'function',
+        function: {
+            name: TOOL_NAMES.WEB_SEARCH,
+            description: [
+                'Search the public web with Tavily when you need external facts that are not available from project files, workspace files, or current SillyTavern instance state.',
+                'Use this for real-world references, factual verification, time-sensitive information, public documentation, or outside background research before answering.',
+                'Keep the query focused and specific; do not use it for questions that can already be answered from local tools.',
+            ].join('\n'),
+            parameters: {
+                type: 'object',
+                properties: {
+                    query: { type: 'string', description: 'Focused search query, for example "SillyTavern world info regex docs" or "Kyoto district history".' },
+                    maxResults: { type: 'number', description: 'Optional number of results to return. Default 5, max 8.' },
+                },
+                required: ['query'],
                 additionalProperties: false,
             },
         },
@@ -611,6 +634,8 @@ export function describeToolCall(name, args = {}) {
             return `搜索内容 ${args.pattern || ''}${args.path ? ` @ ${args.path}` : ''}`.trim();
         case TOOL_NAMES.READ:
             return `读取文件 ${(args.filePath || args.path || '')}${args.tail ? ` tail:${args.tail}` : args.offset ? `:${args.offset}` : args.startLine ? `:${args.startLine}` : ''}`.trim();
+        case TOOL_NAMES.WEB_SEARCH:
+            return `联网搜索 ${args.query || ''}`.trim();
         case TOOL_NAMES.WRITE:
             return `写入文件 ${args.path || args.filePath || ''}`.trim();
         case TOOL_NAMES.APPLY_PATCH:
@@ -807,6 +832,21 @@ export function formatToolResultDisplay(message) {
         return {
             summary: lines.join('\n'),
             details: detailLines.join('\n'),
+        };
+    }
+
+    if (message.toolName === TOOL_NAMES.WEB_SEARCH) {
+        const results = Array.isArray(parsed.results) ? parsed.results : [];
+        const lines = [
+            `已联网搜索：${parsed.query || ''}`,
+            `结果数：${Number(parsed.count) || results.length || 0}`,
+        ];
+        if (Number(parsed.maxResults) > 0) {
+            lines.push(`请求上限：${Number(parsed.maxResults)}`);
+        }
+        return {
+            summary: lines.filter(Boolean).join('\n'),
+            details: formatTavilySearchResults(results),
         };
     }
 

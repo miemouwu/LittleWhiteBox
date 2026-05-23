@@ -1,3 +1,9 @@
+import {
+    DEFAULT_TAVILY_BASE_URL,
+    normalizeTavilyApiKey,
+    normalizeTavilyBaseUrl,
+} from './tavily-search.js';
+
 export const DEFAULT_PROVIDER = 'openai-compatible';
 export const DEFAULT_PRESET_NAME = '默认';
 export const DEFAULT_PERMISSION_MODE = 'default';
@@ -56,6 +62,8 @@ export function buildDefaultPreset() {
         provider: DEFAULT_PROVIDER,
         modelConfigs: cloneDefaultModelConfigs(),
         permissionMode: DEFAULT_PERMISSION_MODE,
+        tavilyApiKey: '',
+        tavilyBaseUrl: DEFAULT_TAVILY_BASE_URL,
     };
 }
 
@@ -64,6 +72,8 @@ export function buildDefaultDelegateConfig(sourcePreset = buildDefaultPreset()) 
     return {
         provider: normalizeProvider(preset.provider),
         modelConfigs: normalizeModelConfigs(preset.modelConfigs || {}),
+        tavilyApiKey: normalizeTavilyApiKey(preset.tavilyApiKey),
+        tavilyBaseUrl: normalizeTavilyBaseUrl(preset.tavilyBaseUrl),
     };
 }
 
@@ -122,6 +132,8 @@ function normalizePresets(input = {}, legacyPresetName) {
             provider: normalizeProvider(rawPreset.provider),
             modelConfigs: normalizeModelConfigs(rawPreset.modelConfigs || {}),
             permissionMode: normalizePermissionMode(rawPreset.permissionMode),
+            tavilyApiKey: normalizeTavilyApiKey(rawPreset.tavilyApiKey),
+            tavilyBaseUrl: normalizeTavilyBaseUrl(rawPreset.tavilyBaseUrl),
         };
     });
 
@@ -150,6 +162,8 @@ function normalizeDelegateConfig(input = {}, fallbackPreset = buildDefaultPreset
     return {
         provider: normalizeProvider(source.provider || fallback.provider),
         modelConfigs: normalizeModelConfigs(source.modelConfigs || fallback.modelConfigs),
+        tavilyApiKey: normalizeTavilyApiKey(source.tavilyApiKey ?? fallback.tavilyApiKey),
+        tavilyBaseUrl: normalizeTavilyBaseUrl(source.tavilyBaseUrl ?? fallback.tavilyBaseUrl),
     };
 }
 
@@ -173,6 +187,8 @@ export function normalizeAgentSettings(saved = {}, options = {}) {
         delegatePresetName,
         delegateConfig,
         presets,
+        tavilyApiKey: normalizeTavilyApiKey((presets[currentPresetName] || {}).tavilyApiKey),
+        tavilyBaseUrl: normalizeTavilyBaseUrl((presets[currentPresetName] || {}).tavilyBaseUrl),
         updatedAt: Number(saved.updatedAt) || 0,
         configVersion: Number(saved.configVersion) || 0,
     };
@@ -199,6 +215,8 @@ export function normalizeAgentConfig(config = {}) {
         provider: currentPreset.provider,
         modelConfigs: currentPreset.modelConfigs,
         permissionMode: normalizePermissionMode(currentPreset.permissionMode),
+        tavilyApiKey: normalizeTavilyApiKey(currentPreset.tavilyApiKey),
+        tavilyBaseUrl: normalizeTavilyBaseUrl(currentPreset.tavilyBaseUrl),
     };
 }
 

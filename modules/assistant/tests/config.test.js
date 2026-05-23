@@ -95,3 +95,40 @@ test('assistant delegate config can override provider details directly', () => {
     assert.equal(providerConfig.model, 'delegate-direct-model');
     assert.equal(providerConfig.toolMode, 'tagged-json');
 });
+
+test('assistant config preserves Tavily settings for main and delegate runs', () => {
+    const config = normalizeAgentConfig({
+        currentPresetName: '主助手',
+        presets: {
+            主助手: {
+                provider: 'openai-compatible',
+                tavilyApiKey: 'main-tavily-key',
+                tavilyBaseUrl: 'https://search.main.example',
+                modelConfigs: {
+                    'openai-compatible': {
+                        baseUrl: 'https://main.example/v1',
+                        model: 'main-model',
+                        apiKey: 'main-key',
+                    },
+                },
+            },
+        },
+        delegateConfig: {
+            provider: 'google',
+            tavilyApiKey: 'delegate-tavily-key',
+            tavilyBaseUrl: 'https://search.delegate.example/',
+            modelConfigs: {
+                google: {
+                    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+                    model: 'delegate-model',
+                    apiKey: 'delegate-key',
+                },
+            },
+        },
+    });
+
+    assert.equal(resolveActiveProviderConfig(config).tavilyApiKey, 'main-tavily-key');
+    assert.equal(resolveActiveProviderConfig(config).tavilyBaseUrl, 'https://search.main.example');
+    assert.equal(resolveActiveProviderConfig(config, { role: 'delegate' }).tavilyApiKey, 'delegate-tavily-key');
+    assert.equal(resolveActiveProviderConfig(config, { role: 'delegate' }).tavilyBaseUrl, 'https://search.delegate.example');
+});
