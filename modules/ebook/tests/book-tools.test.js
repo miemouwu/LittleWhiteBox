@@ -1006,6 +1006,10 @@ test('Initializing on an empty database keeps the shelf empty', async () => {
     assert.equal(state.savedContent, '');
     assert.equal(state.isDeleteBookOpen, false);
     assert.deepEqual(restored, [undefined]);
+
+    const html = renderEbookShell({ state });
+    assert.match(html, /xb-library-grid is-empty/);
+    assert.match(html, /xb-library-empty/);
 });
 
 test('Book controller initialization does not request draw status before frame ready', async () => {

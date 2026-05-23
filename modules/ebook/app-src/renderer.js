@@ -417,7 +417,7 @@ function renderLibraryShell(options = {}) {
             </header>
             <main class="xb-shelf-container">
                 ${state.isDeleteBookOpen ? '<div class="xb-delete-mode-note">删除模式：点击一本书会清除书稿内容和写作记录。</div>' : ''}
-                <section class="xb-library-grid" aria-label="书籍列表">
+                <section class="xb-library-grid${bookCount ? '' : ' is-empty'}" aria-label="书籍列表">
                     ${renderBookCards(state)}
                 </section>
             </main>

@@ -27631,7 +27631,7 @@ function GD(e = {}) {
             </header>
             <main class="xb-shelf-container">
                 ${t.isDeleteBookOpen ? '<div class="xb-delete-mode-note">删除模式：点击一本书会清除书稿内容和写作记录。</div>' : ""}
-                <section class="xb-library-grid" aria-label="书籍列表">
+                <section class="xb-library-grid${n ? "" : " is-empty"}" aria-label="书籍列表">
                     ${qD(t)}
                 </section>
             </main>
@@ -28284,7 +28284,8 @@ function i$(e = "xb-ebook-root") {
         /* Archive */
         .xb-archive-header {
             position: relative;
-            z-index: 2;
+            z-index: 20;
+            grid-row: 1;
             height: 150px;
             display: flex;
             align-items: flex-end;
@@ -28332,7 +28333,8 @@ function i$(e = "xb-ebook-root") {
         }
         .xb-shelf-container {
             position: relative;
-            z-index: 2;
+            z-index: 1;
+            grid-row: 2;
             min-height: 0;
             overflow: auto;
             padding: 18px 60px 96px;
@@ -28341,6 +28343,10 @@ function i$(e = "xb-ebook-root") {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 34px;
+        }
+        .xb-library-grid.is-empty {
+            min-height: 100%;
+            align-content: start;
         }
         .xb-library-empty {
             grid-column: 1 / -1;
@@ -30309,6 +30315,7 @@ function i$(e = "xb-ebook-root") {
                 grid-template-rows: auto minmax(0, 1fr);
             }
             .xb-archive-header {
+                z-index: 30;
                 height: auto;
                 min-height: 0;
                 align-items: flex-start;
@@ -30324,6 +30331,9 @@ function i$(e = "xb-ebook-root") {
                 grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
                 gap: 14px;
                 align-items: start;
+            }
+            .xb-library-grid.is-empty {
+                padding-top: 14px;
             }
             .xb-library-book {
                 min-height: 0;
@@ -30357,6 +30367,7 @@ function i$(e = "xb-ebook-root") {
             .xb-library-empty {
                 min-height: 180px;
                 padding: 22px;
+                pointer-events: none;
             }
             .xb-entry-actions {
                 flex-direction: column;

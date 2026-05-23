@@ -151,7 +151,8 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         /* Archive */
         .xb-archive-header {
             position: relative;
-            z-index: 2;
+            z-index: 20;
+            grid-row: 1;
             height: 150px;
             display: flex;
             align-items: flex-end;
@@ -199,7 +200,8 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         }
         .xb-shelf-container {
             position: relative;
-            z-index: 2;
+            z-index: 1;
+            grid-row: 2;
             min-height: 0;
             overflow: auto;
             padding: 18px 60px 96px;
@@ -208,6 +210,10 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 34px;
+        }
+        .xb-library-grid.is-empty {
+            min-height: 100%;
+            align-content: start;
         }
         .xb-library-empty {
             grid-column: 1 / -1;
@@ -2176,6 +2182,7 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
                 grid-template-rows: auto minmax(0, 1fr);
             }
             .xb-archive-header {
+                z-index: 30;
                 height: auto;
                 min-height: 0;
                 align-items: flex-start;
@@ -2191,6 +2198,9 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
                 grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
                 gap: 14px;
                 align-items: start;
+            }
+            .xb-library-grid.is-empty {
+                padding-top: 14px;
             }
             .xb-library-book {
                 min-height: 0;
@@ -2224,6 +2234,7 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             .xb-library-empty {
                 min-height: 180px;
                 padding: 22px;
+                pointer-events: none;
             }
             .xb-entry-actions {
                 flex-direction: column;
