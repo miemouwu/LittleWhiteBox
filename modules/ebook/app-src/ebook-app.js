@@ -213,7 +213,9 @@ export function createEbookApp(options = {}) {
         }
         if (state.isSettingsOpen) {
             const settingsBody = root.querySelector('.xb-ebook-settings-body');
-            if (settingsBody) settingsBody.scrollTop = 0;
+            if (settingsBody && !wasSettingsOpen) {
+                settingsBody.scrollTop = 0;
+            }
         } else {
             restoreScrollState(root, settingsScroll);
         }

@@ -184,7 +184,7 @@ export function bindEbookEvents(options = {}) {
         button.addEventListener('click', () => void bookController.renameCurrentBook());
     });
     root.querySelector('#xb-save')?.addEventListener('click', () => void bookController.saveCurrentFile());
-    root.querySelector('#xb-agent-close')?.addEventListener('click', () => postToHost('xb-ebook:close'));
+    root.querySelector('#xb-agent-close, #xb-agent-close-mobile')?.addEventListener('click', () => postToHost('xb-ebook:close'));
     root.querySelectorAll('#xb-theme-toggle, [data-theme-toggle]').forEach((button) => {
         button.addEventListener('click', () => {
             state.colorTheme = state.colorTheme === 'light' ? 'dark' : 'light';

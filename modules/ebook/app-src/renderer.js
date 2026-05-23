@@ -822,7 +822,11 @@ function renderStudioShell(options = {}) {
                     <button type="button" class="xb-mobile-segment-button${layoutClass !== 'focus-agent' ? ' is-active' : ''}" data-studio-layout="focus-editor">编辑</button>
                     <button type="button" class="xb-mobile-segment-button${layoutClass === 'focus-agent' ? ' is-active' : ''}" data-studio-layout="focus-agent">助手</button>
                 </div>
-                <button class="xb-mobile-topbar-button" type="button" data-theme-toggle title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${escapeHtml(themeToggleLabel)}</button>
+                <div class="xb-mobile-agent-actions">
+                    <button type="button" class="xb-mobile-agent-action" data-entry-link title="返回书本入口" aria-label="返回书本入口">↩</button>
+                    <button type="button" class="xb-mobile-agent-action" data-theme-toggle title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${escapeHtml(themeToggleLabel)}</button>
+                    <button type="button" class="xb-mobile-agent-action" id="xb-agent-close-mobile" title="退出电纸书" aria-label="退出电纸书">${renderExitIcon()}</button>
+                </div>
             </header>
             <button class="xb-mobile-file-drawer-scrim" type="button" data-mobile-file-drawer-close title="收起目录" aria-label="收起目录"></button>
             <aside class="xb-sidebar">
@@ -869,7 +873,6 @@ function renderStudioShell(options = {}) {
                     <div class="xb-agent-aurora"></div>
                     <header class="xb-agent-head">
                         <div class="xb-agent-head-main">
-                            <div class="xb-agent-id"><span></span>写作助手</div>
                             <div class="xb-agent-global-actions">
                                 <button id="xb-theme-toggle" type="button" title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${escapeHtml(themeToggleLabel)}</button>
                                 <button id="xb-entry-link" type="button" data-entry-link title="返回书本入口" aria-label="返回书本入口">↩</button>
