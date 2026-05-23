@@ -38,7 +38,7 @@ function applyColorTheme(root, state) {
     const themeToggle = root.querySelector('#xb-theme-toggle');
     if (!themeToggle) return;
     const title = theme === 'light' ? '切换为深色视觉' : '切换为白底黑字';
-    themeToggle.textContent = theme === 'light' ? '深色' : '浅色';
+    themeToggle.textContent = theme === 'light' ? '☾' : '☀';
     themeToggle.setAttribute('title', title);
     themeToggle.setAttribute('aria-label', title);
 }
@@ -92,6 +92,50 @@ function isEditableAssistantTextMessage(message = {}) {
         && !(Array.isArray(message.toolCalls) && message.toolCalls.length);
 }
 
+function canDrawSelectedChapter(state = {}) {
+    return !!(
+        !state.isBusy
+        && !state.isDrawingChapter
+        && /^book\/chapters\/.+\.md$/.test(String(state.selectedPath || ''))
+        && state.drawStatus?.enabled
+        && state.drawStatus?.ready
+        && String(state.editorContent || '').replace(/\[ebook-image:[a-z0-9\-_]+\]/gi, '').trim()
+    );
+}
+
+function hydrateReaderImages(root, bookController) {
+    root.querySelectorAll('[data-ebook-image-slot]').forEach((figure) => {
+        const slotId = String(figure.dataset.ebookImageSlot || '').trim();
+        if (!slotId) return;
+        void bookController.getDrawImage(slotId)
+            .then((result) => {
+                if (!result?.hasData || !result.url) {
+                    figure.classList.add('is-failed');
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'xb-reader-image-placeholder';
+                    placeholder.textContent = result?.isFailed
+                        ? (result.errorMessage || '配图生成失败')
+                        : '配图未找到';
+                    figure.replaceChildren(placeholder);
+                    return;
+                }
+                figure.classList.add('is-loaded');
+                const image = document.createElement('img');
+                image.src = result.url;
+                image.alt = result.tags ? `章节配图：${result.tags}` : '章节配图';
+                image.loading = 'lazy';
+                figure.replaceChildren(image);
+            })
+            .catch(() => {
+                figure.classList.add('is-failed');
+                const placeholder = document.createElement('div');
+                placeholder.className = 'xb-reader-image-placeholder';
+                placeholder.textContent = '配图加载失败';
+                figure.replaceChildren(placeholder);
+            });
+    });
+}
+
 export function bindEbookEvents(options = {}) {
     const {
         root,
@@ -131,6 +175,7 @@ export function bindEbookEvents(options = {}) {
     root.querySelector('#xb-studio-link')?.addEventListener('click', () => void bookController.showStudio());
     root.querySelector('#xb-studio-empty-link')?.addEventListener('click', () => void bookController.showStudio());
     root.querySelector('#xb-reader-link')?.addEventListener('click', () => void bookController.showReader());
+    root.querySelector('#xb-draw-chapter')?.addEventListener('click', () => void bookController.drawCurrentChapter());
     root.querySelector('#xb-new-book')?.addEventListener('click', () => void bookController.createNewBook());
     root.querySelector('#xb-new-file')?.addEventListener('click', () => void bookController.createNewFile());
     root.querySelectorAll('[data-book-rename]').forEach((button) => {
@@ -359,6 +404,8 @@ export function bindEbookEvents(options = {}) {
         state.editorContent = editor.value;
         const saveButton = root.querySelector('#xb-save');
         if (saveButton) saveButton.disabled = state.isBusy || !bookController.isEditorDirty();
+        const drawButton = root.querySelector('#xb-draw-chapter');
+        if (drawButton) drawButton.disabled = !canDrawSelectedChapter(state);
         updateEditorMeta(root, state, bookController);
     });
 
@@ -430,4 +477,5 @@ export function bindEbookEvents(options = {}) {
     });
 
     updateAgentScrollButtonsVisibility();
+    hydrateReaderImages(root, bookController);
 }

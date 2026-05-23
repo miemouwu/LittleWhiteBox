@@ -251,15 +251,21 @@ export function createEbookApp(options = {}) {
         render();
     }
 
+    function handleDrawProgress(payload = {}) {
+        bookController.handleDrawProgress(payload);
+    }
+
     async function start() {
         injectEbookStyles(rootId);
         await bookController.initializeBook();
         state.status = '就绪';
         render();
         hostBridge.postToHost('xb-ebook:frame-ready');
+        void bookController.refreshDrawStatus({ renderAfter: true });
     }
 
     return {
+        handleDrawProgress,
         handleHostConfig,
         handleOpenSettings,
         start,

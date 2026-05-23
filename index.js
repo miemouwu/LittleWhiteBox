@@ -7,7 +7,7 @@ import { initTasks } from "./modules/scheduled-tasks/scheduled-tasks.js";
 import { initMessagePreview, addHistoryButtonsDebounced } from "./modules/message-preview.js";
 import { initImmersiveMode } from "./modules/immersive-mode.js";
 import { initTemplateEditor } from "./modules/template-editor/template-editor.js";
-import { initFourthWall, fourthWallCleanup } from "./modules/fourth-wall/fourth-wall.js";
+import { initFourthWall, fourthWallCleanup, openFourthWall } from "./modules/fourth-wall/fourth-wall.js";
 import { initButtonCollapse } from "./widgets/button-collapse.js";
 import { initVariablesPanel, cleanupVariablesPanel } from "./modules/variables/variables-panel.js";
 import { initStreamingGeneration } from "./modules/streaming-generation.js";
@@ -113,12 +113,29 @@ async function initActiveDrawProvider() {
 }
 
 function installDrawFacade() {
+    function getProviderGenerateImagesFromText(provider) {
+        if (provider === 'novelai') return window.xiaobaixNovelDraw?.generateImagesFromText;
+        if (provider === 'sdwebui') return window.xiaobaixSdDraw?.generateImagesFromText;
+        if (provider === 'comfyui') return window.xiaobaixComfyDraw?.generateImagesFromText;
+        return null;
+    }
+
     window.xiaobaixDraw = {
         getProvider() {
             return normalizeDrawProvider(settings.drawProvider);
         },
         isEnabled() {
             return isXiaobaixEnabled && normalizeDrawProvider(settings.drawProvider) !== 'disabled';
+        },
+        getStatus() {
+            const provider = normalizeDrawProvider(settings.drawProvider);
+            const enabled = isXiaobaixEnabled && provider !== 'disabled';
+            const generateImagesFromText = getProviderGenerateImagesFromText(provider);
+            return {
+                provider,
+                enabled,
+                ready: enabled && typeof generateImagesFromText === 'function',
+            };
         },
         async generateImage(input = {}) {
             const provider = normalizeDrawProvider(settings.drawProvider);
@@ -169,6 +186,17 @@ function installDrawFacade() {
             }
 
             throw new Error('未启用画图后端');
+        },
+        async generateImagesFromText(input = {}) {
+            const provider = normalizeDrawProvider(settings.drawProvider);
+            if (!isXiaobaixEnabled || provider === 'disabled') {
+                throw new Error('未启用画图后端');
+            }
+            const generateImagesFromText = getProviderGenerateImagesFromText(provider);
+            if (typeof generateImagesFromText !== 'function') {
+                throw new Error('当前画图模块未初始化');
+            }
+            return generateImagesFromText(input || {});
         },
     };
 }
@@ -533,7 +561,7 @@ function toggleSettingsControls(enabled) {
     const controls = [
         'xiaobaix_recorded_enabled', 'xiaobaix_preview_enabled',
         'scheduled_tasks_enabled', 'xiaobaix_template_enabled',
-        'xiaobaix_immersive_enabled', 'xiaobaix_fourth_wall_enabled',
+        'xiaobaix_immersive_enabled', 'xiaobaix_fourth_wall_open_settings',
         'xiaobaix_variables_panel_enabled',
         'xiaobaix_use_blob', 'xiaobaix_variables_core_enabled', 'xiaobaix_variables_mode', 'xiaobaix_render_enabled',
         'xiaobaix_max_rendered', 'xiaobaix_story_outline_enabled', 'xiaobaix_story_summary_enabled',
@@ -569,6 +597,11 @@ function syncFeatureActionButtons() {
     if (ebookButton) {
         ebookButton.disabled = !isXiaobaixEnabled;
         ebookButton.classList.toggle('disabled-action', !isXiaobaixEnabled);
+    }
+    const fourthWallButton = document.getElementById('xiaobaix_fourth_wall_open_settings');
+    if (fourthWallButton) {
+        fourthWallButton.disabled = !isXiaobaixEnabled;
+        fourthWallButton.classList.toggle('disabled-action', !isXiaobaixEnabled);
     }
 
     const drawButton = document.getElementById('xiaobaix_draw_open_settings');
@@ -686,7 +719,6 @@ async function setupSettings() {
             { id: 'xiaobaix_preview_enabled', key: 'preview', init: initMessagePreview },
             { id: 'scheduled_tasks_enabled', key: 'tasks', init: initTasks },
             { id: 'xiaobaix_template_enabled', key: 'templateEditor', init: initTemplateEditor },
-            { id: 'xiaobaix_fourth_wall_enabled', key: 'fourthWall', init: initFourthWall },
             { id: 'xiaobaix_variables_panel_enabled', key: 'variablesPanel', init: initVariablesPanel },
             { id: 'xiaobaix_variables_core_enabled', key: 'variablesCore', init: initVariablesCore },
             { id: 'xiaobaix_story_summary_enabled', key: 'storySummary' },
@@ -699,9 +731,6 @@ async function setupSettings() {
             $(`#${id}`).prop("checked", settings[key]?.enabled || false).on("change", async function () {
                 if (!isXiaobaixEnabled) return;
                 const enabled = $(this).prop('checked');
-                if (!enabled && key === 'fourthWall') {
-                    try { fourthWallCleanup(); } catch (e) { }
-                }
                 if (!enabled && key === 'tts') {
                     try { cleanupTts(); } catch (e) { }
                 }
@@ -813,6 +842,15 @@ async function setupSettings() {
             }
         });
 
+        $("#xiaobaix_fourth_wall_open_settings").on("click", function () {
+            if (!isXiaobaixEnabled) return;
+            try {
+                openFourthWall();
+            } catch (e) {
+                toastr.warning('四次元壁初始化失败');
+            }
+        });
+
         $("#xiaobaix_use_blob").prop("checked", !!settings.useBlob).on("change", async function () {
             if (!isXiaobaixEnabled) return;
             settings.useBlob = $(this).prop("checked");
@@ -860,7 +898,6 @@ async function setupSettings() {
                 scriptAssistant: 'xiaobaix_script_assistant',
                 tasks: 'scheduled_tasks_enabled',
                 templateEditor: 'xiaobaix_template_enabled',
-                fourthWall: 'xiaobaix_fourth_wall_enabled',
                 variablesPanel: 'xiaobaix_variables_panel_enabled',
                 variablesCore: 'xiaobaix_variables_core_enabled',
                 tts: 'xiaobaix_tts_enabled',
@@ -877,6 +914,10 @@ async function setupSettings() {
             }
             ON.forEach(k => setChecked(MAP[k], true));
             OFF.forEach(k => setChecked(MAP[k], false));
+            settings.fourthWall ||= {};
+            settings.fourthWall.enabled = false;
+            extension_settings[EXT_ID].fourthWall = settings.fourthWall;
+            try { fourthWallCleanup(); } catch { }
             await cleanupDrawProvider(settings.drawProvider);
             settings.drawProvider = 'disabled';
             extension_settings[EXT_ID].drawProvider = 'disabled';
@@ -901,11 +942,11 @@ function setupDebugButtonInSettings() {
         }
         const row = enableCheckbox.closest('.flex-container') || enableCheckbox.parentElement;
         if (!row) return;
-        const actionGroup = row.querySelector('.littlewhitebox-top-actions') || row;
+        const actionGroup = row;
 
         const btn = document.createElement('div');
         btn.id = 'xiaobaix-debug-btn';
-        btn.className = 'menu_button littlewhitebox-top-action-button';
+        btn.className = 'menu_button menu_button_icon littlewhitebox-inline-action-button';
         btn.title = '切换调试监控';
         btn.tabIndex = 0;
         btn.innerHTML = '<span class="dbg-light"></span><span>监控</span>';

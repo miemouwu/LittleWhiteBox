@@ -25,14 +25,6 @@
                         提供STscript(command)异步函数执行酒馆命令:
 
                         await STscript('/echo 你好世界！')">启用小白X</label>
-            <div class="littlewhitebox-top-actions">
-              <button id="xiaobaix_assistant_open_settings" class="menu_button menu_button_icon littlewhitebox-top-action-button" type="button" title="打开小白助手">
-                <span>小白助手</span>
-              </button>
-              <button id="xiaobaix_ebook_open_settings" class="menu_button menu_button_icon littlewhitebox-top-action-button" type="button" title="打开小白电纸书">
-                <span>电纸书</span>
-              </button>
-            </div>
           </div>
           <div class="section-divider">渲染模式
             <hr class="sysHR" />
@@ -193,11 +185,18 @@
           <input type="file" id="import_tasks_file" accept=".json" style="display:none;" />
         </div>
         <div class="template settings-section" style="display:none;">
-          <div class="section-divider">四次元壁</div>
+          <div class="section-divider">小白agent</div>
           <hr class="sysHR" />
-          <div class="flex-container">
-            <input type="checkbox" id="xiaobaix_fourth_wall_enabled" />
-            <label for="xiaobaix_fourth_wall_enabled" class="has-tooltip" data-tooltip="突破第四面墙，与角色进行元对话交流。悬浮按钮位于页面右侧中间。">四次元壁</label>
+          <div class="flex-container littlewhitebox-agent-actions">
+            <button id="xiaobaix_assistant_open_settings" class="menu_button menu_button_icon littlewhitebox-agent-action-button" type="button" title="打开小白助手">
+              <span>小白助手</span>
+            </button>
+            <button id="xiaobaix_ebook_open_settings" class="menu_button menu_button_icon littlewhitebox-agent-action-button" type="button" title="打开小白电纸书">
+              <span>电纸书</span>
+            </button>
+            <button id="xiaobaix_fourth_wall_open_settings" class="menu_button menu_button_icon littlewhitebox-agent-action-button" type="button" title="打开四次元壁">
+              <span>四次元壁</span>
+            </button>
           </div>
           <br>
           <div class="section-divider">剧情管理</div>
@@ -408,30 +407,36 @@
     opacity: .5;
     cursor: not-allowed;
   }
-  .littlewhitebox-top-actions {
-    margin-left: auto;
+  .littlewhitebox-agent-actions {
     display: inline-flex;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: 8px;
-    flex: 0 0 auto;
+    flex-wrap: wrap;
+    margin: 0 0 8px;
     white-space: nowrap;
   }
-  .littlewhitebox-top-action-button {
+  .littlewhitebox-agent-action-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
   }
-  .littlewhitebox-top-action-button span,
-  .littlewhitebox-top-action-button small {
+  .littlewhitebox-agent-action-button span,
+  .littlewhitebox-agent-action-button small {
     color: inherit;
     font: inherit;
     font-size: inherit;
     line-height: inherit;
   }
-  .littlewhitebox-top-action-button .dbg-light {
+  .littlewhitebox-agent-action-button .dbg-light {
     flex: 0 0 auto;
+  }
+  .littlewhitebox-inline-action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
   .task-count {
     font-size: 0.85em;
@@ -488,13 +493,8 @@
     transform: scale(1)
   }
   @media (max-width: 700px) {
-    .littlewhitebox-top-actions {
-      width: auto;
-      margin-left: auto;
-      justify-content: flex-end;
-      padding-right: 0;
-      box-sizing: border-box;
-      flex-wrap: nowrap;
+    .littlewhitebox-agent-actions {
+      width: 100%;
     }
     .littlewhitebox-toggle-row {
       flex-wrap: wrap;
@@ -588,7 +588,6 @@
 	      scriptAssistant: 'xiaobaix_script_assistant',
 	      tasks: 'scheduled_tasks_enabled',
 	      templateEditor: 'xiaobaix_template_enabled',
-	      fourthWall: 'xiaobaix_fourth_wall_enabled',
 	      variablesPanel: 'xiaobaix_variables_panel_enabled',
 	      variablesCore: 'xiaobaix_variables_core_enabled',
 	      storySummary: 'xiaobaix_story_summary_enabled',

@@ -18,7 +18,7 @@ import {
     DEFAULT_BOTTOM,
     DEFAULT_META_PROTOCOL
 } from "./fw-prompt.js";
-import { initMessageEnhancer, cleanupMessageEnhancer } from "./fw-message-enhancer.js";
+import { initMessageEnhancer, cleanupMessageEnhancer, setMessageEnhancerRuntimeActive } from "./fw-message-enhancer.js";
 import { postToIframe, isTrustedMessage, getTrustedOrigin } from "../../core/iframe-messaging.js";
 
 // ════════════════════════════════════════════
@@ -48,6 +48,7 @@ let commentaryBubbleEl = null;
 let commentaryBubbleTimer = null;
 let currentVoiceRequestId = null;
 let commentaryAfterAiDispose = null;
+let runtimeActive = false;
 
 let visibilityHandler = null;
 let pendingPingId = null;
@@ -61,7 +62,7 @@ function getSettings() {
     extension_settings[EXT_ID] ||= {};
     const s = extension_settings[EXT_ID];
 
-    s.fourthWall ||= { enabled: true };
+    s.fourthWall ||= { enabled: false };
     s.fourthWallImage ||= { enablePrompt: false };
     s.fourthWallVoice ||= { enabled: false };
     s.fourthWallCommentary ||= { enabled: false, probability: 30 };
@@ -74,6 +75,10 @@ function getSettings() {
     if (t.metaProtocol === undefined) t.metaProtocol = DEFAULT_META_PROTOCOL;
 
     return s;
+}
+
+function isFourthWallActive() {
+    return runtimeActive || !!getSettings().fourthWall?.enabled;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -481,6 +486,10 @@ function handleFrameMessage(event) {
 
         case 'CLOSE_OVERLAY':
             hideOverlay();
+            break;
+
+        case 'CLOSE_MODULE':
+            closeFourthWall();
             break;
 
         case 'CHECK_IMAGE_CACHE':
@@ -1002,7 +1011,7 @@ function createFloatingButton() {
 
     $btn.on('click', () => {
         if (Date.now() < suppressFloatBtnClickUntil) return;
-        if (!getSettings().fourthWall?.enabled) return;
+        if (!isFourthWallActive()) return;
         showOverlay();
     });
 
@@ -1090,11 +1099,10 @@ function removeFloatingButton() {
 // Init & Cleanup
 // ════════════════════════════════════════════
 
-function initFourthWall() {
-    try { xbLog.info('fourthWall', 'initFourthWall'); } catch { }
-    const settings = getSettings();
-    if (!settings.fourthWall?.enabled) return;
-
+function activateFourthWall() {
+    if (runtimeActive) return;
+    runtimeActive = true;
+    setMessageEnhancerRuntimeActive(true);
     createFloatingButton();
     initCommentary();
     clearExpiredCache();
@@ -1108,8 +1116,31 @@ function initFourthWall() {
     });
 }
 
+function initFourthWall() {
+    try { xbLog.info('fourthWall', 'initFourthWall'); } catch { }
+    const settings = getSettings();
+    if (!settings.fourthWall?.enabled) return;
+    activateFourthWall();
+}
+
+function openFourthWall() {
+    try { xbLog.info('fourthWall', 'openFourthWall'); } catch { }
+    activateFourthWall();
+    showOverlay();
+}
+
+function closeFourthWall() {
+    const settings = getSettings();
+    settings.fourthWall ||= {};
+    settings.fourthWall.enabled = false;
+    saveSettingsDebounced();
+    fourthWallCleanup();
+}
+
 function fourthWallCleanup() {
     try { xbLog.info('fourthWall', 'fourthWallCleanup'); } catch { }
+    runtimeActive = false;
+    setMessageEnhancerRuntimeActive(false);
     events.cleanup();
     cleanupCommentary();
     removeFloatingButton();
@@ -1133,11 +1164,11 @@ function fourthWallCleanup() {
     window.removeEventListener('message', handleFrameMessage);
 }
 
-export { initFourthWall, fourthWallCleanup, showOverlay as showFourthWallPopup };
+export { initFourthWall, fourthWallCleanup, openFourthWall, openFourthWall as showFourthWallPopup };
 
 if (typeof window !== 'undefined') {
     window.fourthWallCleanup = fourthWallCleanup;
-    window.showFourthWallPopup = showOverlay;
+    window.showFourthWallPopup = openFourthWall;
 
     document.addEventListener('xiaobaixEnabledChanged', e => {
         if (e?.detail?.enabled === false) {

@@ -2,6 +2,7 @@ import {
     createBook,
     deleteBook,
     getBook,
+    getBookFile,
     getSelectedBookId,
     listBookFiles,
     listBooks,
@@ -10,8 +11,159 @@ import {
     upsertBookFile,
 } from '../shared/ebook-db.js';
 import { normalizeBookFilePath } from '../shared/book-paths.js';
+import { EBOOK_DRAW_REQUEST_TIMEOUT_MS } from './constants.js';
 
 const DEFAULT_DRAFT_PATH = 'book/chapters/001.md';
+const CHAPTER_PATH_REGEX = /^book\/chapters\/.+\.md$/;
+const EBOOK_IMAGE_MARKER_REGEX = /\[ebook-image:([a-z0-9\-_]+)\]/gi;
+const DRAW_COOLDOWN_TICK_MS = 500;
+const DRAW_COMPLETION_NOTICE_MS = 5000;
+const DRAW_COMPLETION_NOTICE_TEXT = '占位符已插入，请去阅读器查看';
+
+function isChapterPath(path = '') {
+    return CHAPTER_PATH_REGEX.test(String(path || ''));
+}
+
+function stripEbookImageMarkers(content = '') {
+    return String(content || '').replace(EBOOK_IMAGE_MARKER_REGEX, '').trim();
+}
+
+function formatChapterTitle(path = '') {
+    const match = String(path || '').match(/^book\/chapters\/(.+)\.md$/);
+    if (!match) return String(path || '章节');
+    const raw = match[1];
+    if (/^\d+$/.test(raw)) return `第 ${Number(raw)} 章`;
+    return raw || '章节';
+}
+
+function findAnchorPosition(content = '', anchor = '') {
+    const text = String(content || '');
+    const value = String(anchor || '').trim();
+    if (!text || !value) return -1;
+    let index = text.indexOf(value);
+    if (index !== -1) return index + value.length;
+    if (value.length > 8) {
+        const short = value.slice(-10);
+        index = text.indexOf(short);
+        if (index !== -1) return index + short.length;
+    }
+
+    const normalize = (input) => String(input || '').replace(/[\s，。！？、""''：；…\-\n\r]/g, '');
+    const normalizedText = normalize(text);
+    const normalizedAnchor = normalize(value);
+    if (normalizedAnchor.length < 4) return -1;
+    const key = normalizedAnchor.slice(-6);
+    const normalizedIndex = normalizedText.indexOf(key);
+    if (normalizedIndex === -1) return -1;
+    let originalIndex = 0;
+    let walkIndex = 0;
+    while (originalIndex < text.length && walkIndex < normalizedIndex + key.length) {
+        if (normalize(text[originalIndex]) === normalizedText[walkIndex]) walkIndex += 1;
+        originalIndex += 1;
+    }
+    return originalIndex;
+}
+
+function findNearestSentenceEnd(content = '', startPos = -1) {
+    const text = String(content || '');
+    if (startPos < 0 || !text) return startPos;
+    if (startPos >= text.length) return text.length;
+
+    const maxLookAhead = 80;
+    const endLimit = Math.min(text.length, startPos + maxLookAhead);
+    const basicEnders = new Set(['。', '！', '？', '!', '?', '…']);
+    const closingMarks = new Set(['”', '“', '’', '‘', '」', '』', '】', '）', ')', '"', "'", '*', '~', '～', ']']);
+    const eatClosingMarks = (position) => {
+        let next = position;
+        while (next < text.length && closingMarks.has(text[next])) next += 1;
+        return next;
+    };
+
+    if (startPos > 0 && basicEnders.has(text[startPos - 1])) return eatClosingMarks(startPos);
+    for (let offset = 0; offset < maxLookAhead && startPos + offset < endLimit; offset += 1) {
+        const position = startPos + offset;
+        const char = text[position];
+        if (char === '\n') return position + 1;
+        if (basicEnders.has(char)) return eatClosingMarks(position + 1);
+        if (char === '.' && text.slice(position, position + 3) === '...') return eatClosingMarks(position + 3);
+    }
+    return startPos;
+}
+
+function insertEbookImageMarker(content = '', image = {}) {
+    const slotId = String(image?.slotId || '').trim();
+    if (!slotId) return { content, inserted: false, appended: false };
+    const marker = `[ebook-image:${slotId}]`;
+    const text = String(content || '');
+    if (text.includes(marker)) return { content: text, inserted: false, appended: false };
+
+    let position = findAnchorPosition(text, image.anchor || '');
+    if (position >= 0) position = findNearestSentenceEnd(text, position);
+    if (position >= 0) {
+        const before = text.slice(0, position);
+        const after = text.slice(position);
+        let insertText = marker;
+        if (before.length > 0 && !before.endsWith('\n')) insertText = `\n${insertText}`;
+        if (after.length > 0 && !after.startsWith('\n')) insertText = `${insertText}\n`;
+        return {
+            content: `${before}${insertText}${after}`,
+            inserted: true,
+            appended: false,
+        };
+    }
+
+    const needNewline = text.length > 0 && !text.endsWith('\n');
+    return {
+        content: `${text}${needNewline ? '\n' : ''}${marker}`,
+        inserted: true,
+        appended: true,
+    };
+}
+
+function insertEbookImageMarkers(content = '', images = []) {
+    let nextContent = String(content || '');
+    let inserted = 0;
+    let appended = 0;
+    (Array.isArray(images) ? images : []).forEach((image) => {
+        if (!image?.slotId || image.success === false) return;
+        const result = insertEbookImageMarker(nextContent, image);
+        nextContent = result.content;
+        if (result.inserted) inserted += 1;
+        if (result.appended) appended += 1;
+    });
+    return {
+        content: nextContent,
+        inserted,
+        appended,
+    };
+}
+
+export function formatDrawProgress(stateName = '', data = {}) {
+    const current = Number(data.current) || 0;
+    const total = Number(data.total) || 0;
+    const countText = total ? ` ${current}/${total}` : '';
+    switch (stateName) {
+        case 'llm':
+            return '正在分析章节画面...';
+        case 'gen':
+            return total ? `准备生成配图，共 ${total} 张` : '准备生成配图...';
+        case 'queued':
+            return data.ahead > 0 ? `画图排队中，前方 ${data.ahead} 个任务` : `画图排队中${countText}`;
+        case 'progress':
+            return `正在生成配图${countText}`;
+        case 'cooldown': {
+            const remainingMs = Number.isFinite(Number(data.remainingMs))
+                ? Number(data.remainingMs)
+                : Number(data.duration);
+            const remainingText = remainingMs > 0 ? `，剩余 ${(remainingMs / 1000).toFixed(1)}s` : '';
+            return `等待下一张配图${total ? ` ${data.nextIndex || current}/${total}` : ''}${remainingText}`;
+        }
+        case 'success':
+            return `配图完成 ${Number(data.success) || 0}/${total || Number(data.success) || 0}`;
+        default:
+            return '正在配图...';
+    }
+}
 
 function suggestNextChapterPath(files = []) {
     const usedNumbers = new Set((Array.isArray(files) ? files : [])
@@ -32,6 +184,58 @@ export function createBookController(deps = {}) {
         showToast,
         conversationStore,
     } = deps;
+    let drawCooldownTimer = null;
+    let drawCompletionNoticeTimer = null;
+
+    function clearDrawCooldownTimer() {
+        if (drawCooldownTimer) {
+            clearInterval(drawCooldownTimer);
+            drawCooldownTimer = null;
+        }
+    }
+
+    function clearDrawCompletionNoticeTimer() {
+        if (drawCompletionNoticeTimer) {
+            clearTimeout(drawCompletionNoticeTimer);
+            drawCompletionNoticeTimer = null;
+        }
+    }
+
+    function showTemporaryDrawNotice(message = DRAW_COMPLETION_NOTICE_TEXT) {
+        clearDrawCompletionNoticeTimer();
+        state.drawProgressText = message;
+        drawCompletionNoticeTimer = setTimeout(() => {
+            drawCompletionNoticeTimer = null;
+            if (!state.isDrawingChapter && state.drawProgressText === message) {
+                state.drawProgressText = '';
+                render();
+            }
+        }, DRAW_COMPLETION_NOTICE_MS);
+        drawCompletionNoticeTimer?.unref?.();
+        render();
+    }
+
+    function startDrawCooldownCountdown(data = {}) {
+        clearDrawCooldownTimer();
+        const duration = Math.max(0, Number(data.duration) || 0);
+        const endsAt = Date.now() + duration;
+        const updateCountdown = () => {
+            const remainingMs = Math.max(0, endsAt - Date.now());
+            state.drawProgressText = formatDrawProgress('cooldown', {
+                ...data,
+                remainingMs,
+            });
+            render();
+            if (remainingMs <= 0) {
+                clearDrawCooldownTimer();
+            }
+        };
+        updateCountdown();
+        if (duration > 0) {
+            drawCooldownTimer = setInterval(updateCountdown, DRAW_COOLDOWN_TICK_MS);
+            drawCooldownTimer?.unref?.();
+        }
+    }
 
     async function refreshBooksAndFiles() {
         state.books = await listBooks();
@@ -148,6 +352,132 @@ export function createBookController(deps = {}) {
         showToast('已保存');
     }
 
+    async function refreshDrawStatus(options = {}) {
+        try {
+            const result = await requestHost('xb-ebook:draw-status', {});
+            state.drawStatus = {
+                provider: result?.provider || 'disabled',
+                enabled: !!result?.enabled,
+                ready: !!result?.ready,
+            };
+        } catch {
+            state.drawStatus = {
+                provider: 'disabled',
+                enabled: false,
+                ready: false,
+            };
+        }
+        if (options.renderAfter) render();
+        return state.drawStatus;
+    }
+
+    function handleDrawProgress(payload = {}) {
+        if (!state.isDrawingChapter) return;
+        clearDrawCompletionNoticeTimer();
+        if (payload.state === 'cooldown') {
+            startDrawCooldownCountdown(payload.data || {});
+            return;
+        }
+        clearDrawCooldownTimer();
+        state.drawProgressText = formatDrawProgress(payload.state, payload.data || {});
+        render();
+    }
+
+    async function drawCurrentChapter() {
+        if (!state.book || state.isBusy || state.isDrawingChapter) return;
+        if (!isChapterPath(state.selectedPath)) {
+            showToast?.('只有正文章节可以配图');
+            return;
+        }
+        if (!stripEbookImageMarkers(state.editorContent)) {
+            showToast?.('当前章节没有正文');
+            return;
+        }
+
+        const status = await refreshDrawStatus();
+        if (!status.enabled || !status.ready) {
+            showToast?.('画图后端未启用');
+            render();
+            return;
+        }
+
+        const drawBookId = state.book.id;
+        const drawBookTitle = state.book.title || '未命名书稿';
+        const drawChapterPath = state.selectedPath;
+        const drawChapterTitle = formatChapterTitle(drawChapterPath);
+        const drawSourceText = state.editorContent;
+        let completionNotice = '';
+
+        clearDrawCooldownTimer();
+        clearDrawCompletionNoticeTimer();
+        state.isDrawingChapter = true;
+        state.drawProgressText = '正在准备章节配图...';
+        render();
+
+        try {
+            const result = await requestHost('xb-ebook:draw-generate', {
+                source: 'ebook',
+                text: drawSourceText,
+                title: drawChapterTitle,
+                bookId: drawBookId,
+                bookTitle: drawBookTitle,
+                chapterPath: drawChapterPath,
+                chapterTitle: drawChapterTitle,
+            }, {
+                timeoutMs: EBOOK_DRAW_REQUEST_TIMEOUT_MS,
+            });
+            const stillEditingTarget = state.book?.id === drawBookId && state.selectedPath === drawChapterPath;
+            const storedTarget = stillEditingTarget ? null : await getBookFile(drawBookId, drawChapterPath);
+            const targetContent = stillEditingTarget
+                ? state.editorContent
+                : (storedTarget?.content ?? drawSourceText);
+            const insertion = insertEbookImageMarkers(targetContent, result?.images || []);
+            if (!insertion.inserted) {
+                showToast?.(`配图完成，但没有成功图片可插入（${result?.success || 0}/${result?.total || 0}）`);
+                return;
+            }
+            const targetBook = await getBook(drawBookId);
+            if (!targetBook) {
+                showToast?.('配图完成，但原书已删除，未写入');
+                return;
+            }
+            await upsertBookFile(drawBookId, drawChapterPath, insertion.content);
+            if (state.book?.id === drawBookId) {
+                const activePath = state.selectedPath;
+                const activeEditorContent = state.editorContent;
+                const activeSavedContent = state.savedContent;
+                state.files = await listBookFiles(drawBookId);
+                state.selectedPath = activePath;
+                if (stillEditingTarget) {
+                    state.editorContent = insertion.content;
+                    state.savedContent = insertion.content;
+                } else {
+                    state.editorContent = activeEditorContent;
+                    state.savedContent = activeSavedContent;
+                }
+            }
+            state.drawProgressText = '';
+            const fallbackText = insertion.appended ? `，${insertion.appended} 张追加到章末` : '';
+            completionNotice = DRAW_COMPLETION_NOTICE_TEXT;
+            showToast?.(`${DRAW_COMPLETION_NOTICE_TEXT}${fallbackText}`);
+        } catch (error) {
+            showToast?.(`配图失败：${error?.message || error}`);
+        } finally {
+            clearDrawCooldownTimer();
+            state.isDrawingChapter = false;
+            if (completionNotice) {
+                showTemporaryDrawNotice(completionNotice);
+            } else {
+                state.drawProgressText = '';
+                render();
+            }
+        }
+    }
+
+    async function getDrawImage(slotId = '') {
+        return requestHost('xb-ebook:draw-image', { slotId });
+    }
+
     async function createNewBook() {
         if (state.isBusy) return;
         const title = prompt('新书名', '新书稿');
@@ -261,10 +591,14 @@ export function createBookController(deps = {}) {
     return {
         createNewBook,
         createNewFile,
+        drawCurrentChapter,
+        getDrawImage,
+        handleDrawProgress,
         importMaterial,
         initializeBook,
         isEditorDirty,
         refreshBooksAndFiles,
+        refreshDrawStatus,
         removeBook,
         renameCurrentBook,
         saveCurrentFile,

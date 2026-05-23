@@ -422,13 +422,14 @@ html, body {
 <div class="fw-container">
     <header class="fw-header">
         <div class="fw-header-row">
-            <button class="fw-back-btn" id="btn-close" title="返回"><i class="fa-solid fa-chevron-left"></i></button>
+            <button class="fw-back-btn" id="btn-close" title="最小化"><i class="fa-solid fa-window-minimize"></i></button>
             <span class="fw-title" id="fw-title">皮下交流</span>
             <div class="fw-header-right">
                 <div class="fw-header-actions" id="header-actions">
                     <button class="fw-btn fw-btn-icon" id="btn-fullscreen" title="全屏"><i class="fa-solid fa-expand"></i></button>
                     <button class="fw-btn fw-btn-icon" id="btn-settings" title="设置"><i class="fa-solid fa-gear"></i></button>
                     <button class="fw-btn fw-btn-icon" id="btn-prompt" title="提示词"><i class="fa-solid fa-file-lines"></i></button>
+                    <button class="fw-btn fw-btn-icon fw-btn-danger" id="btn-shutdown" title="关闭"><i class="fa-solid fa-xmark"></i></button>
                     <button class="fw-btn fw-btn-danger" id="btn-reset">重开</button>
                 </div>
                 <button class="fw-menu-toggle" id="btn-menu-toggle" title="菜单"><i class="fa-solid fa-bars"></i></button>
@@ -1167,6 +1168,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-settings').onclick = () => { state.settingsOpen = !state.settingsOpen; document.getElementById('settings-panel').classList.toggle('open', state.settingsOpen); };
     document.getElementById('btn-settings-close').onclick = () => { state.settingsOpen = false; document.getElementById('settings-panel').classList.remove('open'); };
     document.getElementById('btn-close').onclick = () => postToParent({ type: 'CLOSE_OVERLAY' });
+    document.getElementById('btn-shutdown').onclick = () => postToParent({ type: 'CLOSE_MODULE' });
     document.getElementById('btn-fullscreen').onclick = () => postToParent({ type: 'TOGGLE_FULLSCREEN' });
 
     document.getElementById('btn-reset').onclick = () => {

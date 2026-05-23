@@ -24,14 +24,15 @@ export function createEbookHostBridge(options = {}) {
         }, window.location.origin);
     }
 
-    function requestHost(type, payload = {}) {
+    function requestHost(type, payload = {}, requestOptions = {}) {
         const requestId = createRequestId('host');
         postToHost(type, { ...payload, requestId });
         return new Promise((resolve, reject) => {
+            const requestTimeoutMs = Number(requestOptions.timeoutMs) || timeoutMs;
             const timer = setTimeout(() => {
                 pendingRequests.delete(requestId);
                 reject(new Error('host_request_timeout'));
-            }, timeoutMs);
+            }, requestTimeoutMs);
             pendingRequests.set(requestId, {
                 resolve,
                 reject,
@@ -57,6 +58,7 @@ export function createEbookHostBridge(options = {}) {
         if (stopListening) return stopListening;
         const onConfig = typeof handlers.onConfig === 'function' ? handlers.onConfig : null;
         const onOpenSettings = typeof handlers.onOpenSettings === 'function' ? handlers.onOpenSettings : null;
+        const onDrawProgress = typeof handlers.onDrawProgress === 'function' ? handlers.onDrawProgress : null;
         const handleMessage = (event) => {
             if (event.origin !== window.location.origin || event.source !== parent) return;
             const data = event.data || {};
@@ -75,6 +77,10 @@ export function createEbookHostBridge(options = {}) {
             }
             if (data.type === 'xb-ebook:host-result') {
                 resolveHostRequest(data.payload || {});
+                return;
+            }
+            if (data.type === 'xb-ebook:draw-progress') {
+                onDrawProgress?.(data.payload || {});
             }
         };
 

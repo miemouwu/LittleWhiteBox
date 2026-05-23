@@ -35,6 +35,13 @@ export function createEbookState() {
         archivedTurnCount: 0,
         isBusy: false,
         activeController: null,
+        drawStatus: {
+            provider: 'disabled',
+            enabled: false,
+            ready: false,
+        },
+        isDrawingChapter: false,
+        drawProgressText: '',
         studioLayout: 'balanced',
         colorTheme: getInitialColorTheme(),
         isSettingsOpen: false,

@@ -2981,7 +2981,7 @@ async function autoGenerateForLastAI() {
     }
 }
 
-async function buildTasksFromMessage({ message, messageId, signal, promptOverride = '', negativePromptOverride = '' }) {
+async function buildTasksFromMessage({ message, messageId, signal, promptOverride = '', negativePromptOverride = '', useWorldbook = true }) {
     if (promptOverride.trim()) {
         return [{
             scene: promptOverride.trim(),
@@ -2994,7 +2994,10 @@ async function buildTasksFromMessage({ message, messageId, signal, promptOverrid
     await loadSharedDrawSettings();
 
     const sharedDrawSettings = getSharedDrawSettings();
-    const rawText = String(message.mes || '').replace(/\[image:[a-z0-9\-_]+\]/gi, '').trim();
+    const rawText = String(message.mes || '')
+        .replace(/\[image:[a-z0-9\-_]+\]/gi, '')
+        .replace(/\[ebook-image:[a-z0-9\-_]+\]/gi, '')
+        .trim();
     const filterRules = sharedDrawSettings.messageFilterRules?.length
         ? sharedDrawSettings.messageFilterRules
         : DEFAULT_MESSAGE_FILTER_RULES;
@@ -3004,7 +3007,7 @@ async function buildTasksFromMessage({ message, messageId, signal, promptOverrid
     const presentCharacters = detectPresentCharacters(messageText, sharedDrawSettings.characterTags || []);
     let worldbookEntries = null;
 
-    if (sharedDrawSettings.worldbooks?.enabled && sharedDrawSettings.worldbooks.uploadedBooks?.length) {
+    if (useWorldbook && sharedDrawSettings.worldbooks?.enabled && sharedDrawSettings.worldbooks.uploadedBooks?.length) {
         const processor = new WorldbookProcessor();
         const charNames = presentCharacters.map(c => c.name).join(' ');
         const allEntries = sharedDrawSettings.worldbooks.uploadedBooks.flatMap(b => b.entries || []);
@@ -3024,7 +3027,7 @@ async function buildTasksFromMessage({ message, messageId, signal, promptOverrid
             presentCharacters,
             llmApi: sharedDrawSettings.llmApi,
             useStream: sharedDrawSettings.useStream,
-            useWorldInfo: sharedDrawSettings.useWorldInfo,
+            useWorldInfo: useWorldbook && sharedDrawSettings.useWorldInfo,
             customPrompts: promptPreset,
             promptDefaults: DEFAULT_PROMPT_CONFIG,
             worldbookEntries,
@@ -3784,6 +3787,152 @@ function cleanupImageDelegation() {
     imageDelegationBound = false;
 }
 
+function buildTextSourceGalleryMeta(options = {}) {
+    const source = String(options.source || '').trim();
+    if (source !== 'ebook') return {};
+    const bookId = String(options.bookId || '').trim();
+    const bookTitle = String(options.bookTitle || options.title || '未命名书稿').trim() || '未命名书稿';
+    const chapterPath = String(options.chapterPath || '').trim();
+    const chapterTitle = String(options.chapterTitle || options.title || chapterPath || '章节').trim() || '章节';
+    return {
+        source,
+        bookId,
+        bookTitle,
+        chapterPath,
+        chapterTitle,
+        chatId: bookId ? `ebook:${bookId}` : 'ebook',
+        characterName: `电纸书 / ${bookTitle}`,
+        messageId: `ebook:${bookId || 'unknown'}:${chapterPath || chapterTitle}`,
+    };
+}
+
+export async function generateImagesFromText(options = {}) {
+    const text = String(options.text || '').trim();
+    if (!text) throw new Error('正文内容为空，无法配图');
+    const signal = options.signal || new AbortController().signal;
+    const galleryMeta = buildTextSourceGalleryMeta(options);
+    const messageId = String(options.messageId || galleryMeta.messageId || `text:${Date.now()}`);
+    const message = {
+        mes: text,
+        name: String(options.title || options.chapterTitle || '章节'),
+        is_user: false,
+    };
+
+    ensureDrawImageStyles();
+    await openDB();
+    options.onStateChange?.('llm', {});
+    const tasks = await buildTasksFromMessage({
+        message,
+        messageId,
+        signal,
+        promptOverride: options.promptOverride || '',
+        negativePromptOverride: options.negativePromptOverride || '',
+        useWorldbook: false,
+    });
+    if (signal.aborted) throw new Error('已取消');
+
+    const sdSettings = getSettings();
+    const sharedDrawSettings = getSharedDrawSettings();
+    const images = [];
+    let successCount = 0;
+
+    options.onStateChange?.('gen', { current: 0, total: tasks.length });
+    for (let i = 0; i < tasks.length; i++) {
+        if (signal.aborted) break;
+        const task = tasks[i];
+        const slotId = generateSlotId();
+        const imgId = generateImgId();
+        const params = getEffectiveParams(sdSettings, options.paramsOverride || {});
+        const promptData = buildPromptForTask(
+            task,
+            sharedDrawSettings,
+            {
+                positivePrefix: params.positivePrefix,
+                negativePrefix: params.negativePrefix,
+            },
+            options.promptOverride || '',
+            options.negativePromptOverride || '',
+        );
+
+        options.onStateChange?.('progress', { current: i + 1, total: tasks.length });
+        try {
+            const base64 = await generateSdImageQueued({
+                prompt: promptData.positive,
+                negativePrompt: promptData.negative,
+                params,
+                signal,
+                onQueueStateChange: (queueState, queueData) => {
+                    if (queueState === 'queued') {
+                        options.onStateChange?.('queued', { current: i + 1, total: tasks.length, ...queueData });
+                    }
+                    if (queueState === 'start') {
+                        options.onStateChange?.('progress', { current: i + 1, total: tasks.length });
+                    }
+                    if (queueState === 'cooldown' && i < tasks.length - 1) {
+                        options.onStateChange?.('cooldown', {
+                            duration: queueData.duration,
+                            nextIndex: i + 2,
+                            total: tasks.length,
+                        });
+                    }
+                },
+                cooldownMs: i < tasks.length - 1 ? FIXED_SD_REQUEST_DELAY_MS : 0,
+            });
+            await storePreview({
+                ...galleryMeta,
+                imgId,
+                slotId,
+                messageId,
+                base64,
+                tags: task.scene || options.promptOverride || '',
+                positive: promptData.positive,
+                characterPrompts: promptData.characterPrompts,
+                negativePrompt: promptData.negative,
+                anchor: task.anchor || '',
+            });
+            await setSlotSelection(slotId, imgId);
+            successCount++;
+            images.push({
+                slotId,
+                imgId,
+                anchor: task.anchor || '',
+                tags: task.scene || options.promptOverride || '',
+                positive: promptData.positive,
+                negativePrompt: promptData.negative,
+                displayUrl: getPreviewDisplayUrl({ imgId, base64 }),
+                success: true,
+            });
+        } catch (error) {
+            if (signal.aborted) break;
+            const errorType = classifyError(error) || ErrorType.UNKNOWN;
+            await storeFailedPlaceholder({
+                ...galleryMeta,
+                slotId,
+                messageId,
+                tags: task.scene || options.promptOverride || '',
+                positive: promptData.positive,
+                errorType: errorType.code,
+                errorMessage: errorType.desc,
+                characterPrompts: promptData.characterPrompts,
+                negativePrompt: promptData.negative,
+                anchor: task.anchor || '',
+            });
+            images.push({
+                slotId,
+                anchor: task.anchor || '',
+                tags: task.scene || options.promptOverride || '',
+                positive: promptData.positive,
+                negativePrompt: promptData.negative,
+                success: false,
+                error: errorType,
+            });
+        }
+    }
+
+    options.onStateChange?.('success', { success: successCount, total: tasks.length });
+    return { ok: true, source: options.source || 'text', success: successCount, total: tasks.length, images };
+}
+
 export async function generateAndInsertImages({
     messageId,
     promptOverride = '',
@@ -4072,6 +4221,7 @@ export async function initSdDraw() {
         fetchSdModels,
         fetchSdSamplers,
         generateSdImage,
+        generateImagesFromText,
         generateAndInsertImages,
         getEffectiveParams,
         abortGeneration,

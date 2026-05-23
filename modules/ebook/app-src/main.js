@@ -11,6 +11,7 @@ const app = createEbookApp({
 hostBridge.start({
     onConfig: app.handleHostConfig,
     onOpenSettings: app.handleOpenSettings,
+    onDrawProgress: app.handleDrawProgress,
 });
 
 void app.start();

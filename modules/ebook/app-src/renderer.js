@@ -10,7 +10,7 @@ const STUDIO_FILE_SECTIONS = [
     {
         key: 'chapters',
         title: '正文',
-        description: '这本书的正式产出。阅读器只读取这里的章节。',
+        description: '阅读器只读取这里的章节。',
         badge: '阅读器',
         empty: '还没有正文。',
         matches: (path) => path.startsWith('book/chapters/'),
@@ -18,7 +18,7 @@ const STUDIO_FILE_SECTIONS = [
     {
         key: 'settings',
         title: '设定草稿',
-        description: '大纲、方案、设定、审稿和修订计划。它们是写作依据，不进阅读器。',
+        description: '它们是写作依据，不进阅读器。',
         badge: '草稿',
         empty: '还没有设定草稿。',
         matches: (path) => (
@@ -30,7 +30,7 @@ const STUDIO_FILE_SECTIONS = [
     {
         key: 'sources',
         title: '导入资料',
-        description: '从酒馆导入的当前聊天全部楼层、当前角色信息、小白X剧情总结和关联世界书，会放在这里。',
+        description: '从酒馆导入当前聊天全部楼层、角色信息、小白X剧情总结和世界书。',
         badge: '素材',
         empty: '还没有导入资料。',
         matches: (path) => path.startsWith('book/sources/'),
@@ -109,6 +109,14 @@ function formatFileTitle(path = '') {
     if (path.startsWith('book/sources/')) return path.replace(/^book\/sources\//, '').replace(/\.md$/, '');
     if (path.startsWith('book/reviews/')) return `审稿 ${path.replace(/^book\/reviews\//, '').replace(/\.md$/, '')}`;
     return path.replace(/^book\//, '');
+}
+
+function isChapterPath(path = '') {
+    return /^book\/chapters\/.+\.md$/.test(String(path || ''));
+}
+
+function stripEbookImageMarkers(content = '') {
+    return String(content || '').replace(/\[ebook-image:[a-z0-9\-_]+\]/gi, '').trim();
 }
 
 function formatBookDate(timestamp = 0) {
@@ -376,7 +384,7 @@ function renderLibraryShell(options = {}) {
     const state = options.state || {};
     const bookCount = Array.isArray(state.books) ? state.books.length : 0;
     const themeClass = state.colorTheme === 'light' ? 'theme-light' : 'theme-dark';
-    const themeToggleLabel = state.colorTheme === 'light' ? '深色' : '浅色';
+    const themeToggleLabel = state.colorTheme === 'light' ? '☾' : '☀';
     const themeToggleTitle = state.colorTheme === 'light' ? '切换为深色视觉' : '切换为白底黑字';
     return `
         <div class="xb-ebook-screen xb-library-screen ${escapeHtml(themeClass)}${state.isDeleteBookOpen ? ' is-delete-mode' : ''}">
@@ -411,7 +419,7 @@ function renderLibraryShell(options = {}) {
 function renderBookEntryShell(options = {}) {
     const state = options.state || {};
     const themeClass = state.colorTheme === 'light' ? 'theme-light' : 'theme-dark';
-    const themeToggleLabel = state.colorTheme === 'light' ? '深色' : '浅色';
+    const themeToggleLabel = state.colorTheme === 'light' ? '☾' : '☀';
     const themeToggleTitle = state.colorTheme === 'light' ? '切换为深色视觉' : '切换为白底黑字';
     return `
         <div class="xb-ebook-screen xb-entry-screen ${escapeHtml(themeClass)}">
@@ -724,8 +732,28 @@ function renderStudioShell(options = {}) {
         ? state.studioLayout
         : 'balanced';
     const themeClass = state.colorTheme === 'light' ? 'theme-light' : 'theme-dark';
-    const themeToggleLabel = state.colorTheme === 'light' ? '深色' : '浅色';
+    const themeToggleLabel = state.colorTheme === 'light' ? '☾' : '☀';
     const themeToggleTitle = state.colorTheme === 'light' ? '切换为深色视觉' : '切换为白底黑字';
+    const drawStatus = state.drawStatus || {};
+    const drawIsChapter = isChapterPath(state.selectedPath);
+    const drawReady = !!drawStatus.enabled && !!drawStatus.ready;
+    const canDrawChapter = !!(
+        !state.isBusy
+        && !state.isDrawingChapter
+        && drawIsChapter
+        && drawReady
+        && stripEbookImageMarkers(state.editorContent)
+    );
+    const drawDisabledAttr = canDrawChapter ? '' : 'disabled';
+    const drawTitle = !drawIsChapter
+        ? '只有正文章节可以配图'
+        : !drawReady
+            ? '画图后端未启用'
+            : !stripEbookImageMarkers(state.editorContent)
+                ? '当前章节没有正文'
+                : '为当前章节生成配图';
+    const drawButtonText = state.isDrawingChapter ? '配图中' : '配图';
+    const drawProgressText = state.drawProgressText ? ` · ${state.drawProgressText}` : '';
 
     return `
         <div class="xb-ebook-shell xb-studio-shell ${escapeHtml(layoutClass)} ${escapeHtml(themeClass)}">
@@ -753,6 +781,7 @@ function renderStudioShell(options = {}) {
                         <div class="xb-editor-actions">
                             <button id="xb-reader-link">阅读器</button>
                             <button id="xb-library-link">书架</button>
+                            <button id="xb-draw-chapter" title="${escapeHtml(drawTitle)}" ${drawDisabledAttr}>${escapeHtml(drawButtonText)}</button>
                             <button id="xb-save" ${dirty && !state.isBusy ? '' : 'disabled'}>保存稿纸</button>
                         </div>
                     </header>
@@ -760,7 +789,7 @@ function renderStudioShell(options = {}) {
                         <textarea id="xb-editor-text" spellcheck="false" ${state.isBusy ? 'disabled' : ''}>${escapeHtml(state.editorContent)}</textarea>
                     </div>
                     <footer class="xb-editor-foot">
-                        <div class="xb-meta" id="xb-editor-meta">${dirty ? '有未保存修改' : '已保存到书库'} · ${renderDraftStats(state)}</div>
+                        <div class="xb-meta" id="xb-editor-meta">${dirty ? '有未保存修改' : '已保存到书库'} · ${renderDraftStats(state)}${escapeHtml(drawProgressText)}</div>
                     </footer>
                 </main>
                 <aside class="xb-agent">
@@ -816,12 +845,35 @@ function renderStudioShell(options = {}) {
 function renderReaderTextContent(content = '') {
     const normalized = String(content || '').trim();
     if (!normalized) return '';
-    return normalized
-        .split(/\n{2,}/)
-        .map((block) => block.trim())
-        .filter(Boolean)
-        .map((block, index) => `<p class="${index === 0 ? 'xb-reader-drop' : ''}">${escapeHtml(block)}</p>`)
-        .join('');
+    const markerRegex = /\[ebook-image:([a-z0-9\-_]+)\]/gi;
+    const parts = [];
+    let lastIndex = 0;
+    let paragraphIndex = 0;
+
+    const pushText = (text = '') => {
+        String(text || '')
+            .split(/\n{2,}/)
+            .map((block) => block.trim())
+            .filter(Boolean)
+            .forEach((block) => {
+                parts.push(`<p class="${paragraphIndex === 0 ? 'xb-reader-drop' : ''}">${escapeHtml(block)}</p>`);
+                paragraphIndex += 1;
+            });
+    };
+
+    let match;
+    while ((match = markerRegex.exec(normalized)) !== null) {
+        pushText(normalized.slice(lastIndex, match.index));
+        const slotId = match[1] || '';
+        parts.push(`
+            <figure class="xb-reader-image" data-ebook-image-slot="${escapeHtml(slotId)}">
+                <div class="xb-reader-image-placeholder">配图加载中</div>
+            </figure>
+        `);
+        lastIndex = markerRegex.lastIndex;
+    }
+    pushText(normalized.slice(lastIndex));
+    return parts.join('');
 }
 
 function renderReaderShell(options = {}) {
@@ -834,7 +886,7 @@ function renderReaderShell(options = {}) {
     const content = active?.content || '';
     const chapterProgress = hasChapters ? Math.round(((index + 1) / chapters.length) * 100) : 0;
     const themeClass = state.colorTheme === 'light' ? 'theme-light' : 'theme-dark';
-    const themeToggleLabel = state.colorTheme === 'light' ? '深色' : '浅色';
+    const themeToggleLabel = state.colorTheme === 'light' ? '☾' : '☀';
     const themeToggleTitle = state.colorTheme === 'light' ? '切换为深色视觉' : '切换为白底黑字';
 
     return `

@@ -679,10 +679,21 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             color: var(--xb-text-muted);
             font-size: 12px;
         }
+        #xb-theme-toggle {
+            min-width: 34px;
+            padding: 0 10px;
+            font-size: 15px;
+            line-height: 1;
+        }
         #xb-save:not(:disabled) {
             color: var(--xb-cyan);
             border-color: rgba(143, 183, 202, 0.32);
             background: rgba(143, 183, 202, 0.12);
+        }
+        #xb-draw-chapter:not(:disabled) {
+            color: var(--xb-text-main);
+            border-color: rgba(233, 231, 227, 0.26);
+            background: rgba(233, 231, 227, 0.10);
         }
         .xb-editor-body {
             min-height: 0;
@@ -911,6 +922,10 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             overflow-wrap: anywhere;
         }
         .xb-assistant-markdown { line-height: 1.72; white-space: normal; }
+        .xb-assistant-markdown,
+        .xb-assistant-markdown * {
+            text-shadow: none !important;
+        }
         .xb-assistant-markdown > *:first-child { margin-top: 0; }
         .xb-assistant-markdown > *:last-child { margin-bottom: 0; }
         .xb-assistant-markdown p,
@@ -924,6 +939,18 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         .xb-assistant-markdown h3,
         .xb-assistant-markdown h4 {
             margin: 0 0 0.85em;
+        }
+        .xb-assistant-markdown strong,
+        .xb-assistant-markdown b,
+        .xb-assistant-markdown h1,
+        .xb-assistant-markdown h2,
+        .xb-assistant-markdown h3,
+        .xb-assistant-markdown h4 {
+            color: var(--xb-text-main);
+            font-weight: 700;
+            text-shadow: none !important;
+            filter: none !important;
+            -webkit-text-stroke: 0 transparent;
         }
         .xb-assistant-markdown code {
             padding: 0.12em 0.36em;
@@ -1687,14 +1714,22 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             text-transform: uppercase;
         }
         .xb-reader-content {
+            position: relative;
+            isolation: isolate;
             max-width: 720px;
             margin: 0 auto;
+            background: transparent;
         }
         .xb-reader-content p {
             margin: 0 0 2rem;
+            background: transparent;
+            box-shadow: none;
             color: var(--xb-text-body);
             font: 20px/2.05 var(--xb-font-serif);
+            font-weight: 400;
+            text-shadow: none;
             text-align: justify;
+            mix-blend-mode: normal;
             white-space: pre-wrap;
         }
         .xb-reader-content p.xb-reader-drop::first-letter {
@@ -1704,6 +1739,34 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             color: var(--xb-text-main);
             font-size: 4.3rem;
             line-height: 0.82;
+        }
+        .xb-reader-image {
+            max-width: 780px;
+            margin: 2.4rem auto 3rem;
+            text-align: center;
+        }
+        .xb-reader-image img {
+            display: block;
+            width: auto;
+            max-width: 100%;
+            max-height: min(72vh, 860px);
+            margin: 0 auto;
+            border-radius: 8px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+        }
+        .xb-reader-image-placeholder {
+            min-height: 180px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(233, 231, 227, 0.16);
+            border-radius: 8px;
+            color: var(--xb-text-muted);
+            font-family: var(--xb-font-mono);
+            font-size: 12px;
+        }
+        .xb-reader-image.is-failed .xb-reader-image-placeholder {
+            border-color: rgba(248, 113, 113, 0.36);
+            color: rgba(248, 113, 113, 0.88);
         }
         .xb-reader-foot {
             max-width: 720px;
@@ -1830,6 +1893,17 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             background: #191c25;
             color: var(--xb-text-body);
         }
+        .theme-dark .xb-assistant-markdown strong,
+        .theme-dark .xb-assistant-markdown b,
+        .theme-dark .xb-assistant-markdown h1,
+        .theme-dark .xb-assistant-markdown h2,
+        .theme-dark .xb-assistant-markdown h3,
+        .theme-dark .xb-assistant-markdown h4 {
+            color: #d7d0c2;
+            font-weight: 700;
+            text-shadow: none !important;
+            filter: none !important;
+        }
         .theme-dark .xb-assistant-markdown code {
             background: rgba(255, 255, 255, 0.075);
             color: #e0dacd;
@@ -1865,6 +1939,8 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         .theme-dark .xb-reader-screen,
         .theme-dark.xb-reader-screen {
             background: #171922;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
         }
         .theme-dark .xb-reader-edge,
         .theme-dark .xb-reader-nav {
@@ -1872,6 +1948,14 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         }
         .theme-dark .xb-reader-paper {
             background: transparent;
+        }
+        .theme-dark .xb-reader-content,
+        .theme-dark .xb-reader-content p {
+            background: transparent !important;
+            box-shadow: none !important;
+            filter: none !important;
+            mix-blend-mode: normal !important;
+            text-shadow: none !important;
         }
 
         .theme-light .xb-archive-header,
@@ -1884,6 +1968,8 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         .xb-reader-screen.theme-light {
             background: var(--xb-bg-deep);
             color: var(--xb-text-main);
+            -webkit-font-smoothing: subpixel-antialiased;
+            text-rendering: auto;
         }
         .theme-light .xb-sidebar {
             border-right-color: rgba(87, 70, 48, 0.12);
@@ -2060,6 +2146,14 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         }
         .theme-light .xb-reader-paper {
             background: transparent;
+        }
+        .theme-light .xb-reader-content,
+        .theme-light .xb-reader-content p {
+            background: transparent !important;
+            box-shadow: none !important;
+            filter: none !important;
+            mix-blend-mode: normal !important;
+            text-shadow: none !important;
         }
 
         /* Legacy shell pieces still used by tests or fallback markup */

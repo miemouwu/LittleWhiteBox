@@ -2,6 +2,7 @@ import { extensionFolderPath } from '../../core/constants.js';
 import { isTrustedMessage, postToIframe } from '../../core/iframe-messaging.js';
 import { buildEbookFrameConfig, saveEbookAgentConfig } from './host/assistant-config.js';
 import { buildImportMaterial } from './host/import-materials.js';
+import { getDisplayPreviewForSlot } from '../draw/shared/gallery-cache.js';
 
 const SOURCE_HOST = 'xb-ebook-host';
 const SOURCE_APP = 'xb-ebook-app';
@@ -13,9 +14,62 @@ let frameReady = false;
 let pendingMessages = [];
 let messageHandlerInstalled = false;
 let pendingOpenSettings = false;
+let overlayResizeHandler = null;
 
 function getIframe() {
     return document.getElementById(IFRAME_ID);
+}
+
+function isEbookMobileDevice() {
+    const mobileTypes = ['mobile', 'tablet'];
+    try {
+        const platformType = globalThis.Bowser?.parse?.(navigator.userAgent)?.platform?.type;
+        if (mobileTypes.includes(platformType)) {
+            return true;
+        }
+    } catch {
+        // Fall back to pointer/screen heuristics below.
+    }
+    return window.matchMedia('(pointer: coarse)').matches && window.matchMedia('(max-width: 900px)').matches;
+}
+
+function getEbookMobileTopOffset() {
+    const rawValue = getComputedStyle(document.documentElement).getPropertyValue('--topBarBlockSize').trim();
+    const parsedValue = Number.parseFloat(rawValue);
+    return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0;
+}
+
+function getEbookMobileViewportHeight() {
+    return Math.max(240, window.innerHeight - getEbookMobileTopOffset());
+}
+
+function applyEbookOverlayViewport(overlay = document.getElementById(OVERLAY_ID)) {
+    if (!overlay) return;
+    if (!isEbookMobileDevice()) {
+        overlay.style.top = '0';
+        overlay.style.height = '100vh';
+        overlay.classList.remove('is-mobile');
+        return;
+    }
+    const topOffset = getEbookMobileTopOffset();
+    const viewportHeight = getEbookMobileViewportHeight();
+    overlay.style.top = `${topOffset}px`;
+    overlay.style.height = `${viewportHeight}px`;
+    overlay.classList.add('is-mobile');
+}
+
+function installOverlayResizeHandler(overlay) {
+    if (overlayResizeHandler) return;
+    overlayResizeHandler = () => applyEbookOverlayViewport(overlay);
+    window.addEventListener('resize', overlayResizeHandler);
+    window.visualViewport?.addEventListener('resize', overlayResizeHandler);
+}
+
+function removeOverlayResizeHandler() {
+    if (!overlayResizeHandler) return;
+    window.removeEventListener('resize', overlayResizeHandler);
+    window.visualViewport?.removeEventListener('resize', overlayResizeHandler);
+    overlayResizeHandler = null;
 }
 
 function postToFrame(type, payload = {}) {
@@ -53,7 +107,12 @@ function createOverlay() {
     overlay.id = OVERLAY_ID;
     overlay.style.cssText = `
         position: fixed;
-        inset: 0;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: auto;
+        width: 100vw;
+        height: 100vh;
         z-index: 100000;
         display: flex;
         align-items: center;
@@ -90,6 +149,8 @@ function createOverlay() {
     shell.appendChild(iframe);
     overlay.appendChild(shell);
     document.body.appendChild(overlay);
+    applyEbookOverlayViewport(overlay);
+    installOverlayResizeHandler(overlay);
     return overlay;
 }
 
@@ -118,6 +179,7 @@ function openEbookSettings() {
 function closeEbook() {
     const overlay = document.getElementById(OVERLAY_ID);
     if (overlay) overlay.remove();
+    removeOverlayResizeHandler();
     frameReady = false;
     pendingMessages = [];
     pendingOpenSettings = false;
@@ -164,6 +226,95 @@ async function handleSaveConfig(payload = {}) {
     });
 }
 
+function getDrawStatus() {
+    const facade = window.xiaobaixDraw;
+    const status = typeof facade?.getStatus === 'function'
+        ? facade.getStatus()
+        : {
+            provider: typeof facade?.getProvider === 'function' ? facade.getProvider() : 'disabled',
+            enabled: !!facade?.isEnabled?.(),
+            ready: !!facade?.generateImagesFromText,
+        };
+    return {
+        provider: status?.provider || 'disabled',
+        enabled: !!status?.enabled,
+        ready: !!status?.ready,
+    };
+}
+
+async function handleDrawStatus(payload = {}) {
+    const requestId = String(payload.requestId || '');
+    replyHostResult(requestId, {
+        ok: true,
+        ...getDrawStatus(),
+    });
+}
+
+async function handleDrawGenerate(payload = {}) {
+    const requestId = String(payload.requestId || '');
+    try {
+        const facade = window.xiaobaixDraw;
+        if (typeof facade?.generateImagesFromText !== 'function') {
+            throw new Error('画图模块未初始化');
+        }
+        const result = await facade.generateImagesFromText({
+            ...payload,
+            onStateChange: (state, data) => {
+                postToFrame('xb-ebook:draw-progress', {
+                    requestId,
+                    state,
+                    data: data || {},
+                });
+            },
+        });
+        replyHostResult(requestId, {
+            ok: true,
+            ...result,
+        });
+    } catch (error) {
+        replyHostResult(requestId, {
+            ok: false,
+            error: error?.message || String(error || 'draw_failed'),
+        });
+    }
+}
+
+function previewToTransferableUrl(preview = {}) {
+    const savedUrl = String(preview?.savedUrl || '').trim();
+    if (savedUrl) return savedUrl;
+    const base64 = String(preview?.base64 || '').trim();
+    if (!base64) return '';
+    if (/^data:[^;]+;base64,/i.test(base64)) return base64;
+    return `data:image/png;base64,${base64}`;
+}
+
+async function handleDrawImage(payload = {}) {
+    const requestId = String(payload.requestId || '');
+    const slotId = String(payload.slotId || '').trim();
+    try {
+        if (!slotId) throw new Error('slot_id_required');
+        const result = await getDisplayPreviewForSlot(slotId);
+        const preview = result.preview || {};
+        replyHostResult(requestId, {
+            ok: true,
+            slotId,
+            hasData: !!result.hasData,
+            isFailed: !!result.isFailed,
+            historyCount: result.historyCount || 0,
+            url: result.hasData ? previewToTransferableUrl(preview) : '',
+            tags: preview.tags || result.failedInfo?.tags || '',
+            positive: preview.positive || result.failedInfo?.positive || '',
+            errorType: result.failedInfo?.errorType || '',
+            errorMessage: result.failedInfo?.errorMessage || '',
+        });
+    } catch (error) {
+        replyHostResult(requestId, {
+            ok: false,
+            error: error?.message || String(error || 'image_lookup_failed'),
+        });
+    }
+}
+
 function handleFrameMessage(event) {
     const iframe = getIframe();
     if (!isTrustedMessage(event, iframe, SOURCE_APP)) return;
@@ -187,6 +338,15 @@ function handleFrameMessage(event) {
             break;
         case 'xb-ebook:save-config':
             void handleSaveConfig(payload);
+            break;
+        case 'xb-ebook:draw-status':
+            void handleDrawStatus(payload);
+            break;
+        case 'xb-ebook:draw-generate':
+            void handleDrawGenerate(payload);
+            break;
+        case 'xb-ebook:draw-image':
+            void handleDrawImage(payload);
             break;
         default:
             break;

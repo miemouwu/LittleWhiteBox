@@ -287,9 +287,32 @@ export async function clearSlotSelection(slotId) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function storePreview(opts) {
-    const { imgId, slotId, messageId, base64 = null, tags, positive, savedUrl = null, status = 'success', errorType = null, errorMessage = null, characterPrompts = null, negativePrompt = null, anchor = '' } = opts;
+    const {
+        imgId,
+        slotId,
+        messageId,
+        base64 = null,
+        tags,
+        positive,
+        savedUrl = null,
+        status = 'success',
+        errorType = null,
+        errorMessage = null,
+        characterPrompts = null,
+        negativePrompt = null,
+        anchor = '',
+        source = '',
+        chatId = '',
+        characterName = '',
+        bookId = '',
+        bookTitle = '',
+        chapterPath = '',
+        chapterTitle = '',
+    } = opts;
     const database = await openDB();
     const ctx = getContext();
+    const resolvedChatId = String(chatId || ctx.chatId || (ctx.characterId || 'unknown'));
+    const resolvedCharacterName = String(characterName || getChatCharacterName());
     
     return new Promise((resolve, reject) => {
         try {
@@ -298,8 +321,13 @@ export async function storePreview(opts) {
                 imgId,
                 slotId: slotId || imgId,
                 messageId,
-                chatId: ctx.chatId || (ctx.characterId || 'unknown'),
-                characterName: getChatCharacterName(),
+                chatId: resolvedChatId,
+                characterName: resolvedCharacterName,
+                source,
+                bookId,
+                bookTitle,
+                chapterPath,
+                chapterTitle,
                 base64,
                 tags,
                 positive,
@@ -325,6 +353,13 @@ export async function storeFailedPlaceholder(opts) {
         imgId: `failed-${opts.slotId}-${Date.now()}`,
         slotId: opts.slotId,
         messageId: opts.messageId,
+        source: opts.source || '',
+        chatId: opts.chatId || '',
+        characterName: opts.characterName || '',
+        bookId: opts.bookId || '',
+        bookTitle: opts.bookTitle || '',
+        chapterPath: opts.chapterPath || '',
+        chapterTitle: opts.chapterTitle || '',
         base64: null,
         tags: opts.tags,
         positive: opts.positive,

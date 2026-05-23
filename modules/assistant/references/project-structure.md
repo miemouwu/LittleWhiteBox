@@ -65,7 +65,7 @@ LittleWhiteBox/
 ├── .eslintrc.cjs                           # ESLint 规则配置
 ├── .gitattributes                          # Git 文本/二进制属性配置
 ├── .gitignore                              # Git 忽略规则
-├── index.js                                # 插件入口：模块初始化、设置绑定、开关启停
+├── index.js                                # 插件入口：模块初始化、设置绑定、开关启停、画图统一 facade
 ├── jsconfig.json                           # JS 项目路径与编辑器提示配置
 ├── manifest.json                           # 插件清单（名称/版本/入口等）
 ├── package.json                            # NPM 脚本与依赖声明
@@ -177,16 +177,16 @@ LittleWhiteBox/
 │   │
 │   ├── ebook/                             # 小白电纸书 App：书架、书本入口、创作台、章节阅读器
 │   │   ├── ebook.html                      # 电纸书 iframe 入口，加载 dist/ebook-app.js
-│   │   ├── ebook.js                        # 宿主 overlay 与 iframe 消息分发
+│   │   ├── ebook.js                        # 宿主 overlay、iframe 消息分发、素材导入与画图桥接
 │   │   ├── host/                           # 电纸书 host 侧辅助：Agent 配置转发、聊天/角色/总结/世界书素材导入
 │   │   ├── app-src/                        # 电纸书 iframe App 源码；main.js 只做装配入口
 │   │   │   ├── main.js                     # 创建 hostBridge + ebookApp 并启动，不承载业务逻辑
 │   │   │   ├── ebook-app.js                # App 生命周期装配：state、controller、runner、renderer
-│   │   │   ├── book-controller.js          # 书籍/文件选择、保存、新建、素材导入
-│   │   │   ├── host-bridge.js              # iframe 与宿主消息桥、配置接收、host request 管理
+│   │   │   ├── book-controller.js          # 书籍/文件选择、保存、新建、素材导入、当前章节配图落盘
+│   │   │   ├── host-bridge.js              # iframe 与宿主消息桥、配置接收、host request/配图进度管理
 │   │   │   ├── agent-runner.js             # 电纸书主 Agent 与只读 Delegate 工具循环
-│   │   │   ├── renderer.js                 # 三栏 UI HTML 渲染
-│   │   │   ├── ui-bindings.js              # DOM 事件绑定到 controller / agentRunner
+│   │   │   ├── renderer.js                 # 三栏 UI HTML 渲染、阅读器 `[ebook-image:slot]` 占位渲染
+│   │   │   ├── ui-bindings.js              # DOM 事件绑定到 controller / agentRunner，并在阅读器中水合配图
 │   │   │   ├── provider-config.js          # 复用小白助手模型配置并创建适配器
 │   │   │   ├── prompts.js                  # 电纸书主 Agent / Delegate 提示词与快捷动作提示
 │   │   │   ├── state.js                    # 电纸书 iframe 本地状态初始结构
@@ -195,22 +195,23 @@ LittleWhiteBox/
 │   │   │   ├── text-metrics.js             # 写作字数、行数与估算 token 统计
 │   │   │   └── text-utils.js               # iframe 文本转义与 JSON 安全工具
 │   │   ├── shared/                         # 书籍 IndexedDB、book/... 路径校验、作品工具运行时
+│   │   │   ├── book-templates.js           # 新书默认文件：章节、大纲、文风、角色、世界、状态追踪、审稿规则
 │   │   │   ├── book-tools.js               # 作品工具 facade：文件工具、Plan、Delegate 路由
 │   │   │   ├── book-file-tools.js          # LS/Glob/Grep/Read/Write/apply_patch/Move/Delete 实现
 │   │   │   ├── tool-definitions.js         # 电纸书工具 schema 与工具调用摘要
 │   │   │   ├── book-paths.js               # book/... 路径规范化与越界拒绝
-│   │   │   └── ebook-db.js                 # LittleWhiteBox_Ebook IndexedDB 书籍、文件、Plan 表
+│   │   │   └── ebook-db.js                 # LittleWhiteBox_Ebook IndexedDB 书籍、文件、Plan、会话消息表
 │   │   ├── tests/                          # 电纸书作品工具与隔离测试
 │   │   └── dist/                           # Vite 构建产物；提交时保留，lint 忽略
 │   │
-│   ├── draw/                              # AI 画图大模块：共享层 + Provider
+│   ├── draw/                              # AI 画图大模块：共享层 + Provider；统一图库也服务电纸书配图
 │   │   ├── shared/                        # 跨 Provider 共享能力
 │   │   │   ├── danbooru-local-db.js        # Danbooru 本地角色库加载与搜索
 │   │   │   ├── data/                       # 跨 Provider 共用画图数据资源
 │   │   │   │   └── danbooru-chars.dat      # Danbooru 角色数据
 │   │   │   ├── draw-common.js              # 占位符、锚点、角色 Prompt、图片 DOM 渲染与错误分类
 │   │   │   ├── draw-settings.js            # 共享 LLM/角色/世界书设置读写，不初始化 Provider 专属 Prompt
-│   │   │   ├── gallery-cache.js            # 共用图库缓存与 [image:slot] 占位符存储
+│   │   │   ├── gallery-cache.js            # 共用图库缓存；聊天 `[image:slot]` 与电纸书 `[ebook-image:slot]` 共用 previews
 │   │   │   ├── scene-planner.js            # Provider 无关的 LLM 场景规划调用与解析
 │   │   │   └── worldbook-processor.js      # 世界书上下文处理
 │   │   └── providers/                     # 具体画图后端 Provider
@@ -219,22 +220,30 @@ LittleWhiteBox/
 │   │       │   ├── cloud-presets.js        # NovelAI 云端预设
 │   │       │   ├── floating-panel.js       # NovelAI 楼层/悬浮画图面板
 │   │       │   ├── novel-draw.html         # NovelAI 设置 UI
-│   │       │   ├── novel-draw.js           # NovelAI 生命周期、设置和出图逻辑
+│   │       │   ├── novel-draw.js           # NovelAI 生命周期、设置、楼层出图与文本源出图 `generateImagesFromText`
 │   │       │   ├── novel-prompts.js        # NovelAI 提示词模板加载与默认配置
 │   │       │   └── prompts/               # NovelAI 提示词模板
 │   │       │       ├── output-format-legacy.md
 │   │       │       ├── output-format.md
 │   │       │       ├── top-system-pov.md
 │   │       │       └── top-system.md
-│   │       └── sd-webui/                  # SD WebUI Provider
-│   │           ├── SD_TAG编写指南.md       # SD 专属 TAG 指南
-│   │           ├── floating-panel.js       # SD 楼层/悬浮画图面板
-│   │           ├── prompts/               # SD 提示词模板
-│   │           │   ├── output-format.md
-│   │           │   └── top-system.md
-│   │           ├── sd-draw.html            # SD 设置面板 UI
-│   │           ├── sd-draw.js              # SD 生命周期、设置和出图逻辑
-│   │           └── sd-prompts.js           # SD 提示词模板加载与默认配置
+│   │       ├── sd-webui/                  # SD WebUI Provider
+│   │       │   ├── SD_TAG编写指南.md       # SD 专属 TAG 指南
+│   │       │   ├── floating-panel.js       # SD 楼层/悬浮画图面板
+│   │       │   ├── prompts/               # SD 提示词模板
+│   │       │   │   ├── output-format.md
+│   │       │   │   └── top-system.md
+│   │       │   ├── sd-draw.html            # SD 设置面板 UI
+│   │       │   ├── sd-draw.js              # SD 生命周期、设置、楼层出图与文本源出图 `generateImagesFromText`
+│   │       │   └── sd-prompts.js           # SD 提示词模板加载与默认配置
+│   │       └── comfyui/                   # ComfyUI Provider
+│   │           ├── COMFY_TAG编写指南.md    # ComfyUI 专属 TAG 指南
+│   │           ├── comfy-draw.html         # ComfyUI 设置面板 UI
+│   │           ├── comfy-draw.js           # ComfyUI 生命周期、设置、楼层出图与文本源出图 `generateImagesFromText`
+│   │           ├── comfy-prompts.js        # ComfyUI 提示词模板加载与默认配置
+│   │           ├── floating-panel.js       # ComfyUI 楼层/悬浮画图面板
+│   │           ├── prompts/               # ComfyUI 提示词模板
+│   │           └── workflows/             # ComfyUI 默认工作流 JSON
 │   │
 │   ├── scheduled-tasks/                   # 定时任务与嵌入式任务功能
 │   │   ├── embedded-tasks.html             # 内嵌任务 UI

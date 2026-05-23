@@ -2398,6 +2398,252 @@ function notifyNovelDrawAfterAi(data, source) {
 // 多图生成
 // ═══════════════════════════════════════════════════════════════════════════
 
+function buildTextSourceGalleryMeta(options = {}) {
+    const source = String(options.source || '').trim();
+    if (source !== 'ebook') return {};
+    const bookId = String(options.bookId || '').trim();
+    const bookTitle = String(options.bookTitle || options.title || '未命名书稿').trim() || '未命名书稿';
+    const chapterPath = String(options.chapterPath || '').trim();
+    const chapterTitle = String(options.chapterTitle || options.title || chapterPath || '章节').trim() || '章节';
+    return {
+        source,
+        bookId,
+        bookTitle,
+        chapterPath,
+        chapterTitle,
+        chatId: bookId ? `ebook:${bookId}` : 'ebook',
+        characterName: `电纸书 / ${bookTitle}`,
+        messageId: `ebook:${bookId || 'unknown'}:${chapterPath || chapterTitle}`,
+    };
+}
+
+async function maybeAutoLearnFromTasks(tasks = [], settings = {}) {
+    if (!settings.autoLearnCharacters) return;
+    try {
+        const tagsCopy = JSON.parse(JSON.stringify(settings.characterTags || []));
+        const settingsCopy = { ...settings, characterTags: tagsCopy };
+        const learnResult = autoLearnFromTasks(tasks, settingsCopy);
+        if (learnResult.newChars.length || learnResult.updatedChars.length) {
+            const parts = [];
+            if (learnResult.newChars.length) parts.push(`新角色: ${learnResult.newChars.join(', ')}`);
+            if (learnResult.updatedChars.length) parts.push(`更新: ${learnResult.updatedChars.join(', ')}`);
+            const msg = `已学习 ${parts.join(' | ')}`;
+            updateSettingsPersistent((draft) => {
+                draft.characterTags = tagsCopy;
+            }, msg)
+                .then((ok) => { if (ok && overlayCreated && frameReady) sendInitData(); })
+                .catch(e => {
+                    console.warn('[NovelDraw] 自动学习保存失败:', e);
+                });
+        }
+    } catch (e) {
+        console.warn('[NovelDraw] 自动学习角色失败:', e);
+    }
+}
+
+async function buildTextSourceTasks({ messageText, presentCharacters, settings, preset, signal, useWorldbook = false }) {
+    let worldbookEntries = null;
+    const customPrompts = getActivePromptPreset() || DEFAULT_PROMPT_CONFIG;
+    if (useWorldbook && settings.worldbooks?.enabled && settings.worldbooks.uploadedBooks?.length) {
+        const processor = new WorldbookProcessor();
+        const charNames = presentCharacters.map(c => c.name).join(' ');
+        const allEntries = settings.worldbooks.uploadedBooks.flatMap(b => b.entries || []);
+        worldbookEntries = processor.processFromEntries({
+            entries: allEntries,
+            contextText: `${messageText} ${charNames}`,
+            keywordFilterMode: settings.worldbooks.keywordFilterMode || 'auto',
+        });
+    }
+
+    let tasks = await generateAndParseScenePlan({
+        messageText,
+        presentCharacters,
+        llmApi: settings.llmApi,
+        useStream: settings.useStream,
+        useWorldInfo: useWorldbook && settings.useWorldInfo,
+        customPrompts,
+        promptDefaults: DEFAULT_PROMPT_CONFIG,
+        worldbookEntries,
+        timeout: settings.timeout || 120000,
+        maxImages: preset.maxImages || 0,
+        maxCharactersPerImage: preset.maxCharactersPerImage || 0,
+        disablePrefill: !!settings.disablePrefill,
+        signal,
+    });
+
+    const maxImg = preset.maxImages || 0;
+    const maxChar = preset.maxCharactersPerImage || 0;
+    if (maxImg > 0 && tasks.length > maxImg) tasks = tasks.slice(0, maxImg);
+    if (maxChar > 0) {
+        tasks = tasks.map(task => ({
+            ...task,
+            chars: Array.isArray(task.chars) ? task.chars.slice(0, maxChar) : [],
+        }));
+    }
+    return tasks;
+}
+
+async function generateImagesFromText(options = {}) {
+    const text = String(options.text || '').trim();
+    if (!text) throw new NovelDrawError('正文内容为空，无法配图', ErrorType.PARSE);
+    const galleryMeta = buildTextSourceGalleryMeta(options);
+    const messageId = String(options.messageId || galleryMeta.messageId || `text:${Date.now()}`);
+    const job = createGenerationJob(messageId);
+
+    try {
+        await loadSettings();
+        ensureStyles();
+        await openDB();
+
+        const signal = options.signal || job.controller.signal;
+        const settings = getSettings();
+        const preset = getActiveParamsPreset();
+        if (!preset) throw new NovelDrawError('无可用的 NovelAI 参数预设', ErrorType.PARSE);
+
+        const rawText = text
+            .replace(PLACEHOLDER_REGEX, '')
+            .replace(/\[ebook-image:[a-z0-9\-_]+\]/gi, '')
+            .trim();
+        const filterRules = settings.messageFilterRules?.length
+            ? settings.messageFilterRules
+            : DEFAULT_MESSAGE_FILTER_RULES;
+        const messageText = applyMessageFilterRules(rawText, filterRules);
+        if (!messageText) throw new NovelDrawError('正文内容为空（可能被过滤规则清空）', ErrorType.PARSE);
+
+        const presentCharacters = detectPresentCharacters(messageText, settings.characterTags || []);
+        options.onStateChange?.('llm', {});
+        if (signal.aborted) throw new NovelDrawError('已取消', ErrorType.UNKNOWN);
+
+        let tasks = [];
+        try {
+            tasks = await buildTextSourceTasks({
+                messageText,
+                presentCharacters,
+                settings,
+                preset,
+                signal,
+                useWorldbook: !!options.useWorldbook,
+            });
+        } catch (e) {
+            console.error('[NovelDraw] 文本配图场景分析失败:', e);
+            if (signal.aborted) throw new NovelDrawError('已取消', ErrorType.UNKNOWN);
+            if (e instanceof LLMServiceError) {
+                throw new NovelDrawError(`场景分析失败: ${e.message}`, classifyError(e));
+            }
+            throw e;
+        }
+
+        if (signal.aborted) throw new NovelDrawError('已取消', ErrorType.UNKNOWN);
+        await maybeAutoLearnFromTasks(tasks, settings);
+
+        const images = [];
+        let successCount = 0;
+        options.onStateChange?.('gen', { current: 0, total: tasks.length });
+
+        for (let i = 0; i < tasks.length; i++) {
+            if (signal.aborted) break;
+            const task = tasks[i];
+            const slotId = generateSlotId();
+            const scene = joinTags(preset.positivePrefix, task.scene);
+            const characterPrompts = assembleCharacterPrompts(task.chars || [], settings.characterTags || []);
+            const tagsForStore = task.scene || '';
+            const negativePrompt = preset.negativePrefix || '';
+
+            options.onStateChange?.('progress', { current: i + 1, total: tasks.length });
+
+            try {
+                const base64 = await generateNovelImage({
+                    scene,
+                    characterPrompts,
+                    negativePrompt,
+                    params: preset.params || {},
+                    signal,
+                    onQueueStateChange: (queueState, queueData) => {
+                        if (queueState === 'queued') {
+                            options.onStateChange?.('queued', { current: i + 1, total: tasks.length, ...queueData });
+                        }
+                        if (queueState === 'start') {
+                            options.onStateChange?.('progress', { current: i + 1, total: tasks.length });
+                        }
+                    },
+                });
+                const imgId = generateImgId();
+                await storePreview({
+                    ...galleryMeta,
+                    imgId,
+                    slotId,
+                    messageId,
+                    base64,
+                    tags: tagsForStore,
+                    positive: scene,
+                    characterPrompts,
+                    negativePrompt,
+                    anchor: task.anchor || '',
+                });
+                await setSlotSelection(slotId, imgId);
+                successCount++;
+                images.push({
+                    slotId,
+                    imgId,
+                    anchor: task.anchor || '',
+                    tags: tagsForStore,
+                    positive: scene,
+                    negativePrompt,
+                    displayUrl: getPreviewDisplayUrl({ imgId, base64 }),
+                    success: true,
+                });
+            } catch (e) {
+                if (signal.aborted) break;
+                console.error(`[NovelDraw] 文本配图 ${i + 1} 失败:`, e);
+                const errorType = classifyError(e);
+                await storeFailedPlaceholder({
+                    ...galleryMeta,
+                    slotId,
+                    messageId,
+                    tags: tagsForStore,
+                    positive: scene,
+                    errorType: errorType.code,
+                    errorMessage: errorType.desc,
+                    characterPrompts,
+                    negativePrompt,
+                    anchor: task.anchor || '',
+                });
+                images.push({
+                    slotId,
+                    anchor: task.anchor || '',
+                    tags: tagsForStore,
+                    positive: scene,
+                    negativePrompt,
+                    success: false,
+                    error: errorType,
+                });
+            }
+
+            if (signal.aborted) break;
+            if (i < tasks.length - 1) {
+                const delay = randomDelay(settings.requestDelay?.min, settings.requestDelay?.max);
+                options.onStateChange?.('cooldown', { duration: delay, nextIndex: i + 2, total: tasks.length });
+                await new Promise(resolve => {
+                    const tid = setTimeout(resolve, delay);
+                    signal.addEventListener('abort', () => { clearTimeout(tid); resolve(); }, { once: true });
+                });
+            }
+        }
+
+        options.onStateChange?.('success', { success: successCount, total: tasks.length, aborted: signal.aborted });
+        return {
+            ok: true,
+            source: options.source || 'text',
+            success: successCount,
+            total: tasks.length,
+            images,
+            aborted: signal.aborted,
+        };
+    } finally {
+        releaseGenerationJob(job);
+    }
+}
+
 async function generateAndInsertImages({ messageId, onStateChange, skipLock = false }) {
     if (skipLock) {
         // 兼容旧调用：当前改为 message 级去重 + 图片请求队列，不再使用全局生成锁
@@ -3713,6 +3959,7 @@ export async function initNovelDraw() {
         getSettings,
         saveSettings,
         generateNovelImage,
+        generateImagesFromText,
         generateAndInsertImages,
         refreshSingleImage,
         saveSingleImage,
@@ -3798,6 +4045,7 @@ export {
     getActivePromptPreset,
     isModuleEnabled,
     findLastAIMessageId,
+    generateImagesFromText,
     generateAndInsertImages,
     generateNovelImage,
     createPlaceholder,

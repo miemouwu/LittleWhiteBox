@@ -22,14 +22,23 @@ const CSS_INJECTED_KEY = 'xb-me-css-injected';
 let imageObserver = null;
 let novelDrawObserver = null;
 let afterAiGateDispose = null;
+let runtimeActive = false;
+
+export function setMessageEnhancerRuntimeActive(active) {
+    runtimeActive = !!active;
+}
+
+function isFourthWallEnabled() {
+    const settings = extension_settings[EXT_ID];
+    return runtimeActive || !!settings?.fourthWall?.enabled;
+}
 
 // ════════════════════════════════════════════
 // Init & Cleanup
 // ════════════════════════════════════════════
 
 export async function initMessageEnhancer() {
-    const settings = extension_settings[EXT_ID];
-    if (!settings?.fourthWall?.enabled) return;
+    if (!isFourthWallEnabled()) return;
 
     xbLog.info('messageEnhancer', 'init message enhancer');
     initAfterAiGate();
@@ -124,8 +133,7 @@ function initNovelDrawObserver() {
     const pendingTexts = new Set();
 
     novelDrawObserver = new MutationObserver((mutations) => {
-        const settings = extension_settings[EXT_ID];
-        if (!settings?.fourthWall?.enabled) return;
+        if (!isFourthWallEnabled()) return;
 
         for (const mutation of mutations) {
             for (const node of mutation.addedNodes) {
@@ -180,8 +188,7 @@ function handleMessageChange(data) {
 }
 
 function processAllMessages() {
-    const settings = extension_settings[EXT_ID];
-    if (!settings?.fourthWall?.enabled) return;
+    if (!isFourthWallEnabled()) return;
     document.querySelectorAll('#chat .mes .mes_text').forEach(enhanceMessageContent);
 }
 

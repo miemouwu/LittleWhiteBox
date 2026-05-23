@@ -33,7 +33,7 @@ const {
     createBookToolRuntime,
     getEbookToolDefinitions,
 } = toolsModule;
-const { createBookController } = controllerModule;
+const { createBookController, formatDrawProgress } = controllerModule;
 const { createEbookConversationStore } = conversationStoreModule;
 const {
     EBOOK_DEFAULT_PRESERVED_TURNS,
@@ -212,6 +212,7 @@ test('Delegate prompt gives the reviewer a stable book-specific tool model', () 
     assert.match(EBOOK_DELEGATE_PROMPT, /SillyTavern/);
     assert.match(EBOOK_DELEGATE_PROMPT, /当前打开的这本书是唯一工作对象/);
     assert.match(EBOOK_DELEGATE_PROMPT, /book\/chapters\//);
+    assert.match(EBOOK_DELEGATE_PROMPT, /\[ebook-image:slotId\]/);
     assert.match(EBOOK_DELEGATE_PROMPT, /\[审稿分身自动上下文\]/);
     assert.match(EBOOK_DELEGATE_PROMPT, /# 工具使用指导/);
     assert.match(EBOOK_DELEGATE_PROMPT, /不知道文件在哪时先 LS \/ Glob/);
@@ -879,6 +880,280 @@ test('Initializing on an empty database keeps the shelf empty', async () => {
     assert.equal(state.savedContent, '');
     assert.equal(state.isDeleteBookOpen, false);
     assert.deepEqual(restored, [undefined]);
+});
+
+test('Book controller initialization does not request draw status before frame ready', async () => {
+    await resetDb();
+    const state = {
+        book: null,
+        books: [],
+        files: [],
+        selectedPath: '',
+        readerPath: '',
+        viewMode: 'library',
+        editorContent: '',
+        savedContent: '',
+        isBusy: false,
+        toast: '',
+    };
+    const requests = [];
+    const controller = createBookController({
+        state,
+        render() {},
+        requestHost(type) {
+            requests.push(type);
+        },
+        showToast() {},
+    });
+
+    await controller.initializeBook();
+
+    assert.deepEqual(requests, []);
+});
+
+test('Studio draw button is only active for drawable chapters', () => {
+    const baseState = {
+        book: { id: 'book-draw-render', title: '配图按钮测试' },
+        books: [],
+        files: [],
+        selectedPath: 'book/chapters/001.md',
+        readerPath: '',
+        viewMode: 'studio',
+        editorContent: '她推开门。',
+        savedContent: '她推开门。',
+        messages: [],
+        toolTrace: [],
+        openToolTurnKeys: [],
+        openThoughtKeys: [],
+        historySummary: '',
+        isBusy: false,
+        isDrawingChapter: false,
+        drawStatus: { provider: 'novelai', enabled: true, ready: true },
+        colorTheme: 'dark',
+        status: '就绪',
+        toast: '',
+    };
+
+    const enabledHtml = renderEbookShell({
+        state: baseState,
+        providerConfig: { provider: 'test', model: 'demo' },
+        dirty: false,
+    });
+    assert.match(enabledHtml, /id="xb-draw-chapter"[^>]*>配图<\/button>/);
+    assert.doesNotMatch(enabledHtml, /id="xb-draw-chapter"[^>]*disabled/);
+
+    const nonChapterHtml = renderEbookShell({
+        state: { ...baseState, selectedPath: 'book/outline.md' },
+        providerConfig: { provider: 'test', model: 'demo' },
+        dirty: false,
+    });
+    assert.match(nonChapterHtml, /id="xb-draw-chapter"[^>]*disabled/);
+
+    const disabledBackendHtml = renderEbookShell({
+        state: { ...baseState, drawStatus: { provider: 'disabled', enabled: false, ready: false } },
+        providerConfig: { provider: 'test', model: 'demo' },
+        dirty: false,
+    });
+    assert.match(disabledBackendHtml, /id="xb-draw-chapter"[^>]*disabled/);
+});
+
+test('Book draw cooldown progress includes a countdown', () => {
+    assert.equal(
+        formatDrawProgress('cooldown', { duration: 18500, nextIndex: 3, total: 4 }),
+        '等待下一张配图 3/4，剩余 18.5s',
+    );
+});
+
+test('Book controller draws current chapter and inserts ebook image markers by anchor', async () => {
+    await resetDb();
+    const book = await createBook('章节配图测试');
+    const originalContent = '她推开门。\n\n夜色涌进来。';
+    await upsertBookFile(book.id, 'book/chapters/001.md', originalContent);
+    const state = {
+        book,
+        books: [book],
+        files: await listBookFiles(book.id),
+        selectedPath: 'book/chapters/001.md',
+        readerPath: 'book/chapters/001.md',
+        viewMode: 'studio',
+        editorContent: originalContent,
+        savedContent: originalContent,
+        isBusy: false,
+        isDrawingChapter: false,
+        drawStatus: { provider: 'novelai', enabled: true, ready: true },
+        drawProgressText: '',
+        toast: '',
+    };
+    const seenRequests = [];
+    const controller = createBookController({
+        state,
+        render() {},
+        async requestHost(type, payload) {
+            seenRequests.push({ type, payload });
+            if (type === 'xb-ebook:draw-status') {
+                return { ok: true, provider: 'novelai', enabled: true, ready: true };
+            }
+            if (type === 'xb-ebook:draw-generate') {
+                return {
+                    ok: true,
+                    success: 2,
+                    total: 2,
+                    images: [
+                        { slotId: 'slot-anchor', anchor: '她推开门', success: true },
+                        { slotId: 'slot-tail', anchor: '不存在的锚点', success: true },
+                    ],
+                };
+            }
+            throw new Error('unexpected_request');
+        },
+        showToast() {},
+    });
+
+    await controller.drawCurrentChapter();
+
+    const updated = await getBookFile(book.id, 'book/chapters/001.md');
+    assert.match(updated.content, /她推开门。\n\[ebook-image:slot-anchor\]/);
+    assert.match(updated.content, /夜色涌进来。\n\[ebook-image:slot-tail\]$/);
+    assert.equal(state.savedContent, updated.content);
+    assert.equal(seenRequests.some((item) => item.type === 'xb-ebook:draw-generate'), true);
+    const drawPayload = seenRequests.find((item) => item.type === 'xb-ebook:draw-generate')?.payload || {};
+    assert.equal(drawPayload.source, 'ebook');
+    assert.equal(drawPayload.bookId, book.id);
+    assert.equal(drawPayload.chapterPath, 'book/chapters/001.md');
+    assert.equal(state.drawProgressText, '占位符已插入，请去阅读器查看');
+});
+
+test('Book drawing saves the original chapter if the user switches files while generation runs', async () => {
+    await resetDb();
+    const book = await createBook('切换文件配图测试');
+    const chapterContent = '她推开门。';
+    await upsertBookFile(book.id, 'book/chapters/001.md', chapterContent);
+    await upsertBookFile(book.id, 'book/outline.md', '旧大纲');
+    const state = {
+        book,
+        books: [book],
+        files: await listBookFiles(book.id),
+        selectedPath: 'book/chapters/001.md',
+        readerPath: 'book/chapters/001.md',
+        viewMode: 'studio',
+        editorContent: chapterContent,
+        savedContent: chapterContent,
+        isBusy: false,
+        isDrawingChapter: false,
+        drawStatus: { provider: 'novelai', enabled: true, ready: true },
+        drawProgressText: '',
+        toast: '',
+    };
+    const controller = createBookController({
+        state,
+        render() {},
+        async requestHost(type) {
+            if (type === 'xb-ebook:draw-status') {
+                return { ok: true, provider: 'novelai', enabled: true, ready: true };
+            }
+            if (type === 'xb-ebook:draw-generate') {
+                state.selectedPath = 'book/outline.md';
+                state.editorContent = '未保存的新大纲';
+                state.savedContent = '旧大纲';
+                return {
+                    ok: true,
+                    success: 1,
+                    total: 1,
+                    images: [{ slotId: 'slot-switch', anchor: '她推开门', success: true }],
+                };
+            }
+            throw new Error('unexpected_request');
+        },
+        showToast() {},
+    });
+
+    await controller.drawCurrentChapter();
+
+    const updatedChapter = await getBookFile(book.id, 'book/chapters/001.md');
+    assert.match(updatedChapter.content, /她推开门。\n\[ebook-image:slot-switch\]/);
+    assert.equal(state.selectedPath, 'book/outline.md');
+    assert.equal(state.editorContent, '未保存的新大纲');
+    assert.equal(state.savedContent, '旧大纲');
+});
+
+test('Book drawing does not recreate files when the original book is deleted mid-generation', async () => {
+    await resetDb();
+    const book = await createBook('删除中配图测试');
+    await upsertBookFile(book.id, 'book/chapters/001.md', '她推开门。');
+    const state = {
+        book,
+        books: [book],
+        files: await listBookFiles(book.id),
+        selectedPath: 'book/chapters/001.md',
+        readerPath: 'book/chapters/001.md',
+        viewMode: 'studio',
+        editorContent: '她推开门。',
+        savedContent: '她推开门。',
+        isBusy: false,
+        isDrawingChapter: false,
+        drawStatus: { provider: 'novelai', enabled: true, ready: true },
+        drawProgressText: '',
+        toast: '',
+    };
+    const toasts = [];
+    const controller = createBookController({
+        state,
+        render() {},
+        async requestHost(type) {
+            if (type === 'xb-ebook:draw-status') {
+                return { ok: true, provider: 'novelai', enabled: true, ready: true };
+            }
+            if (type === 'xb-ebook:draw-generate') {
+                await deleteBook(book.id);
+                state.book = null;
+                return {
+                    ok: true,
+                    success: 1,
+                    total: 1,
+                    images: [{ slotId: 'slot-deleted-book', anchor: '她推开门', success: true }],
+                };
+            }
+            throw new Error('unexpected_request');
+        },
+        showToast(message) {
+            toasts.push(message);
+        },
+    });
+
+    await controller.drawCurrentChapter();
+
+    assert.equal(await getBook(book.id), null);
+    assert.equal(await getBookFile(book.id, 'book/chapters/001.md'), null);
+    assert.match(toasts.at(-1), /原书已删除/);
+});
+
+test('Reader renders ebook image markers as loadable image slots', () => {
+    const state = {
+        book: { id: 'book-reader-image', title: '阅读配图测试' },
+        books: [],
+        files: [{
+            path: 'book/chapters/001.md',
+            content: '第一段。\n\n[ebook-image:slot-reader]\n\n第二段。',
+        }],
+        selectedPath: 'book/chapters/001.md',
+        readerPath: 'book/chapters/001.md',
+        viewMode: 'reader',
+        messages: [],
+        toolTrace: [],
+        isBusy: false,
+        colorTheme: 'dark',
+        toast: '',
+    };
+
+    const html = renderEbookShell({
+        state,
+        providerConfig: { provider: 'test', model: 'demo' },
+        dirty: false,
+    });
+
+    assert.match(html, /data-ebook-image-slot="slot-reader"/);
+    assert.match(html, /配图加载中/);
+    assert.doesNotMatch(html, /\[ebook-image:slot-reader\]/);
 });
 
 test('Deleting a book removes persisted conversation rows and stale selection metadata', async () => {
@@ -2168,6 +2443,7 @@ test('Book prompt keeps assistant-style tool layers and recovery rules', () => {
     assert.match(EBOOK_SYSTEM_PROMPT, /工具返回错误时/);
     assert.match(EBOOK_SYSTEM_PROMPT, /RenameBook/);
     assert.match(EBOOK_SYSTEM_PROMPT, /DelegateRun/);
+    assert.match(EBOOK_SYSTEM_PROMPT, /\[ebook-image:slotId\]/);
     assert.doesNotMatch(EBOOK_SYSTEM_PROMPT, /不要尝试 `local/);
     assert.doesNotMatch(EBOOK_SYSTEM_PROMPT, /插件源码|JS API|斜杠命令/);
 
