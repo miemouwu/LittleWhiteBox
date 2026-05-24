@@ -2060,7 +2060,6 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             border-color: rgba(235, 231, 221, 0.16);
             box-shadow: none;
         }
-        .theme-dark .xb-entry-action strong,
         .theme-dark .xb-portal-theme {
             color: var(--xb-text-main);
         }
@@ -2425,30 +2424,6 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             .xb-entry-action strong { font-size: 48px; }
             .xb-entry-action {
                 flex: 1;
-            }
-            .xb-entry-action strong {
-                color: var(--xb-text-main);
-                transform: none;
-            }
-            .xb-entry-action span {
-                color: var(--xb-text-main);
-                opacity: 0.72;
-            }
-            .theme-dark .xb-entry-action.is-studio {
-                border-color: rgba(166, 171, 200, 0.16);
-                background: radial-gradient(circle at center, rgba(166, 171, 200, 0.11), transparent 60%), #2b3040;
-            }
-            .theme-dark .xb-entry-action.is-reader {
-                border-color: rgba(233, 231, 227, 0.12);
-                background: radial-gradient(circle at center, rgba(233, 231, 227, 0.08), transparent 60%), #2c2f36;
-            }
-            .theme-light .xb-entry-action.is-studio {
-                border-color: rgba(87, 70, 48, 0.14);
-                background: radial-gradient(circle at center, rgba(166, 171, 200, 0.10), transparent 60%), #f7f7fc;
-            }
-            .theme-light .xb-entry-action.is-reader {
-                border-color: rgba(87, 70, 48, 0.14);
-                background: radial-gradient(circle at center, rgba(206, 179, 122, 0.10), transparent 60%), #fffaf2;
             }
             .xb-portal-theme {
                 top: 22px;
@@ -2971,6 +2946,33 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             .xb-reader-content p {
                 font-size: 18px;
                 line-height: 1.95;
+            }
+        }
+
+        @media (hover: none), (pointer: coarse) {
+            .xb-entry-action strong {
+                color: var(--xb-text-main);
+                transform: none;
+            }
+            .xb-entry-action span {
+                color: var(--xb-text-main);
+                opacity: 0.72;
+            }
+            .theme-dark .xb-entry-action.is-studio {
+                border-color: rgba(166, 171, 200, 0.16);
+                background: radial-gradient(circle at center, rgba(166, 171, 200, 0.11), transparent 60%), #2b3040;
+            }
+            .theme-dark .xb-entry-action.is-reader {
+                border-color: rgba(233, 231, 227, 0.12);
+                background: radial-gradient(circle at center, rgba(233, 231, 227, 0.08), transparent 60%), #2c2f36;
+            }
+            .theme-light .xb-entry-action.is-studio {
+                border-color: rgba(87, 70, 48, 0.14);
+                background: radial-gradient(circle at center, rgba(166, 171, 200, 0.10), transparent 60%), #f7f7fc;
+            }
+            .theme-light .xb-entry-action.is-reader {
+                border-color: rgba(87, 70, 48, 0.14);
+                background: radial-gradient(circle at center, rgba(206, 179, 122, 0.10), transparent 60%), #fffaf2;
             }
         }
 

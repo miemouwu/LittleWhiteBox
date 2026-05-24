@@ -6494,7 +6494,7 @@ function gS(e = {}) {
   }
   async function p(g = {}) {
     i();
-    const y = jt(g.path), b = await Wn(await t(), y, typeof g.content == "string" ? g.content : String(g.content ?? ""));
+    const y = jt(g.path || g.filePath), b = await Wn(await t(), y, typeof g.content == "string" ? g.content : String(g.content ?? ""));
     return await r?.(), {
       ok: !0,
       path: b.path,
@@ -6594,7 +6594,8 @@ function Bg(e = {}) {
         description: [
           "列出当前书稿某个目录下的第一层文件和文件夹。",
           "只返回目录项，不递归，也不读取文件内容。",
-          "适合在读稿或改稿前先确认章节、资料、设定、审稿文件放在哪里。"
+          "适合在读稿或改稿前先确认章节、资料、设定、审稿文件放在哪里。",
+          "目录路径必须写成 `book/.../`，例如 `book/`、`book/chapters/`；这是目录工具，不读取文件正文。"
         ].join(`
 `),
         parameters: {
@@ -6602,7 +6603,7 @@ function Bg(e = {}) {
           properties: {
             path: {
               type: "string",
-              description: "目录路径，例如 `book/`、`book/sources/`、`book/chapters/`。"
+              description: "目录路径，必须是 `book/.../`，例如 `book/`、`book/sources/`、`book/chapters/`。不要传 filePath。"
             },
             offset: {
               type: "number",
@@ -6625,7 +6626,8 @@ function Bg(e = {}) {
         description: [
           "按路径模式快速匹配当前书稿里的文件。",
           "只匹配文件路径，不检查文件内容。",
-          "适合在已知目录、扩展名、章节编号或资料类型时缩小范围。"
+          "适合在已知目录、扩展名、章节编号或资料类型时缩小范围。",
+          "pattern 使用 `book/...` 路径模式；`path` 只是可选目录范围，不能替代 pattern。"
         ].join(`
 `),
         parameters: {
@@ -6633,11 +6635,11 @@ function Bg(e = {}) {
           properties: {
             pattern: {
               type: "string",
-              description: "路径匹配模式，例如 `book/**/*.md` 或 `book/chapters/*.md`。"
+              description: "必填路径匹配模式，例如 `book/**/*.md`、`book/chapters/*.md`、`book/sources/**/*.md`。"
             },
             path: {
               type: "string",
-              description: "可选的目录范围，例如 `book/chapters/`。"
+              description: "可选目录范围，必须是 `book/.../`，例如 `book/chapters/`。"
             }
           },
           required: ["pattern"],
@@ -6652,7 +6654,8 @@ function Bg(e = {}) {
         description: [
           "在当前书稿文件里搜索正文内容。",
           "默认按正则搜索，返回匹配文件和行级片段。",
-          "适合在阅读大量文件前，先定位角色名、台词、设定、伏笔、剧情点或审稿意见。"
+          "适合在阅读大量文件前，先定位角色名、台词、设定、伏笔、剧情点或审稿意见。",
+          "`path` 用来限制搜索目录，`include` 用来限制文件 glob；普通文本搜索请显式传 `useRegex: false`。"
         ].join(`
 `),
         parameters: {
@@ -6664,7 +6667,7 @@ function Bg(e = {}) {
             },
             path: {
               type: "string",
-              description: "可选的搜索目录，例如 `book/chapters/`。"
+              description: "可选的搜索目录，必须是 `book/.../`，例如 `book/chapters/`。"
             },
             include: {
               type: "string",
@@ -6677,7 +6680,7 @@ function Bg(e = {}) {
                 "files_with_matches",
                 "count"
               ],
-              description: "返回方式。默认 `content`。"
+              description: "`content` 返回命中行，`files_with_matches` 只返回文件，`count` 返回计数。默认 `content`。"
             },
             limit: {
               type: "number",
@@ -6708,7 +6711,8 @@ function Bg(e = {}) {
         description: [
           "读取当前书稿里的文本文件，或查看目录内容。",
           "读取文件时返回带行号的内容；读取目录时返回目录项；大文件会给出继续读取提示。",
-          "需要文件末尾内容时单独使用 `tail`。"
+          "需要文件末尾内容时单独使用 `tail`。",
+          "参数名是 `filePath`，不是 `path`；文件路径如 `book/outline.md`，目录路径如 `book/chapters/`。"
         ].join(`
 `),
         parameters: {
@@ -6716,7 +6720,7 @@ function Bg(e = {}) {
           properties: {
             filePath: {
               type: "string",
-              description: "文件或目录路径，例如 `book/outline.md` 或 `book/chapters/`。"
+              description: "文件或目录路径，例如 `book/outline.md`、`book/chapters/001.md` 或 `book/chapters/`。不要传 path。"
             },
             offset: {
               type: "number",
@@ -6744,7 +6748,8 @@ function Bg(e = {}) {
       description: [
         "用 Tavily 联网查证当前书稿和资料区无法提供的现实资料、公开文档或时间敏感信息。",
         "适合查真实地点、历史背景、机构、职业细节、生活常识、年代事实、公开资料或外部参考；书稿原文、导入资料、设定连续性仍优先用 LS / Glob / Grep / Read。",
-        "搜索词要具体；先查事实，再把结果转化为写作、设定或审稿判断，不要把联网结果当成已导入资料。"
+        "搜索词要具体；先查事实，再把结果转化为写作、设定或审稿判断，不要把联网结果当成已导入资料。",
+        "只在工具列表里出现时才可用；没有这个工具时不要声称自己联网查过。"
       ].join(`
 `),
       parameters: {
@@ -6770,22 +6775,23 @@ function Bg(e = {}) {
       description: [
         "写入当前书稿里的完整文本文件。",
         "适合新建文件，或在明确需要整篇重写时覆盖整个文件。",
-        "改章节局部内容时优先用 apply_patch，避免无意覆盖已有文字。"
+        "改章节局部内容时优先用 apply_patch，避免无意覆盖已有文字。",
+        "参数名是 `filePath` 和 `content`。Write 会覆盖目标文件的完整内容。"
       ].join(`
 `),
       parameters: {
         type: "object",
         properties: {
-          path: {
+          filePath: {
             type: "string",
-            description: "目标文件路径，例如 `book/chapters/001.md`。"
+            description: "目标文件路径，例如 `book/chapters/001.md`、`book/notes/idea.md`。"
           },
           content: {
             type: "string",
             description: "要写入的完整文件内容。"
           }
         },
-        required: ["path", "content"],
+        required: ["filePath", "content"],
         additionalProperties: !1
       }
     }
@@ -6796,6 +6802,10 @@ function Bg(e = {}) {
       description: [
         "用结构化补丁精准修改当前书稿文件。",
         "适合局部修订、多文件修订、新增、删除或重命名书稿文件。",
+        "Patch format uses structured headers such as `*** Begin Patch`, `*** Update File: book/example.md`, `@@`, and `*** End Patch`.",
+        "File operation headers support `*** Add File: book/...`, `*** Update File: book/...`, and `*** Delete File: book/...`; renames use `*** Move to: book/...` after an update header.",
+        "Hunk headers support plain `@@`, anchored `@@ existing line`, and standard unified diff ranges like `@@ -1,3 +1,3 @@`.",
+        "Hunk body lines must start with a space for context, `-` for removed old lines, or `+` for added new lines; add-file content lines must start with `+`.",
         "补丁头里的文件路径必须写成 `book/...`。",
         "修订章节时优先用它，尽量保留没有必要改动的原文。"
       ].join(`
@@ -6804,7 +6814,7 @@ function Bg(e = {}) {
         type: "object",
         properties: { patchText: {
           type: "string",
-          description: "完整补丁文本，从 `*** Begin Patch` 到 `*** End Patch`。"
+          description: "完整 apply_patch body，包括 `*** Begin Patch`、一个或多个 `*** Update/Add/Delete File: book/...` 文件操作、hunk，以及 `*** End Patch`。"
         } },
         required: ["patchText"],
         additionalProperties: !1
@@ -6817,14 +6827,15 @@ function Bg(e = {}) {
       description: [
         "删除当前书稿里的文件或文件夹。",
         "可以删除单个文件，也可以删除目录及其下面的文件。",
-        "不要无必要删除正文、资料、设定或审稿意见；整理草稿时也要谨慎。"
+        "不要无必要删除正文、资料、设定或审稿意见；整理草稿时也要谨慎。",
+        "删除目录时路径要以 `/` 结尾，例如 `book/notes/`；删除文件时传完整文件路径。"
       ].join(`
 `),
       parameters: {
         type: "object",
         properties: { path: {
           type: "string",
-          description: "目标文件或目录路径，例如 `book/reviews/old.md`。"
+          description: "目标文件或目录路径，例如 `book/reviews/old.md` 或 `book/notes/`。目录删除请保留末尾 `/`。"
         } },
         required: ["path"],
         additionalProperties: !1
@@ -6837,7 +6848,8 @@ function Bg(e = {}) {
       description: [
         "移动或重命名当前书稿里的文件或文件夹。",
         "适合整理章节、资料、设定、审稿意见的位置或命名。",
-        "目标已存在时需要明确允许覆盖；不要把目录移动到它自己里面。"
+        "目标已存在时需要明确允许覆盖；不要把目录移动到它自己里面。",
+        "参数名是 `fromPath` 和 `toPath`；移动目录时两边都建议写成 `book/.../`。"
       ].join(`
 `),
       parameters: {
@@ -6845,11 +6857,11 @@ function Bg(e = {}) {
         properties: {
           fromPath: {
             type: "string",
-            description: "原路径，例如 `book/notes/draft.md`。"
+            description: "原路径，例如 `book/notes/draft.md` 或 `book/notes/`。"
           },
           toPath: {
             type: "string",
-            description: "目标路径，例如 `book/notes/revision-plan.md`。"
+            description: "目标路径，例如 `book/notes/revision-plan.md` 或 `book/archive/notes/`。"
           },
           overwrite: {
             type: "boolean",
@@ -6867,7 +6879,8 @@ function Bg(e = {}) {
       description: [
         "为当前这本书创建一个写作计划项。",
         "适合多步骤写作、长修订、阻塞问题或需要稍后续接的任务。",
-        "计划只记录状态，不会自动审稿、写正文或调用其他工具。"
+        "计划只记录状态，不会自动审稿、写正文或调用其他工具。",
+        "只在任务需要跨多步跟踪时使用；短小的直接写作或一次性回答不必建计划。"
       ].join(`
 `),
       parameters: {
@@ -6917,7 +6930,8 @@ function Bg(e = {}) {
         "在实际推进后更新当前书的写作计划项。",
         "用 status 表示进度，用 note 追加简短进展，用 result/error 记录最终结果或失败原因。",
         "只有对应写作、审稿或修订确实完成后，才标记 completed。",
-        "如果依赖项还没完成，这个计划不能进入 in_progress。"
+        "如果依赖项还没完成，这个计划不能进入 in_progress。",
+        "参数 `id` 必须来自 PlanCreate 或 PlanList；不要自己编一个看起来像 id 的值。"
       ].join(`
 `),
       parameters: {
@@ -6990,7 +7004,8 @@ function Bg(e = {}) {
       description: [
         "列出当前这本书的写作计划。",
         "适合在续写、继续修订、避免重复计划、选择下一步或检查阻塞时使用。",
-        "不传筛选条件时返回当前计划；只在需要缩小范围时使用 status、priority 或 owner。"
+        "不传筛选条件时返回当前计划；只在需要缩小范围时使用 status、priority 或 owner。",
+        "如果不确定是否已有相关计划，先 PlanList，再决定创建或更新。"
       ].join(`
 `),
       parameters: {
@@ -7034,7 +7049,11 @@ function Bg(e = {}) {
     type: "function",
     function: {
       name: te.PLAN_GET,
-      description: ["读取当前这本书某个计划项的完整记录。", "当当前计划摘要不够，需要查看详情、依赖、备注、结果或错误时使用。"].join(`
+      description: [
+        "读取当前这本书某个计划项的完整记录。",
+        "当当前计划摘要不够，需要查看详情、依赖、备注、结果或错误时使用。",
+        "参数 `id` 必须来自 PlanCreate 或 PlanList。"
+      ].join(`
 `),
       parameters: {
         type: "object",
@@ -7053,7 +7072,8 @@ function Bg(e = {}) {
       description: [
         "修改当前书的书名。",
         "只改变书籍标题，不移动章节、资料或设定文件。",
-        "当用户要求改书名、换标题、重命名当前作品时使用。"
+        "当用户要求改书名、换标题、重命名当前作品时使用。",
+        "参数只有 `title`；不要用 Write 修改某个文件来改书名。"
       ].join(`
 `),
       parameters: {
@@ -7074,7 +7094,8 @@ function Bg(e = {}) {
         "请一个只读审稿分身独立阅读当前书稿，并把结果交回给你。",
         "适合明确、独立、可验收的审稿、连续性检查、资料核对或问题定位。",
         "分身只知道你写进任务、背景和交付要求里的信息，以及它自己读取到的书稿内容。",
-        "分身不能写文件、不能管理计划、不能继续委派。"
+        "分身不能写文件、不能管理计划、不能继续委派。",
+        "参数 `task` 必填；`context` 写路径、背景和限制；`deliverable` 写返回格式。不要把它当成写作或修改工具。"
       ].join(`
 `),
       parameters: {
@@ -7112,7 +7133,7 @@ function Fg(e = "", t = {}) {
     case te.WEB_SEARCH:
       return `联网查资料 ${t.query || ""}`.trim();
     case te.WRITE:
-      return `写入 ${t.path || ""}`.trim();
+      return `写入 ${t.filePath || t.path || ""}`.trim();
     case te.APPLY_PATCH:
       return "修订作品文件";
     case te.DELETE:
@@ -30618,7 +30639,6 @@ function E2(e = "xb-ebook-root") {
             border-color: rgba(235, 231, 221, 0.16);
             box-shadow: none;
         }
-        .theme-dark .xb-entry-action strong,
         .theme-dark .xb-portal-theme {
             color: var(--xb-text-main);
         }
@@ -30983,30 +31003,6 @@ function E2(e = "xb-ebook-root") {
             .xb-entry-action strong { font-size: 48px; }
             .xb-entry-action {
                 flex: 1;
-            }
-            .xb-entry-action strong {
-                color: var(--xb-text-main);
-                transform: none;
-            }
-            .xb-entry-action span {
-                color: var(--xb-text-main);
-                opacity: 0.72;
-            }
-            .theme-dark .xb-entry-action.is-studio {
-                border-color: rgba(166, 171, 200, 0.16);
-                background: radial-gradient(circle at center, rgba(166, 171, 200, 0.11), transparent 60%), #2b3040;
-            }
-            .theme-dark .xb-entry-action.is-reader {
-                border-color: rgba(233, 231, 227, 0.12);
-                background: radial-gradient(circle at center, rgba(233, 231, 227, 0.08), transparent 60%), #2c2f36;
-            }
-            .theme-light .xb-entry-action.is-studio {
-                border-color: rgba(87, 70, 48, 0.14);
-                background: radial-gradient(circle at center, rgba(166, 171, 200, 0.10), transparent 60%), #f7f7fc;
-            }
-            .theme-light .xb-entry-action.is-reader {
-                border-color: rgba(87, 70, 48, 0.14);
-                background: radial-gradient(circle at center, rgba(206, 179, 122, 0.10), transparent 60%), #fffaf2;
             }
             .xb-portal-theme {
                 top: 22px;
@@ -31529,6 +31525,33 @@ function E2(e = "xb-ebook-root") {
             .xb-reader-content p {
                 font-size: 18px;
                 line-height: 1.95;
+            }
+        }
+
+        @media (hover: none), (pointer: coarse) {
+            .xb-entry-action strong {
+                color: var(--xb-text-main);
+                transform: none;
+            }
+            .xb-entry-action span {
+                color: var(--xb-text-main);
+                opacity: 0.72;
+            }
+            .theme-dark .xb-entry-action.is-studio {
+                border-color: rgba(166, 171, 200, 0.16);
+                background: radial-gradient(circle at center, rgba(166, 171, 200, 0.11), transparent 60%), #2b3040;
+            }
+            .theme-dark .xb-entry-action.is-reader {
+                border-color: rgba(233, 231, 227, 0.12);
+                background: radial-gradient(circle at center, rgba(233, 231, 227, 0.08), transparent 60%), #2c2f36;
+            }
+            .theme-light .xb-entry-action.is-studio {
+                border-color: rgba(87, 70, 48, 0.14);
+                background: radial-gradient(circle at center, rgba(166, 171, 200, 0.10), transparent 60%), #f7f7fc;
+            }
+            .theme-light .xb-entry-action.is-reader {
+                border-color: rgba(87, 70, 48, 0.14);
+                background: radial-gradient(circle at center, rgba(206, 179, 122, 0.10), transparent 60%), #fffaf2;
             }
         }
 

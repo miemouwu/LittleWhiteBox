@@ -399,7 +399,7 @@ test('local sources tool runtime rejects editor mutation tools outside editor wr
     assert.equal(executeCalls, 0);
 });
 
-test('local sources tool runtime accepts Write filePath alias for editor permissions', async () => {
+test('local sources tool runtime accepts Write filePath for editor permissions', async () => {
     let currentState = createState({
         'local/demo.txt': 'old\n',
     });

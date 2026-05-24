@@ -50,7 +50,7 @@ export const TOOL_DEFINITIONS = [
             parameters: {
                 type: 'object',
                 properties: {
-                    path: { type: 'string', description: 'Public directory path, for example scripts/extensions/third-party/ or scripts/extensions/third-party/LittleWhiteBox/modules/.' },
+                    path: { type: 'string', description: 'Site-root-relative tool path without `public/`, for example scripts/extensions/third-party/ or scripts/extensions/third-party/LittleWhiteBox/modules/.' },
                     scope: { type: 'string', enum: ['project', 'local'], description: 'Lookup scope. Default is project. Use local to list only the `local/` workspace tree.' },
                     offset: { type: 'number', description: 'Optional 1-based entry offset for paging. Default 1.' },
                     limit: { type: 'number', description: 'Maximum number of first-level entries to return. Default 100, max 300.' },
@@ -75,8 +75,8 @@ export const TOOL_DEFINITIONS = [
             parameters: {
                 type: 'object',
                 properties: {
-                    pattern: { type: 'string', description: 'Glob path pattern, for example scripts/extensions/third-party/LittleWhiteBox/modules/**/*.js.' },
-                    path: { type: 'string', description: 'Optional directory scope inside the selected lookup scope.' },
+                    pattern: { type: 'string', description: 'Glob path pattern without `public/`, for example scripts/extensions/third-party/LittleWhiteBox/modules/**/*.js.' },
+                    path: { type: 'string', description: 'Optional directory scope inside the selected lookup scope. Project paths omit `public/`.' },
                     scope: { type: 'string', enum: ['project', 'local'], description: 'Lookup scope. Default is project. Use local to search only `local/` files.' },
                 },
                 required: ['pattern'],
@@ -100,7 +100,7 @@ export const TOOL_DEFINITIONS = [
                 type: 'object',
                 properties: {
                     pattern: { type: 'string', description: 'grep/rg-style search pattern. Treated as regex by default.' },
-                    path: { type: 'string', description: 'Optional directory scope inside the selected lookup scope.' },
+                    path: { type: 'string', description: 'Optional directory scope inside the selected lookup scope. Project paths omit `public/`.' },
                     scope: { type: 'string', enum: ['project', 'local'], description: 'Lookup scope. Default is project. Use local to search only `local/` files.' },
                     include: { type: 'string', description: 'Optional file path glob filter, for example **/*.js or modules/assistant/**/*.js.' },
                     outputMode: {
@@ -133,7 +133,7 @@ export const TOOL_DEFINITIONS = [
             parameters: {
                 type: 'object',
                 properties: {
-                    filePath: { type: 'string', description: 'Public file or directory path, for example scripts/extensions/third-party/LittleWhiteBox/index.js or local/.' },
+                    filePath: { type: 'string', description: 'Site-root-relative tool path without `public/`, for example scripts/extensions/third-party/LittleWhiteBox/index.js or local/.' },
                     scope: { type: 'string', enum: ['project', 'local'], description: 'Lookup scope. Default is project. Use local to read only `local/` workspace files or directories.' },
                     offset: { type: 'number', description: 'Optional line offset (1-based). Default 1.' },
                     limit: { type: 'number', description: 'Optional maximum number of lines or directory entries to return. Default 2000.' },
@@ -176,11 +176,10 @@ export const TOOL_DEFINITIONS = [
             parameters: {
                 type: 'object',
                 properties: {
-                    path: { type: 'string', description: 'Target `local/...` file path, for example local/README.md or local/my-plugin/README.md.' },
-                    filePath: { type: 'string', description: 'Compatibility alias for `path`; prefer `path` for new calls.' },
+                    filePath: { type: 'string', description: 'Target `local/...` file path, for example local/README.md or local/my-plugin/README.md.' },
                     content: { type: 'string', description: 'Full text content to write.' },
                 },
-                required: ['path', 'content'],
+                required: ['filePath', 'content'],
                 additionalProperties: false,
             },
         },
@@ -637,7 +636,7 @@ export function describeToolCall(name, args = {}) {
         case TOOL_NAMES.WEB_SEARCH:
             return `联网搜索 ${args.query || ''}`.trim();
         case TOOL_NAMES.WRITE:
-            return `写入文件 ${args.path || args.filePath || ''}`.trim();
+            return `写入文件 ${args.filePath || args.path || ''}`.trim();
         case TOOL_NAMES.APPLY_PATCH:
             return '应用补丁';
         case TOOL_NAMES.DELETE:

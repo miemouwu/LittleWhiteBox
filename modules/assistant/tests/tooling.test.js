@@ -34,6 +34,16 @@ test('Read exposes tail as the only extra range shortcut', () => {
     assert.doesNotMatch(JSON.stringify(definition.function.parameters.properties), /mode|from/i);
 });
 
+test('Write exposes filePath as the single model-facing target path parameter', () => {
+    const definition = TOOL_DEFINITIONS.find((entry) => entry.function?.name === TOOL_NAMES.WRITE);
+    assert(definition);
+    assert.deepEqual(Object.keys(definition.function.parameters.properties), [
+        'filePath',
+        'content',
+    ]);
+    assert.deepEqual(definition.function.parameters.required, ['filePath', 'content']);
+});
+
 test('web search tool exposes a focused Tavily schema', () => {
     const definition = TOOL_DEFINITIONS.find((entry) => entry.function?.name === TOOL_NAMES.WEB_SEARCH);
     assert(definition);
@@ -81,6 +91,16 @@ test('lookup tool descriptions explain that local scope still uses local-prefixe
     lookupTools.forEach((toolName) => {
         const definition = TOOL_DEFINITIONS.find((entry) => entry.function?.name === toolName);
         assert.match(String(definition?.function?.description || ''), /local\/\.\.\.|local\/"\s*is valid|local\/\.\.\. form|full `local\/\.\.\.` path/i);
+    });
+});
+
+test('lookup tool schemas tell models to omit the public prefix for project paths', () => {
+    const lookupTools = [TOOL_NAMES.LS, TOOL_NAMES.GLOB, TOOL_NAMES.GREP, TOOL_NAMES.READ];
+    lookupTools.forEach((toolName) => {
+        const definition = TOOL_DEFINITIONS.find((entry) => entry.function?.name === toolName);
+        const parameterText = JSON.stringify(definition?.function?.parameters || {});
+        assert.match(parameterText, /without `public\/`|omit `public\/`/i);
+        assert.doesNotMatch(parameterText, /public\/scripts\/extensions/i);
     });
 });
 

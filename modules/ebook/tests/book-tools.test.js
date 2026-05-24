@@ -356,15 +356,16 @@ test('Delegate book tool profile is read-only and excludes orchestration tools',
     assert.equal(names.includes(EBOOK_TOOL_NAMES.DELEGATE_RUN), false);
 });
 
-test('Book tool definitions use the current Read/Write parameter names only', () => {
+test('Book tool definitions expose filePath consistently for Read and Write', () => {
     const definitions = getEbookToolDefinitions();
     const readDefinition = definitions.find((definition) => definition.function.name === EBOOK_TOOL_NAMES.READ);
     const writeDefinition = definitions.find((definition) => definition.function.name === EBOOK_TOOL_NAMES.WRITE);
 
     assert.equal(Object.hasOwn(readDefinition.function.parameters.properties, 'filePath'), true);
     assert.equal(Object.hasOwn(readDefinition.function.parameters.properties, 'path'), false);
-    assert.equal(Object.hasOwn(writeDefinition.function.parameters.properties, 'path'), true);
-    assert.equal(Object.hasOwn(writeDefinition.function.parameters.properties, 'filePath'), false);
+    assert.equal(Object.hasOwn(writeDefinition.function.parameters.properties, 'filePath'), true);
+    assert.equal(Object.hasOwn(writeDefinition.function.parameters.properties, 'path'), false);
+    assert.deepEqual(writeDefinition.function.parameters.required, ['filePath', 'content']);
 });
 
 test('Book agent automatically passes review context into DelegateRun', async () => {
@@ -662,7 +663,7 @@ test('Book Delete removes a directory tree and returns a deleted count', async (
     assert.notEqual(await getBookFile(book.id, 'book/outline.md'), null);
 });
 
-test('Book Read and Write reject the removed legacy path aliases', async () => {
+test('Book Read rejects path while Write uses filePath and still tolerates hidden path calls', async () => {
     await resetDb();
     const book = await createBook('工具字段测试');
     const runtime = createBookToolRuntime({ bookId: book.id });
@@ -671,10 +672,15 @@ test('Book Read and Write reject the removed legacy path aliases', async () => {
         () => runtime.execute(EBOOK_TOOL_NAMES.READ, { path: 'book/outline.md' }),
         /book_path_required/,
     );
-    await assert.rejects(
-        () => runtime.execute(EBOOK_TOOL_NAMES.WRITE, { filePath: 'book/notes/temp.md', content: 'x' }),
-        /book_path_required/,
-    );
+    const written = await runtime.execute(EBOOK_TOOL_NAMES.WRITE, { filePath: 'book/notes/temp.md', content: 'x' });
+    assert.equal(written.ok, true);
+    assert.equal(written.path, 'book/notes/temp.md');
+    assert.equal((await getBookFile(book.id, 'book/notes/temp.md')).content, 'x');
+
+    const hiddenAlias = await runtime.execute(EBOOK_TOOL_NAMES.WRITE, { path: 'book/notes/path-alias.md', content: 'y' });
+    assert.equal(hiddenAlias.ok, true);
+    assert.equal(hiddenAlias.path, 'book/notes/path-alias.md');
+    assert.equal((await getBookFile(book.id, 'book/notes/path-alias.md')).content, 'y');
 });
 
 test('Book Move rejects moving the book root or a directory into itself', async () => {
@@ -3490,6 +3496,8 @@ test('Book prompt keeps assistant-style tool layers and recovery rules', () => {
     assert.match(EBOOK_SYSTEM_PROMPT, /RenameBook/);
     assert.match(EBOOK_SYSTEM_PROMPT, /DelegateRun/);
     assert.match(EBOOK_SYSTEM_PROMPT, /\[ebook-image:slotId\]/);
+    assert.doesNotMatch(EBOOK_SYSTEM_PROMPT, /## 工具参数速记|## apply_patch 格式/);
+    assert.doesNotMatch(EBOOK_SYSTEM_PROMPT, /\*\*\* Update File: book\/example\.md/);
     assert.doesNotMatch(EBOOK_SYSTEM_PROMPT, /web_search|Tavily|联网查资料/);
     assert.doesNotMatch(EBOOK_SYSTEM_PROMPT, /不要尝试 `local/);
     assert.doesNotMatch(EBOOK_SYSTEM_PROMPT, /插件源码|JS API|斜杠命令/);
@@ -3503,6 +3511,13 @@ test('Book prompt keeps assistant-style tool layers and recovery rules', () => {
         .find((definition) => definition.function?.name === EBOOK_TOOL_NAMES.PLAN_CREATE);
     assert.equal(planCreate.function.parameters.properties.blockedBy.type, 'array');
 
+    const applyPatch = getEbookToolDefinitions()
+        .find((definition) => definition.function?.name === EBOOK_TOOL_NAMES.APPLY_PATCH);
+    assert.match(String(applyPatch.function.description), /\*\*\* Update File: book\/example\.md/);
+    assert.match(String(applyPatch.function.description), /\*\*\* Move to: book\/\.\.\./);
+    assert.match(String(applyPatch.function.description), /Hunk headers support plain `@@`/);
+    assert.match(String(applyPatch.function.parameters.properties.patchText.description), /Update\/Add\/Delete File: book\/\.\.\./);
+
     const webSearchDefinitions = getEbookToolDefinitions({ webSearchEnabled: true });
     const webSearch = webSearchDefinitions.find((definition) => definition.function?.name === EBOOK_TOOL_NAMES.WEB_SEARCH);
     assert.match(String(webSearch.function.description), /当前书稿和资料区无法提供/);
@@ -3512,4 +3527,47 @@ test('Book prompt keeps assistant-style tool layers and recovery rules', () => {
             .some((definition) => definition.function?.name === EBOOK_TOOL_NAMES.WEB_SEARCH),
         false,
     );
+});
+
+test('Book tool definitions teach exact parameters like assistant tools', () => {
+    const definitions = new Map(
+        getEbookToolDefinitions({ webSearchEnabled: true })
+            .map((definition) => [definition.function?.name, definition.function]),
+    );
+
+    const ls = definitions.get(EBOOK_TOOL_NAMES.LS);
+    assert.match(String(ls.description), /目录路径必须写成 `book\/\.\.\.\/`/);
+    assert.match(String(ls.parameters.properties.path.description), /不要传 filePath/);
+
+    const glob = definitions.get(EBOOK_TOOL_NAMES.GLOB);
+    assert.match(String(glob.description), /`path` 只是可选目录范围，不能替代 pattern/);
+
+    const grep = definitions.get(EBOOK_TOOL_NAMES.GREP);
+    assert.match(String(grep.description), /useRegex: false/);
+    assert.match(String(grep.parameters.properties.outputMode.description), /files_with_matches/);
+
+    const read = definitions.get(EBOOK_TOOL_NAMES.READ);
+    assert.match(String(read.description), /参数名是 `filePath`，不是 `path`/);
+    assert.match(String(read.parameters.properties.filePath.description), /不要传 path/);
+
+    const write = definitions.get(EBOOK_TOOL_NAMES.WRITE);
+    assert.match(String(write.description), /参数名是 `filePath` 和 `content`/);
+    assert.equal(Object.hasOwn(write.parameters.properties, 'path'), false);
+    assert.match(String(write.parameters.properties.filePath.description), /目标文件路径/);
+
+    const deleteTool = definitions.get(EBOOK_TOOL_NAMES.DELETE);
+    assert.match(String(deleteTool.description), /删除目录时路径要以 `\/` 结尾/);
+
+    const move = definitions.get(EBOOK_TOOL_NAMES.MOVE);
+    assert.match(String(move.description), /参数名是 `fromPath` 和 `toPath`/);
+
+    const planUpdate = definitions.get(EBOOK_TOOL_NAMES.PLAN_UPDATE);
+    assert.match(String(planUpdate.description), /不要自己编一个看起来像 id 的值/);
+
+    const renameBook = definitions.get(EBOOK_TOOL_NAMES.RENAME_BOOK);
+    assert.match(String(renameBook.description), /参数只有 `title`/);
+
+    const delegateRun = definitions.get(EBOOK_TOOL_NAMES.DELEGATE_RUN);
+    assert.match(String(delegateRun.description), /`task` 必填/);
+    assert.match(String(delegateRun.description), /不要把它当成写作或修改工具/);
 });

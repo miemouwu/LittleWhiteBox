@@ -30,11 +30,12 @@ export function getEbookToolDefinitions(options = {}) {
                     '列出当前书稿某个目录下的第一层文件和文件夹。',
                     '只返回目录项，不递归，也不读取文件内容。',
                     '适合在读稿或改稿前先确认章节、资料、设定、审稿文件放在哪里。',
+                    '目录路径必须写成 `book/.../`，例如 `book/`、`book/chapters/`；这是目录工具，不读取文件正文。',
                 ].join('\n'),
                 parameters: {
                     type: 'object',
                     properties: {
-                        path: { type: 'string', description: '目录路径，例如 `book/`、`book/sources/`、`book/chapters/`。' },
+                        path: { type: 'string', description: '目录路径，必须是 `book/.../`，例如 `book/`、`book/sources/`、`book/chapters/`。不要传 filePath。' },
                         offset: { type: 'number', description: '从第几个目录项开始返回，1 起算。默认 1。' },
                         limit: { type: 'number', description: '最多返回多少个目录项。默认 100，最大 300。' },
                     },
@@ -51,12 +52,13 @@ export function getEbookToolDefinitions(options = {}) {
                     '按路径模式快速匹配当前书稿里的文件。',
                     '只匹配文件路径，不检查文件内容。',
                     '适合在已知目录、扩展名、章节编号或资料类型时缩小范围。',
+                    'pattern 使用 `book/...` 路径模式；`path` 只是可选目录范围，不能替代 pattern。',
                 ].join('\n'),
                 parameters: {
                     type: 'object',
                     properties: {
-                        pattern: { type: 'string', description: '路径匹配模式，例如 `book/**/*.md` 或 `book/chapters/*.md`。' },
-                        path: { type: 'string', description: '可选的目录范围，例如 `book/chapters/`。' },
+                        pattern: { type: 'string', description: '必填路径匹配模式，例如 `book/**/*.md`、`book/chapters/*.md`、`book/sources/**/*.md`。' },
+                        path: { type: 'string', description: '可选目录范围，必须是 `book/.../`，例如 `book/chapters/`。' },
                     },
                     required: ['pattern'],
                     additionalProperties: false,
@@ -71,14 +73,15 @@ export function getEbookToolDefinitions(options = {}) {
                     '在当前书稿文件里搜索正文内容。',
                     '默认按正则搜索，返回匹配文件和行级片段。',
                     '适合在阅读大量文件前，先定位角色名、台词、设定、伏笔、剧情点或审稿意见。',
+                    '`path` 用来限制搜索目录，`include` 用来限制文件 glob；普通文本搜索请显式传 `useRegex: false`。',
                 ].join('\n'),
                 parameters: {
                     type: 'object',
                     properties: {
                         pattern: { type: 'string', description: '搜索词；默认按正则解释，`useRegex: false` 时按普通文本搜索。' },
-                        path: { type: 'string', description: '可选的搜索目录，例如 `book/chapters/`。' },
+                        path: { type: 'string', description: '可选的搜索目录，必须是 `book/.../`，例如 `book/chapters/`。' },
                         include: { type: 'string', description: '可选的文件匹配范围，例如 `book/chapters/*.md`。' },
-                        outputMode: { type: 'string', enum: ['content', 'files_with_matches', 'count'], description: '返回方式。默认 `content`。' },
+                        outputMode: { type: 'string', enum: ['content', 'files_with_matches', 'count'], description: '`content` 返回命中行，`files_with_matches` 只返回文件，`count` 返回计数。默认 `content`。' },
                         limit: { type: 'number', description: '最多返回多少条结果。默认 100，最大 100。' },
                         offset: { type: 'number', description: '跳过多少条结果后再返回。默认 0。' },
                         contextLines: { type: 'number', description: '每条匹配前后附带多少行上下文。默认 0，最大 5。' },
@@ -97,11 +100,12 @@ export function getEbookToolDefinitions(options = {}) {
                     '读取当前书稿里的文本文件，或查看目录内容。',
                     '读取文件时返回带行号的内容；读取目录时返回目录项；大文件会给出继续读取提示。',
                     '需要文件末尾内容时单独使用 `tail`。',
+                    '参数名是 `filePath`，不是 `path`；文件路径如 `book/outline.md`，目录路径如 `book/chapters/`。',
                 ].join('\n'),
                 parameters: {
                     type: 'object',
                     properties: {
-                        filePath: { type: 'string', description: '文件或目录路径，例如 `book/outline.md` 或 `book/chapters/`。' },
+                        filePath: { type: 'string', description: '文件或目录路径，例如 `book/outline.md`、`book/chapters/001.md` 或 `book/chapters/`。不要传 path。' },
                         offset: { type: 'number', description: '从第几行或第几个目录项开始读，1 起算。默认 1。' },
                         limit: { type: 'number', description: '最多读取多少行或目录项。默认 1200，最大 2000。' },
                         tail: { type: 'number', description: '读取文件最后 N 行。需要单独使用，不要和 offset/limit 混用。' },
@@ -122,6 +126,7 @@ export function getEbookToolDefinitions(options = {}) {
                     '用 Tavily 联网查证当前书稿和资料区无法提供的现实资料、公开文档或时间敏感信息。',
                     '适合查真实地点、历史背景、机构、职业细节、生活常识、年代事实、公开资料或外部参考；书稿原文、导入资料、设定连续性仍优先用 LS / Glob / Grep / Read。',
                     '搜索词要具体；先查事实，再把结果转化为写作、设定或审稿判断，不要把联网结果当成已导入资料。',
+                    '只在工具列表里出现时才可用；没有这个工具时不要声称自己联网查过。',
                 ].join('\n'),
                 parameters: {
                     type: 'object',
@@ -146,14 +151,15 @@ export function getEbookToolDefinitions(options = {}) {
                         '写入当前书稿里的完整文本文件。',
                         '适合新建文件，或在明确需要整篇重写时覆盖整个文件。',
                         '改章节局部内容时优先用 apply_patch，避免无意覆盖已有文字。',
+                        '参数名是 `filePath` 和 `content`。Write 会覆盖目标文件的完整内容。',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
                         properties: {
-                            path: { type: 'string', description: '目标文件路径，例如 `book/chapters/001.md`。' },
+                            filePath: { type: 'string', description: '目标文件路径，例如 `book/chapters/001.md`、`book/notes/idea.md`。' },
                             content: { type: 'string', description: '要写入的完整文件内容。' },
                         },
-                        required: ['path', 'content'],
+                        required: ['filePath', 'content'],
                         additionalProperties: false,
                     },
                 },
@@ -165,13 +171,17 @@ export function getEbookToolDefinitions(options = {}) {
                     description: [
                         '用结构化补丁精准修改当前书稿文件。',
                         '适合局部修订、多文件修订、新增、删除或重命名书稿文件。',
+                        'Patch format uses structured headers such as `*** Begin Patch`, `*** Update File: book/example.md`, `@@`, and `*** End Patch`.',
+                        'File operation headers support `*** Add File: book/...`, `*** Update File: book/...`, and `*** Delete File: book/...`; renames use `*** Move to: book/...` after an update header.',
+                        'Hunk headers support plain `@@`, anchored `@@ existing line`, and standard unified diff ranges like `@@ -1,3 +1,3 @@`.',
+                        'Hunk body lines must start with a space for context, `-` for removed old lines, or `+` for added new lines; add-file content lines must start with `+`.',
                         '补丁头里的文件路径必须写成 `book/...`。',
                         '修订章节时优先用它，尽量保留没有必要改动的原文。',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
                         properties: {
-                            patchText: { type: 'string', description: '完整补丁文本，从 `*** Begin Patch` 到 `*** End Patch`。' },
+                            patchText: { type: 'string', description: '完整 apply_patch body，包括 `*** Begin Patch`、一个或多个 `*** Update/Add/Delete File: book/...` 文件操作、hunk，以及 `*** End Patch`。' },
                         },
                         required: ['patchText'],
                         additionalProperties: false,
@@ -186,11 +196,12 @@ export function getEbookToolDefinitions(options = {}) {
                         '删除当前书稿里的文件或文件夹。',
                         '可以删除单个文件，也可以删除目录及其下面的文件。',
                         '不要无必要删除正文、资料、设定或审稿意见；整理草稿时也要谨慎。',
+                        '删除目录时路径要以 `/` 结尾，例如 `book/notes/`；删除文件时传完整文件路径。',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
                         properties: {
-                            path: { type: 'string', description: '目标文件或目录路径，例如 `book/reviews/old.md`。' },
+                            path: { type: 'string', description: '目标文件或目录路径，例如 `book/reviews/old.md` 或 `book/notes/`。目录删除请保留末尾 `/`。' },
                         },
                         required: ['path'],
                         additionalProperties: false,
@@ -205,12 +216,13 @@ export function getEbookToolDefinitions(options = {}) {
                         '移动或重命名当前书稿里的文件或文件夹。',
                         '适合整理章节、资料、设定、审稿意见的位置或命名。',
                         '目标已存在时需要明确允许覆盖；不要把目录移动到它自己里面。',
+                        '参数名是 `fromPath` 和 `toPath`；移动目录时两边都建议写成 `book/.../`。',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
                         properties: {
-                            fromPath: { type: 'string', description: '原路径，例如 `book/notes/draft.md`。' },
-                            toPath: { type: 'string', description: '目标路径，例如 `book/notes/revision-plan.md`。' },
+                            fromPath: { type: 'string', description: '原路径，例如 `book/notes/draft.md` 或 `book/notes/`。' },
+                            toPath: { type: 'string', description: '目标路径，例如 `book/notes/revision-plan.md` 或 `book/archive/notes/`。' },
                             overwrite: { type: 'boolean', description: '目标已存在时是否允许覆盖。默认 false。' },
                         },
                         required: ['fromPath', 'toPath'],
@@ -226,6 +238,7 @@ export function getEbookToolDefinitions(options = {}) {
                         '为当前这本书创建一个写作计划项。',
                         '适合多步骤写作、长修订、阻塞问题或需要稍后续接的任务。',
                         '计划只记录状态，不会自动审稿、写正文或调用其他工具。',
+                        '只在任务需要跨多步跟踪时使用；短小的直接写作或一次性回答不必建计划。',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
@@ -251,6 +264,7 @@ export function getEbookToolDefinitions(options = {}) {
                         '用 status 表示进度，用 note 追加简短进展，用 result/error 记录最终结果或失败原因。',
                         '只有对应写作、审稿或修订确实完成后，才标记 completed。',
                         '如果依赖项还没完成，这个计划不能进入 in_progress。',
+                        '参数 `id` 必须来自 PlanCreate 或 PlanList；不要自己编一个看起来像 id 的值。',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
@@ -279,6 +293,7 @@ export function getEbookToolDefinitions(options = {}) {
                         '列出当前这本书的写作计划。',
                         '适合在续写、继续修订、避免重复计划、选择下一步或检查阻塞时使用。',
                         '不传筛选条件时返回当前计划；只在需要缩小范围时使用 status、priority 或 owner。',
+                        '如果不确定是否已有相关计划，先 PlanList，再决定创建或更新。',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
@@ -299,6 +314,7 @@ export function getEbookToolDefinitions(options = {}) {
                     description: [
                         '读取当前这本书某个计划项的完整记录。',
                         '当当前计划摘要不够，需要查看详情、依赖、备注、结果或错误时使用。',
+                        '参数 `id` 必须来自 PlanCreate 或 PlanList。',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
@@ -318,6 +334,7 @@ export function getEbookToolDefinitions(options = {}) {
                         '修改当前书的书名。',
                         '只改变书籍标题，不移动章节、资料或设定文件。',
                         '当用户要求改书名、换标题、重命名当前作品时使用。',
+                        '参数只有 `title`；不要用 Write 修改某个文件来改书名。',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
@@ -338,6 +355,7 @@ export function getEbookToolDefinitions(options = {}) {
                         '适合明确、独立、可验收的审稿、连续性检查、资料核对或问题定位。',
                         '分身只知道你写进任务、背景和交付要求里的信息，以及它自己读取到的书稿内容。',
                         '分身不能写文件、不能管理计划、不能继续委派。',
+                        '参数 `task` 必填；`context` 写路径、背景和限制；`deliverable` 写返回格式。不要把它当成写作或修改工具。',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
@@ -370,7 +388,7 @@ export function describeEbookToolCall(name = '', args = {}) {
         case EBOOK_TOOL_NAMES.WEB_SEARCH:
             return `联网查资料 ${args.query || ''}`.trim();
         case EBOOK_TOOL_NAMES.WRITE:
-            return `写入 ${args.path || ''}`.trim();
+            return `写入 ${args.filePath || args.path || ''}`.trim();
         case EBOOK_TOOL_NAMES.APPLY_PATCH:
             return '修订作品文件';
         case EBOOK_TOOL_NAMES.DELETE:

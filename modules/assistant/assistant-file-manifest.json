@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-24T01:02:08.577Z",
+  "generatedAt": "2026-05-24T01:55:19.826Z",
   "version": 2,
   "files": [
     {
@@ -392,7 +392,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/assistant/app-src/prompts/system-prompt.js",
       "relativePath": "modules/assistant/app-src/prompts/system-prompt.js",
       "extension": ".js",
-      "sizeBytes": 18166
+      "sizeBytes": 18402
     },
     {
       "source": "littlewhitebox",
@@ -476,7 +476,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/assistant/app-src/tooling.js",
       "relativePath": "modules/assistant/app-src/tooling.js",
       "extension": ".js",
-      "sizeBytes": 66342
+      "sizeBytes": 66343
     },
     {
       "source": "littlewhitebox",
@@ -546,7 +546,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/assistant/assistant-file-manifest.json",
       "relativePath": "modules/assistant/assistant-file-manifest.json",
       "extension": ".json",
-      "sizeBytes": 174067
+      "sizeBytes": 174068
     },
     {
       "source": "littlewhitebox",
@@ -574,7 +574,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/assistant/references/project-structure.md",
       "relativePath": "modules/assistant/references/project-structure.md",
       "extension": ".md",
-      "sizeBytes": 35445
+      "sizeBytes": 35814
     },
     {
       "source": "littlewhitebox",
@@ -763,7 +763,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/assistant/tests/local-sources-tool-runtime.test.js",
       "relativePath": "modules/assistant/tests/local-sources-tool-runtime.test.js",
       "extension": ".js",
-      "sizeBytes": 16392
+      "sizeBytes": 16386
     },
     {
       "source": "littlewhitebox",
@@ -812,7 +812,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/assistant/tests/tooling.test.js",
       "relativePath": "modules/assistant/tests/tooling.test.js",
       "extension": ".js",
-      "sizeBytes": 11752
+      "sizeBytes": 12754
     },
     {
       "source": "littlewhitebox",
@@ -1155,7 +1155,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/app-src/prompts.js",
       "relativePath": "modules/ebook/app-src/prompts.js",
       "extension": ".js",
-      "sizeBytes": 26476
+      "sizeBytes": 27762
     },
     {
       "source": "littlewhitebox",
@@ -1183,7 +1183,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/app-src/styles.js",
       "relativePath": "modules/ebook/app-src/styles.js",
       "extension": ".js",
-      "sizeBytes": 104294
+      "sizeBytes": 104310
     },
     {
       "source": "littlewhitebox",
@@ -1239,7 +1239,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/shared/book-file-tools.js",
       "relativePath": "modules/ebook/shared/book-file-tools.js",
       "extension": ".js",
-      "sizeBytes": 17120
+      "sizeBytes": 17137
     },
     {
       "source": "littlewhitebox",
@@ -1253,7 +1253,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/shared/book-templates.js",
       "relativePath": "modules/ebook/shared/book-templates.js",
       "extension": ".js",
-      "sizeBytes": 11815
+      "sizeBytes": 13146
     },
     {
       "source": "littlewhitebox",
@@ -1274,14 +1274,14 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/shared/tool-definitions.js",
       "relativePath": "modules/ebook/shared/tool-definitions.js",
       "extension": ".js",
-      "sizeBytes": 21111
+      "sizeBytes": 24007
     },
     {
       "source": "littlewhitebox",
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/tests/book-tools.test.js",
       "relativePath": "modules/ebook/tests/book-tools.test.js",
       "extension": ".js",
-      "sizeBytes": 124835
+      "sizeBytes": 129844
     },
     {
       "source": "littlewhitebox",

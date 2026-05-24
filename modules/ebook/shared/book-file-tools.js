@@ -314,7 +314,7 @@ export function createBookFileToolHandlers(options = {}) {
 
     async function executeWrite(args = {}) {
         assertWritable();
-        const path = assertBookFilePath(args.path);
+        const path = assertBookFilePath(args.path || args.filePath);
         const file = await upsertBookFile(await currentBookId(), path, typeof args.content === 'string' ? args.content : String(args.content ?? ''));
         await onFilesChanged?.();
         return {

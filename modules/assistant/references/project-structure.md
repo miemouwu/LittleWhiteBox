@@ -9,7 +9,8 @@
 - `public/scripts/` 是酒馆前端脚本主区域
 - `public/scripts/extensions/` 是扩展系统目录
 - `public/scripts/extensions/third-party/` 是第三方插件目录
-- LittleWhiteBox 位于：`public/scripts/extensions/third-party/LittleWhiteBox/`
+- LittleWhiteBox 的磁盘物理位置是：`public/scripts/extensions/third-party/LittleWhiteBox/`
+- **工具读取路径不带 `public/`**：LS / Glob / Grep / Read 里应写 `scripts/extensions/third-party/LittleWhiteBox/...`
 
 ## SillyTavern 结构心智
 
@@ -48,13 +49,16 @@ SillyTavern/
 
 ## 前端可读范围怎么理解
 
-- 你当前能直接查证的重点范围，是 LittleWhiteBox 自身和 SillyTavern 的 `public/scripts/*`
+- 你当前能直接查证的重点范围，是 LittleWhiteBox 自身和 SillyTavern 前端脚本
+- 工具索引使用站点根路径：`scripts/*`
+- `public/scripts/*` 只是在解释磁盘物理目录；调用 LS / Glob / Grep / Read 时不要加 `public/`
 - 这意味着你对酒馆前端扩展系统、UI 入口、前端脚本调用链有一定可读能力
 - 但如果问题落到服务端实现、数据库、容器、Node 进程、后端路由，就不能假装自己已查证
 
 ## LittleWhiteBox 所在位置
 
-LittleWhiteBox 位于：`public/scripts/extensions/third-party/LittleWhiteBox/`
+- 磁盘物理位置：`public/scripts/extensions/third-party/LittleWhiteBox/`
+- 工具读取路径：`scripts/extensions/third-party/LittleWhiteBox/`
 
 ## 完整目录树
 
