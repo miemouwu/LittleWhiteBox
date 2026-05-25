@@ -1396,6 +1396,14 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         .xb-agent-form {
             position: relative;
             z-index: 2;
+            height: 144px;
+            min-height: 144px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: stretch;
+            overflow: hidden;
             padding: 18px 30px 24px;
             border-top: 1px solid rgba(255, 255, 255, 0.025);
             background: linear-gradient(0deg, var(--xb-bg-agent) 74%, transparent);
@@ -1403,6 +1411,7 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         .xb-agent-compose-row {
             display: flex;
             align-items: center;
+            width: 100%;
             gap: 12px;
             padding: 8px 14px;
             border: 1px solid rgba(255, 255, 255, 0.09);
@@ -1422,9 +1431,11 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         }
         #xb-agent-input {
             width: 100%;
+            height: 46px;
             min-height: 46px;
-            max-height: 150px;
-            resize: vertical;
+            max-height: 68px;
+            resize: none;
+            overflow-y: hidden;
             border: 0;
             outline: none;
             background: transparent;
@@ -2537,6 +2548,8 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
                 left: 0;
                 right: 0;
                 bottom: 0;
+                height: 122px;
+                min-height: 122px;
                 padding: 14px 20px 22px;
             }
             .xb-compose-hint {
@@ -2853,10 +2866,12 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
                 left: 0;
                 right: 0;
                 bottom: 0;
+                height: calc(122px + env(safe-area-inset-bottom, 0px));
+                min-height: calc(122px + env(safe-area-inset-bottom, 0px));
                 padding: 14px 18px calc(20px + env(safe-area-inset-bottom, 0px));
             }
             .xb-agent {
-                padding-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+                padding-bottom: calc(122px + env(safe-area-inset-bottom, 0px));
             }
             .xb-reader-edge {
                 top: auto;

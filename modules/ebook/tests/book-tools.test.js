@@ -2499,6 +2499,7 @@ test('Book agent composer keeps Enter as newline on mobile and send on desktop',
 });
 
 test('Book agent composer preserves draft through renderer and submit clears it', () => {
+    const previousGetComputedStyle = globalThis.getComputedStyle;
     const state = {
         book: { id: 'book-compose-draft', title: '输入草稿测试' },
         books: [],
@@ -2530,6 +2531,8 @@ test('Book agent composer preserves draft through renderer and submit clears it'
     const listeners = {};
     const input = {
         value: '流式过程中输入的新指令',
+        scrollHeight: 96,
+        style: {},
         addEventListener(eventName, handler) {
             listeners[`input:${eventName}`] = handler;
         },
@@ -2552,30 +2555,44 @@ test('Book agent composer preserves draft through renderer and submit clears it'
         },
     };
 
-    bindEbookEvents({
-        root,
-        state,
-        render() {},
-        postToHost() {},
-        bookController: {},
-        agentRunner: {
-            cancelActiveRun() {},
-            runAgent(text) {
-                runText = text;
+    try {
+        globalThis.getComputedStyle = () => ({
+            minHeight: '46px',
+            maxHeight: '68px',
+        });
+
+        bindEbookEvents({
+            root,
+            state,
+            render() {},
+            postToHost() {},
+            bookController: {},
+            agentRunner: {
+                cancelActiveRun() {},
+                runAgent(text) {
+                    runText = text;
+                },
             },
-        },
-        persistConversation() {},
-        clearConversation() {},
-        showToast() {},
-    });
+            persistConversation() {},
+            clearConversation() {},
+            showToast() {},
+        });
 
-    listeners['input:input']();
-    assert.equal(state.agentInputDraft, '流式过程中输入的新指令');
+        listeners['input:input']();
+        assert.equal(state.agentInputDraft, '流式过程中输入的新指令');
+        assert.equal(input.style.height, '68px');
+        assert.equal(input.style.overflowY, 'auto');
 
-    listeners['form:submit']({ preventDefault() {} });
-    assert.match(runText, /流式过程中输入的新指令/);
-    assert.equal(state.agentInputDraft, '');
-    assert.equal(input.value, '');
+        input.scrollHeight = 46;
+        listeners['form:submit']({ preventDefault() {} });
+        assert.match(runText, /流式过程中输入的新指令/);
+        assert.equal(state.agentInputDraft, '');
+        assert.equal(input.value, '');
+        assert.equal(input.style.height, '46px');
+        assert.equal(input.style.overflowY, 'hidden');
+    } finally {
+        globalThis.getComputedStyle = previousGetComputedStyle;
+    }
 });
 
 test('Book agent chat scroll toggles auto-scroll like assistant', () => {

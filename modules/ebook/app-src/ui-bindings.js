@@ -61,6 +61,24 @@ function updateComposeHint(root) {
         : 'Enter 发送 · Shift+Enter 换行';
 }
 
+function parsePixelValue(value, fallback = 0) {
+    const numeric = Number.parseFloat(value);
+    return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function autoSizeAgentInput(root) {
+    const input = root?.querySelector?.('#xb-agent-input');
+    if (!input?.style) return;
+    const computed = globalThis.getComputedStyle?.(input);
+    const minHeight = parsePixelValue(computed?.minHeight, 46);
+    const maxHeight = Math.max(minHeight, parsePixelValue(computed?.maxHeight, 68));
+    const contentHeight = Number.isFinite(Number(input.scrollHeight)) ? Number(input.scrollHeight) : minHeight;
+    input.style.height = '0px';
+    const nextHeight = Math.min(maxHeight, Math.max(minHeight, contentHeight));
+    input.style.height = `${nextHeight}px`;
+    input.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden';
+}
+
 function applyColorTheme(root, state) {
     const theme = state.colorTheme === 'light' ? 'light' : 'dark';
     root.querySelectorAll('.xb-ebook-shell, .xb-ebook-screen').forEach((node) => {
@@ -474,6 +492,7 @@ export function bindEbookEvents(options = {}) {
     agentInput?.addEventListener('input', () => {
         state.agentInputDraft = agentInput.value;
         updateComposeHint(root);
+        autoSizeAgentInput(root);
     });
     agentInput?.addEventListener('keydown', (event) => {
         if (!isSendShortcut(event)) return;
@@ -481,6 +500,7 @@ export function bindEbookEvents(options = {}) {
         root.querySelector('#xb-agent-form')?.requestSubmit();
     });
     updateComposeHint(root);
+    autoSizeAgentInput(root);
 
     root.querySelector('#xb-agent-form')?.addEventListener('submit', (event) => {
         event.preventDefault();
@@ -493,6 +513,7 @@ export function bindEbookEvents(options = {}) {
         if (!text) return;
         state.agentInputDraft = '';
         if (input) input.value = '';
+        autoSizeAgentInput(root);
         void agentRunner.runAgent(buildActionPrompt('custom', { text, selectedPath: state.selectedPath }));
     });
 
