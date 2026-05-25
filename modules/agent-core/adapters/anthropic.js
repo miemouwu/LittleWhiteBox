@@ -82,19 +82,19 @@ function buildProviderPayload(response) {
         : undefined;
 }
 
-function buildAnthropicMessages(messages) {
+function buildToolResultBlock(message = {}) {
+    return {
+        type: 'tool_result',
+        tool_use_id: message.tool_call_id,
+        content: message.content,
+    };
+}
+
+export function buildAnthropicMessages(messages) {
     const filtered = [];
-    const toolNameById = new Map();
 
-    messages.forEach((message) => {
-        (message.tool_calls || []).forEach((toolCall) => {
-            if (toolCall.id && toolCall.function?.name) {
-                toolNameById.set(toolCall.id, toolCall.function.name);
-            }
-        });
-    });
-
-    for (const message of messages) {
+    for (let index = 0; index < messages.length; index += 1) {
+        const message = messages[index];
         if (message.role === 'system') continue;
 
         if (message.role === 'assistant') {
@@ -109,14 +109,14 @@ function buildAnthropicMessages(messages) {
         }
 
         if (message.role === 'tool') {
+            const toolResults = [buildToolResultBlock(message)];
+            while (messages[index + 1]?.role === 'tool') {
+                index += 1;
+                toolResults.push(buildToolResultBlock(messages[index]));
+            }
             filtered.push({
                 role: 'user',
-                content: [{
-                    type: 'tool_result',
-                    tool_use_id: message.tool_call_id,
-                    name: toolNameById.get(message.tool_call_id || '') || undefined,
-                    content: message.content,
-                }],
+                content: toolResults,
             });
             continue;
         }
@@ -154,12 +154,19 @@ function emitStreamProgress(task, payload) {
     });
 }
 
+export function normalizeAnthropicSdkBaseUrl(baseUrl = '') {
+    return String(baseUrl || 'https://api.anthropic.com')
+        .trim()
+        .replace(/\/+$/, '')
+        .replace(/\/v1$/i, '');
+}
+
 export class AnthropicAdapter {
     constructor(config) {
         this.config = config;
         this.client = new Anthropic({
             apiKey: config.apiKey,
-            baseURL: String(config.baseUrl || 'https://api.anthropic.com/v1').replace(/\/$/, ''),
+            baseURL: normalizeAnthropicSdkBaseUrl(config.baseUrl),
             timeout: Number(config.timeoutMs) || 15 * 60 * 1000,
             maxRetries: 0,
             dangerouslyAllowBrowser: true,

@@ -5,11 +5,27 @@ export const HOST_CHAT_COMPLETIONS_SOURCE_CLAUDE = 'claude';
 export const HOST_CHAT_COMPLETIONS_SOURCE_MAKERSUITE = 'makersuite';
 export const HOST_CHAT_COMPLETIONS_STATUS_ENDPOINT = '/api/backends/chat-completions/status';
 export const HOST_CHAT_COMPLETIONS_GENERATE_ENDPOINT = '/api/backends/chat-completions/generate';
+export const HOST_CHAT_COMPLETIONS_DEFAULT_REVERSE_PROXY = Object.freeze({
+    [HOST_CHAT_COMPLETIONS_SOURCE_CLAUDE]: 'https://api.anthropic.com/v1',
+    [HOST_CHAT_COMPLETIONS_SOURCE_MAKERSUITE]: 'https://generativelanguage.googleapis.com',
+});
 
 let requestHeadersProvider = null;
 
 function normalizeBaseUrl(value) {
     return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function normalizeReverseProxyForSource(value, source) {
+    const baseUrl = normalizeBaseUrl(value);
+    if (source === HOST_CHAT_COMPLETIONS_SOURCE_CLAUDE) {
+        if (!baseUrl || /\/v\d[\w.-]*$/i.test(baseUrl)) return baseUrl;
+        return `${baseUrl}/v1`;
+    }
+    if (source === HOST_CHAT_COMPLETIONS_SOURCE_MAKERSUITE) {
+        return baseUrl.replace(/\/v\d[\w.-]*$/i, '');
+    }
+    return baseUrl;
 }
 
 export function setHostChatCompletionsRequestHeadersProvider(provider) {
@@ -45,14 +61,16 @@ function normalizeHostFailureMessage(rawText = '', fallbackMessage = '') {
 }
 
 function buildHostChatCompletionsFields(config = {}, source = HOST_CHAT_COMPLETIONS_SOURCE_OPENAI) {
-    const baseUrl = normalizeBaseUrl(config.baseUrl);
+    const baseUrl = normalizeReverseProxyForSource(config.baseUrl, source);
     const apiKey = String(config.apiKey || '').trim();
+    const defaultReverseProxy = HOST_CHAT_COMPLETIONS_DEFAULT_REVERSE_PROXY[source] || '';
+    const reverseProxy = baseUrl || (apiKey ? defaultReverseProxy : '');
     const fields = {
         chat_completion_source: source || HOST_CHAT_COMPLETIONS_SOURCE_OPENAI,
     };
 
-    if (baseUrl) {
-        fields.reverse_proxy = baseUrl;
+    if (reverseProxy) {
+        fields.reverse_proxy = reverseProxy;
     }
     if (apiKey) {
         fields.proxy_password = apiKey;

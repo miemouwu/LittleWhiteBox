@@ -2,6 +2,7 @@ import {
     HOST_CHAT_COMPLETIONS_SOURCE_CLAUDE,
     HOST_CHAT_COMPLETIONS_SOURCE_MAKERSUITE,
     HOST_CHAT_COMPLETIONS_SOURCE_OPENAI,
+    HOST_CHAT_COMPLETIONS_DEFAULT_REVERSE_PROXY,
     fetchHostChatCompletionsModels,
 } from '../../../shared/host-llm/chat-completions/client.js';
 import {
@@ -32,6 +33,21 @@ const MODEL_FILTERS = {
         ],
     },
 };
+const SILLYTAVERN_CLAUDE_FALLBACK_MODELS = Object.freeze([
+    'claude-opus-4-7',
+    'claude-opus-4-6',
+    'claude-opus-4-5',
+    'claude-opus-4-5-20251101',
+    'claude-sonnet-4-6',
+    'claude-sonnet-4-5',
+    'claude-sonnet-4-5-20250929',
+    'claude-opus-4-1',
+    'claude-opus-4-1-20250805',
+    'claude-opus-4-0',
+    'claude-opus-4-20250514',
+    'claude-sonnet-4-0',
+    'claude-sonnet-4-20250514',
+]);
 
 function refillSelect(select, options, placeholderLabel = '') {
     select.replaceChildren();
@@ -228,10 +244,47 @@ async function tryCandidateFetches({ urls, requestOptionsList, extractModels, pr
     throw new Error(`${providerLabel} 拉取模型失败：未获取到模型列表。`);
 }
 
-async function pullModelsForProvider(providerConfig) {
+async function pullSillyTavernClaudeModels(providerConfig) {
+    const apiKey = String(providerConfig.apiKey || '').trim();
+    const customBaseUrl = normalizeBaseUrl(providerConfig.baseUrl || '');
+    const baseUrl = normalizeBaseUrl(
+        customBaseUrl || HOST_CHAT_COMPLETIONS_DEFAULT_REVERSE_PROXY[HOST_CHAT_COMPLETIONS_SOURCE_CLAUDE],
+    );
+
+    if (apiKey && baseUrl) {
+        try {
+            return await tryCandidateFetches({
+                urls: buildAnthropicCandidateUrls(baseUrl),
+                requestOptionsList: [{
+                    headers: {
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01',
+                        Accept: 'application/json',
+                    },
+                }],
+                extractModels: extractAnthropicModels,
+                providerLabel: 'Anthropic',
+            });
+        } catch (error) {
+            if (customBaseUrl) {
+                throw error;
+            }
+            // SillyTavern does not expose Claude model listing through /status.
+            // Browser-side official Anthropic fetches may also be blocked by CORS, so keep the config page usable.
+        }
+    }
+
+    return [...SILLYTAVERN_CLAUDE_FALLBACK_MODELS];
+}
+
+export async function pullModelsForProvider(providerConfig) {
     const provider = providerConfig.provider;
     const baseUrl = normalizeBaseUrl(providerConfig.baseUrl || '');
     const apiKey = String(providerConfig.apiKey || '').trim();
+
+    if (provider === 'sillytavern-claude') {
+        return filterModels(await pullSillyTavernClaudeModels(providerConfig));
+    }
 
     if (isSillyTavernProvider(provider)) {
         return filterModels(await fetchHostChatCompletionsModels(

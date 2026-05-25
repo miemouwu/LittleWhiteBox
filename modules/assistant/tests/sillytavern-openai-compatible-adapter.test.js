@@ -4,17 +4,21 @@ import assert from 'node:assert/strict';
 import { SillyTavernClaudeAdapter } from '../../agent-core/adapters/sillytavern-claude.js';
 import { SillyTavernGoogleAdapter } from '../../agent-core/adapters/sillytavern-google.js';
 import { SillyTavernOpenAICompatibleAdapter } from '../../agent-core/adapters/sillytavern-openai-compatible.js';
+import { normalizeAnthropicSdkBaseUrl } from '../../agent-core/adapters/anthropic.js';
 import {
     HOST_CHAT_COMPLETIONS_GENERATE_ENDPOINT,
     HOST_CHAT_COMPLETIONS_STATUS_ENDPOINT,
     buildHostClaudeGeneratePayload,
+    buildHostChatCompletionsStatusPayload,
     buildHostGoogleGeneratePayload,
     buildHostOpenAICompatibleGeneratePayload,
     buildHostOpenAICompatibleStatusPayload,
+    fetchHostChatCompletionsModels,
     fetchHostOpenAICompatibleModels,
     setHostChatCompletionsRequestHeadersProvider,
 } from '../../../shared/host-llm/chat-completions/client.js';
 import { createAgentAdapter } from '../../agent-core/provider-config.js';
+import { pullModelsForProvider } from '../../agent-core/ui/settings-panel.js';
 
 function createSseResponse(events = [], delimiter = '\n\n') {
     const payload = events.map((event) => `data: ${JSON.stringify(event)}${delimiter}`).join('') + `data: [DONE]${delimiter}`;
@@ -138,6 +142,130 @@ test('host Claude and Google payloads select the matching SillyTavern chat-compl
     assert.equal(googlePayload.proxy_password, 'google-key');
     assert.equal(googlePayload.use_sysprompt, true);
     assert.equal(googlePayload.tool_choice, 'auto');
+});
+
+test('direct Anthropic adapter strips v1 because the SDK appends it itself', () => {
+    assert.equal(normalizeAnthropicSdkBaseUrl(''), 'https://api.anthropic.com');
+    assert.equal(normalizeAnthropicSdkBaseUrl('https://api.anthropic.com/v1/'), 'https://api.anthropic.com');
+    assert.equal(normalizeAnthropicSdkBaseUrl('https://proxy.example/anthropic/v1'), 'https://proxy.example/anthropic');
+});
+
+test('host Claude payload adds v1 because SillyTavern appends messages itself', () => {
+    const claudePayload = buildHostClaudeGeneratePayload(
+        {
+            baseUrl: 'https://beta.smolproxy.org/deepseek/anthropic',
+            apiKey: 'proxy-key',
+            model: 'deepseek-v4-pro',
+        },
+        {},
+        [{ role: 'user', content: 'hello' }],
+        false,
+    );
+
+    assert.equal(claudePayload.chat_completion_source, 'claude');
+    assert.equal(claudePayload.reverse_proxy, 'https://beta.smolproxy.org/deepseek/anthropic/v1');
+    assert.equal(claudePayload.proxy_password, 'proxy-key');
+});
+
+test('host Claude payload keeps explicit API versions instead of duplicating v1', () => {
+    const v1Payload = buildHostClaudeGeneratePayload(
+        {
+            baseUrl: 'https://beta.smolproxy.org/deepseek/anthropic/v1',
+            apiKey: 'proxy-key',
+            model: 'deepseek-v4-pro',
+        },
+        {},
+        [{ role: 'user', content: 'hello' }],
+        false,
+    );
+    const v3Payload = buildHostClaudeGeneratePayload(
+        {
+            baseUrl: 'https://proxy.example/anthropic/v3',
+            apiKey: 'proxy-key',
+            model: 'custom-anthropic-model',
+        },
+        {},
+        [{ role: 'user', content: 'hello' }],
+        false,
+    );
+
+    assert.equal(v1Payload.reverse_proxy, 'https://beta.smolproxy.org/deepseek/anthropic/v1');
+    assert.equal(v3Payload.reverse_proxy, 'https://proxy.example/anthropic/v3');
+});
+
+test('host Claude and Google payloads use LittleWhiteBox keys when Base URL is blank', () => {
+    const claudePayload = buildHostClaudeGeneratePayload(
+        {
+            baseUrl: '',
+            apiKey: 'claude-key',
+            model: 'claude-sonnet-4-0',
+        },
+        {},
+        [{ role: 'user', content: 'hello' }],
+        false,
+    );
+    const googlePayload = buildHostGoogleGeneratePayload(
+        {
+            baseUrl: '',
+            apiKey: 'google-key',
+            model: 'gemini-2.5-pro',
+        },
+        {},
+        [{ role: 'user', content: 'hello' }],
+        false,
+    );
+
+    assert.equal(claudePayload.chat_completion_source, 'claude');
+    assert.equal(claudePayload.reverse_proxy, 'https://api.anthropic.com/v1');
+    assert.equal(claudePayload.proxy_password, 'claude-key');
+    assert.equal(googlePayload.chat_completion_source, 'makersuite');
+    assert.equal(googlePayload.reverse_proxy, 'https://generativelanguage.googleapis.com');
+    assert.equal(googlePayload.proxy_password, 'google-key');
+});
+
+test('host Google payload strips API version from reverse proxy before calling SillyTavern', () => {
+    const googlePayload = buildHostGoogleGeneratePayload(
+        {
+            baseUrl: 'https://generativelanguage.googleapis.com/v1beta/',
+            apiKey: 'google-key',
+            model: 'gemini-2.5-pro',
+        },
+        {},
+        [{ role: 'user', content: 'hello' }],
+        false,
+    );
+
+    assert.equal(googlePayload.chat_completion_source, 'makersuite');
+    assert.equal(googlePayload.reverse_proxy, 'https://generativelanguage.googleapis.com');
+    assert.equal(googlePayload.proxy_password, 'google-key');
+});
+
+test('host Google payload strips nonstandard API versions before calling SillyTavern', () => {
+    const googlePayload = buildHostGoogleGeneratePayload(
+        {
+            baseUrl: 'https://generativelanguage.googleapis.com/v3/',
+            apiKey: 'google-key',
+            model: 'gemini-2.5-pro',
+        },
+        {},
+        [{ role: 'user', content: 'hello' }],
+        false,
+    );
+
+    assert.equal(googlePayload.chat_completion_source, 'makersuite');
+    assert.equal(googlePayload.reverse_proxy, 'https://generativelanguage.googleapis.com');
+    assert.equal(googlePayload.proxy_password, 'google-key');
+});
+
+test('host Google status payload strips API version from reverse proxy before calling SillyTavern', () => {
+    assert.deepEqual(buildHostChatCompletionsStatusPayload({
+        baseUrl: 'https://generativelanguage.googleapis.com/v1/',
+        apiKey: 'google-key',
+    }, 'makersuite'), {
+        chat_completion_source: 'makersuite',
+        reverse_proxy: 'https://generativelanguage.googleapis.com',
+        proxy_password: 'google-key',
+    });
 });
 
 test('sillytavern Claude adapter streams tool calls through host generate endpoint', async () => {
@@ -497,6 +625,110 @@ test('host OpenAI-compatible model pull posts to SillyTavern status endpoint', a
             },
         }]);
         assert.deepEqual(models, ['chat-model', 'embedding-model']);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('host Google model pull posts LittleWhiteBox key through SillyTavern status endpoint', async () => {
+    const originalFetch = globalThis.fetch;
+    const requests = [];
+    globalThis.fetch = async (url, options = {}) => {
+        requests.push({
+            url: String(url),
+            method: options.method,
+            body: JSON.parse(String(options.body || '{}')),
+        });
+        return createJsonResponse({
+            data: [
+                { id: 'gemini-2.5-pro' },
+                { id: 'embedding-model' },
+            ],
+        });
+    };
+
+    try {
+        const models = await fetchHostChatCompletionsModels({
+            baseUrl: '',
+            apiKey: 'google-key',
+        }, 'makersuite');
+
+        assert.deepEqual(requests, [{
+            url: HOST_CHAT_COMPLETIONS_STATUS_ENDPOINT,
+            method: 'POST',
+            body: {
+                chat_completion_source: 'makersuite',
+                reverse_proxy: 'https://generativelanguage.googleapis.com',
+                proxy_password: 'google-key',
+            },
+        }]);
+        assert.deepEqual(models, ['gemini-2.5-pro', 'embedding-model']);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('host Claude status payload uses LittleWhiteBox key when Base URL is blank', () => {
+    assert.deepEqual(buildHostChatCompletionsStatusPayload({
+        baseUrl: '',
+        apiKey: 'claude-key',
+    }, 'claude'), {
+        chat_completion_source: 'claude',
+        reverse_proxy: 'https://api.anthropic.com/v1',
+        proxy_password: 'claude-key',
+    });
+});
+
+test('SillyTavern Claude model pull honors custom proxy model lists', async () => {
+    const originalFetch = globalThis.fetch;
+    const requests = [];
+    globalThis.fetch = async (url, options = {}) => {
+        requests.push({
+            url: String(url),
+            headers: options.headers,
+        });
+        return createJsonResponse({
+            data: [
+                { id: 'deepseek-chat' },
+                { id: 'deepseek-reasoner' },
+            ],
+        });
+    };
+
+    try {
+        const models = await pullModelsForProvider({
+            provider: 'sillytavern-claude',
+            baseUrl: 'https://beta.smolproxy.org/deepseek/anthropic',
+            apiKey: 'proxy-key',
+        });
+
+        assert.equal(requests[0].url, 'https://beta.smolproxy.org/deepseek/anthropic/v1/models');
+        assert.equal(requests[0].headers['x-api-key'], 'proxy-key');
+        assert.deepEqual(models, ['deepseek-chat', 'deepseek-reasoner']);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('SillyTavern Claude model pull does not hide custom proxy failures behind Claude defaults', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => createJsonResponse({
+        error: {
+            message: 'proxy model list unavailable',
+        },
+    }, false, 404);
+
+    try {
+        await assert.rejects(
+            async () => {
+                await pullModelsForProvider({
+                    provider: 'sillytavern-claude',
+                    baseUrl: 'https://beta.smolproxy.org/deepseek/anthropic',
+                    apiKey: 'proxy-key',
+                });
+            },
+            /proxy model list unavailable/,
+        );
     } finally {
         globalThis.fetch = originalFetch;
     }

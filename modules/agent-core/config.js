@@ -52,7 +52,7 @@ export const DEFAULT_MODEL_CONFIGS = {
         temperature: 0.2,
     },
     anthropic: {
-        baseUrl: 'https://api.anthropic.com/v1',
+        baseUrl: 'https://api.anthropic.com',
         model: 'claude-sonnet-4-0',
         apiKey: '',
         temperature: 0.2,
