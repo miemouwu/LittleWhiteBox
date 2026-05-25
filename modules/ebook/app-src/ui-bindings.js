@@ -105,6 +105,42 @@ function updateOpenKeyList(list = [], key = '', open = false) {
     return [...current];
 }
 
+function findClosest(target, selector) {
+    return target?.closest?.(selector) || null;
+}
+
+const ROOT_DELEGATED_BINDINGS_KEY = '__xiaobaixEbookDelegatedBindings';
+
+function clearDelegatedRootBindings(root) {
+    const existing = root?.[ROOT_DELEGATED_BINDINGS_KEY];
+    if (!existing) return;
+    try {
+        existing.abortController?.abort?.();
+    } catch {
+        // Older WebViews may not fully support AbortController-backed listeners.
+    }
+    root.removeEventListener?.('toggle', existing.handleToggle, true);
+    root.removeEventListener?.('click', existing.handleClick);
+    root[ROOT_DELEGATED_BINDINGS_KEY] = null;
+}
+
+function bindDelegatedRootEvents(root, handlers = {}) {
+    if (!root?.addEventListener) return;
+    clearDelegatedRootBindings(root);
+    const abortController = typeof AbortController === 'function'
+        ? new AbortController()
+        : null;
+    const toggleOptions = abortController ? { capture: true, signal: abortController.signal } : true;
+    const clickOptions = abortController ? { signal: abortController.signal } : undefined;
+    root.addEventListener('toggle', handlers.handleToggle, toggleOptions);
+    root.addEventListener('click', handlers.handleClick, clickOptions);
+    root[ROOT_DELEGATED_BINDINGS_KEY] = {
+        abortController,
+        handleToggle: handlers.handleToggle,
+        handleClick: handlers.handleClick,
+    };
+}
+
 async function copyText(text = '') {
     const normalized = String(text || '');
     if (!normalized) return false;
@@ -152,12 +188,21 @@ function canDrawSelectedChapter(state = {}) {
     ));
 }
 
+function canHydrateReaderFigure(figure, slotId = '') {
+    return !!(
+        figure
+        && figure.isConnected !== false
+        && String(figure.dataset?.ebookImageSlot || '').trim() === slotId
+    );
+}
+
 function hydrateReaderImages(root, bookController) {
     root.querySelectorAll('[data-ebook-image-slot]').forEach((figure) => {
         const slotId = String(figure.dataset.ebookImageSlot || '').trim();
         if (!slotId) return;
         void bookController.getDrawImage(slotId)
             .then((result) => {
+                if (!canHydrateReaderFigure(figure, slotId)) return;
                 if (!result?.hasData || !result.url) {
                     figure.classList.add('is-failed');
                     const placeholder = document.createElement('div');
@@ -176,6 +221,7 @@ function hydrateReaderImages(root, bookController) {
                 figure.replaceChildren(image);
             })
             .catch(() => {
+                if (!canHydrateReaderFigure(figure, slotId)) return;
                 figure.classList.add('is-failed');
                 const placeholder = document.createElement('div');
                 placeholder.className = 'xb-reader-image-placeholder';
@@ -190,6 +236,7 @@ export function bindEbookEvents(options = {}) {
         root,
         state,
         render,
+        renderSettingsSurface,
         postToHost,
         bookController,
         agentRunner,
@@ -252,11 +299,11 @@ export function bindEbookEvents(options = {}) {
     root.querySelector('#xb-agent-open-settings')?.addEventListener('click', () => {
         state.isSettingsOpen = true;
         state.configFormSyncPending = true;
-        render();
+        if (!renderSettingsSurface?.()) render();
     });
     root.querySelector('#xb-agent-settings-close')?.addEventListener('click', () => {
         state.isSettingsOpen = false;
-        render();
+        if (!renderSettingsSurface?.()) render();
     });
     root.querySelector('#xb-agent-clear')?.addEventListener('click', async () => {
         if (state.isBusy) return;
@@ -301,12 +348,6 @@ export function bindEbookEvents(options = {}) {
             void bookController.selectReaderChapter(button.dataset.readerPath || '');
         });
     });
-    root.querySelectorAll('.xb-file').forEach((button) => {
-        button.addEventListener('click', () => {
-            root.querySelector('.xb-studio-shell')?.classList.remove('is-file-drawer-open');
-            void bookController.selectFile(button.dataset.path || '');
-        });
-    });
     root.querySelector('#xb-mobile-file-picker')?.addEventListener('click', () => {
         root.querySelector('.xb-studio-shell')?.classList.add('is-file-drawer-open');
     });
@@ -323,9 +364,6 @@ export function bindEbookEvents(options = {}) {
     });
     root.querySelector('#xb-reader-index-scrim')?.addEventListener('click', () => {
         root.querySelector('.xb-reader-screen')?.classList.remove('is-reader-index-open');
-    });
-    root.querySelectorAll('[data-import]').forEach((button) => {
-        button.addEventListener('click', () => void bookController.importMaterial(button.dataset.import || ''));
     });
     root.querySelectorAll('[data-home-action]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -355,31 +393,6 @@ export function bindEbookEvents(options = {}) {
             void agentRunner.runAgent(promptText);
         });
     });
-    root.querySelectorAll('.xb-tool-turn[data-tool-turn-key]').forEach((details) => {
-        details.addEventListener('toggle', () => {
-            if (state.isBusy && details.dataset.autoOpenToolTurn === 'true') return;
-            const wasLazy = details.dataset.lazyToolTurn === 'true';
-            state.openToolTurnKeys = updateOpenKeyList(
-                state.openToolTurnKeys,
-                details.dataset.toolTurnKey || '',
-                details.open,
-            );
-            if (wasLazy || !details.open) {
-                render();
-            }
-        });
-    });
-    root.querySelectorAll('.xb-thought-details[data-thought-key]').forEach((details) => {
-        details.addEventListener('toggle', () => {
-            if (state.isBusy && details.dataset.autoOpenThought === 'true') return;
-            state.openThoughtKeys = updateOpenKeyList(
-                state.openThoughtKeys,
-                details.dataset.thoughtKey || '',
-                details.open,
-            );
-        });
-    });
-
     function flashMessageActionButton(messageIndex, action, ok) {
         if (!Number.isInteger(messageIndex) || messageIndex < 0 || !action) return;
         const feedbackKey = `${action}:${messageIndex}`;
@@ -402,75 +415,123 @@ export function bindEbookEvents(options = {}) {
         messageActionFeedbackTimers.set(feedbackKey, timer);
     }
 
-    root.querySelectorAll('[data-message-action][data-message-index]').forEach((button) => {
-        button.addEventListener('click', async () => {
-            const messageIndex = Number.parseInt(button.dataset.messageIndex || '', 10);
-            const action = String(button.dataset.messageAction || '').trim();
-            if (!Number.isInteger(messageIndex) || messageIndex < 0 || !action) return;
-            if (state.isBusy && action !== 'cancel-edit') return;
-            const message = state.messages[messageIndex];
-            if (!isEditableAssistantTextMessage(message)) return;
+    async function handleMessageActionClick(button) {
+        const messageIndex = Number.parseInt(button.dataset.messageIndex || '', 10);
+        const action = String(button.dataset.messageAction || '').trim();
+        if (!Number.isInteger(messageIndex) || messageIndex < 0 || !action) return;
+        if (state.isBusy && action !== 'cancel-edit') return;
+        const message = state.messages[messageIndex];
+        if (!isEditableAssistantTextMessage(message)) return;
 
-            if (action === 'copy') {
-                const copied = await copyText(message.content);
-                flashMessageActionButton(messageIndex, action, copied);
-                showToast?.(copied ? '已复制整条消息' : '复制失败');
+        if (action === 'copy') {
+            const copied = await copyText(message.content);
+            flashMessageActionButton(messageIndex, action, copied);
+            showToast?.(copied ? '已复制整条消息' : '复制失败');
+            return;
+        }
+
+        if (action === 'edit') {
+            if (state.isBusy) return;
+            state.editingMessageIndex = messageIndex;
+            render();
+            const textarea = root.querySelector(`.xb-msg[data-message-index="${messageIndex}"] .xb-msg-editor`);
+            textarea?.focus();
+            textarea?.setSelectionRange(textarea.value.length, textarea.value.length);
+            return;
+        }
+
+        if (action === 'cancel-edit') {
+            state.editingMessageIndex = -1;
+            render();
+            return;
+        }
+
+        if (action === 'save-edit') {
+            if (state.isBusy) return;
+            const textarea = root.querySelector(`.xb-msg[data-message-index="${messageIndex}"] .xb-msg-editor`);
+            const nextContent = String(textarea?.value || '').trim();
+            if (!nextContent) {
+                showToast?.('消息内容不能为空');
                 return;
             }
+            state.messages[messageIndex] = {
+                ...message,
+                content: nextContent,
+            };
+            state.editingMessageIndex = -1;
+            await persistConversation?.(state.book?.id);
+            showToast?.('消息已更新');
+            render();
+            return;
+        }
 
-            if (action === 'edit') {
-                if (state.isBusy) return;
-                state.editingMessageIndex = messageIndex;
+        if (action === 'delete') {
+            if (state.isBusy) return;
+            state.messages.splice(messageIndex, 1);
+            state.editingMessageIndex = -1;
+            await persistConversation?.(state.book?.id);
+            showToast?.('消息已删除');
+            render();
+            return;
+        }
+
+        if (action === 'reroll') {
+            if (state.isBusy) return;
+            const result = await agentRunner.rerunFromMessageIndex(messageIndex);
+            if (result?.ok === false) {
+                showToast?.('这条消息前没有可重跑的用户输入');
+            }
+        }
+    }
+
+    const handleDelegatedToggle = (event) => {
+        const details = event.target;
+        if (!details?.matches?.('.xb-tool-turn[data-tool-turn-key], .xb-thought-details[data-thought-key]')) return;
+        if (details.matches('.xb-tool-turn[data-tool-turn-key]')) {
+            if (state.isBusy && details.dataset.autoOpenToolTurn === 'true') return;
+            const wasLazy = details.dataset.lazyToolTurn === 'true';
+            state.openToolTurnKeys = updateOpenKeyList(
+                state.openToolTurnKeys,
+                details.dataset.toolTurnKey || '',
+                details.open,
+            );
+            if (wasLazy || !details.open) {
                 render();
-                const textarea = root.querySelector(`.xb-msg[data-message-index="${messageIndex}"] .xb-msg-editor`);
-                textarea?.focus();
-                textarea?.setSelectionRange(textarea.value.length, textarea.value.length);
-                return;
             }
+            return;
+        }
+        if (state.isBusy && details.dataset.autoOpenThought === 'true') return;
+        state.openThoughtKeys = updateOpenKeyList(
+            state.openThoughtKeys,
+            details.dataset.thoughtKey || '',
+            details.open,
+        );
+    };
 
-            if (action === 'cancel-edit') {
-                state.editingMessageIndex = -1;
-                render();
-                return;
-            }
+    const handleDelegatedClick = (event) => {
+        const messageAction = findClosest(event.target, '[data-message-action][data-message-index]');
+        if (messageAction) {
+            event.preventDefault?.();
+            void handleMessageActionClick(messageAction);
+            return;
+        }
+        const fileButton = findClosest(event.target, '.xb-file[data-path]');
+        if (fileButton && root.contains(fileButton)) {
+            event.preventDefault?.();
+            root.querySelector('.xb-studio-shell')?.classList.remove('is-file-drawer-open');
+            void bookController.selectFile(fileButton.dataset.path || '');
+            return;
+        }
+        const importButton = findClosest(event.target, '[data-import]');
+        if (importButton && root.contains(importButton) && !importButton.disabled) {
+            event.preventDefault?.();
+            void bookController.importMaterial(importButton.dataset.import || '');
+        }
+    };
 
-            if (action === 'save-edit') {
-                if (state.isBusy) return;
-                const textarea = root.querySelector(`.xb-msg[data-message-index="${messageIndex}"] .xb-msg-editor`);
-                const nextContent = String(textarea?.value || '').trim();
-                if (!nextContent) {
-                    showToast?.('消息内容不能为空');
-                    return;
-                }
-                state.messages[messageIndex] = {
-                    ...message,
-                    content: nextContent,
-                };
-                state.editingMessageIndex = -1;
-                await persistConversation?.(state.book?.id);
-                showToast?.('消息已更新');
-                render();
-                return;
-            }
-
-            if (action === 'delete') {
-                if (state.isBusy) return;
-                state.messages.splice(messageIndex, 1);
-                state.editingMessageIndex = -1;
-                await persistConversation?.(state.book?.id);
-                showToast?.('消息已删除');
-                render();
-                return;
-            }
-
-            if (action === 'reroll') {
-                if (state.isBusy) return;
-                const result = await agentRunner.rerunFromMessageIndex(messageIndex);
-                if (result?.ok === false) {
-                    showToast?.('这条消息前没有可重跑的用户输入');
-                }
-            }
-        });
+    bindDelegatedRootEvents(root, {
+        handleToggle: handleDelegatedToggle,
+        handleClick: handleDelegatedClick,
     });
 
     const editor = root.querySelector('#xb-editor-text');

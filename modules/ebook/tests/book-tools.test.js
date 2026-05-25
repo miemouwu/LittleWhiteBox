@@ -58,8 +58,13 @@ const {
     buildDelegateBookContextPrompt,
 } = promptsModule;
 const { buildEbookProviderMessagesFromHistory, createEbookAgentRunner } = agentRunnerModule;
-const { captureScrollState, restoreScrollState } = ebookAppModule;
-const { countMessageWindowUnits, renderEbookShell } = rendererModule;
+const { captureScrollState, createEbookApp, restoreScrollState } = ebookAppModule;
+const {
+    collectAgentRenderUnits,
+    collectStudioFileSectionModels,
+    countMessageWindowUnits,
+    renderEbookShell,
+} = rendererModule;
 const { bindEbookEvents } = uiBindingsModule;
 const { HTML_PREVIEW_SANDBOX, renderMarkdownToHtml } = messageMarkdownModule;
 const { createLightBrakeController } = lightBrakeModule;
@@ -273,10 +278,11 @@ test('Default outline template pushes volume-level planning before chapter draft
     assert.match(outline, /大纲推进原则/);
     assert.match(outline, /大概有几卷/);
     assert.match(outline, /当前卷必须有可执行的卷内细纲/);
-    assert.match(outline, /卷内细纲制定好后，直接推进写完卷内章节/);
-    assert.match(outline, /## 当前卷细纲/);
-    assert.match(outline, /章节功能表/);
-    assert.match(outline, /章末位移/);
+    assert.match(outline, /卷内推进草图制定好后，沿事件集团连续写作/);
+    assert.match(outline, /## 当前卷推进草图/);
+    assert.match(outline, /章节表是地图，不是工单/);
+    assert.match(outline, /章末位移是写完后回头看的结果/);
+    assert.match(outline, /第 1 章写到：主角第一次注意到女主那个下午/);
 });
 
 test('Book context prompt keeps stable files separate from volatile turn context', () => {
@@ -443,22 +449,23 @@ test('Book action prompts rely on injected core story files', () => {
     assert.match(spinePrompt, /书脊/);
     assert.match(spinePrompt, /不要直接写完整大纲/);
     assert.match(EBOOK_SYSTEM_PROMPT, /长篇推进要有卷级心智/);
-    assert.match(EBOOK_SYSTEM_PROMPT, /当前卷缺少可执行细纲/);
+    assert.match(EBOOK_SYSTEM_PROMPT, /当前卷缺少可执行推进草图/);
     assert.match(EBOOK_SYSTEM_PROMPT, /不要每章都问用户/);
     assert.match(outlinePrompt, /\[作品核心设定\]/);
     assert.match(outlinePrompt, /不要硬写完整大纲/);
     assert.match(outlinePrompt, /不要只写“下一章”/);
     assert.match(outlinePrompt, /不一次性生成全书每章细纲/);
-    assert.match(outlinePrompt, /当前卷要写出可执行的卷内细纲/);
-    assert.match(outlinePrompt, /章节功能表/);
+    assert.match(outlinePrompt, /当前卷要写出可执行的推进草图/);
+    assert.match(outlinePrompt, /推进草图是地图，不是工单/);
     assert.match(outlinePrompt, /按卷或事件集团推进/);
     assert.match(outlinePrompt, /少问多执行/);
     assert.match(outlinePrompt, /按需读取对应资料/);
     assert.match(nextChapterPrompt, /\[作品核心设定\]/);
     assert.match(nextChapterPrompt, /不要直接硬写长正文/);
-    assert.match(nextChapterPrompt, /当前卷没有可执行的卷内细纲/);
+    assert.match(nextChapterPrompt, /当前卷没有可执行的卷内推进草图/);
     assert.match(nextChapterPrompt, /不要变成写一章问一章/);
-    assert.match(nextChapterPrompt, /直接按章节功能表推进下一章/);
+    assert.match(nextChapterPrompt, /沿事件集团和人物当前压力自然续写/);
+    assert.match(nextChapterPrompt, /一章不需要完成任何固定事件/);
     assert.match(nextChapterPrompt, /只读取目标章节或相邻章节/);
     assert.match(openingOptionsPrompt, /不要直接写入文件/);
     assert.match(openingOptionsPrompt, /给 2 到 3 个不同开场方案/);
@@ -1306,6 +1313,38 @@ test('Studio renders mobile workspace switching and file drawer hooks', () => {
     assert.doesNotMatch(html, /保存稿纸/);
 });
 
+test('Studio file section models keep unchanged file signatures reusable', () => {
+    const files = [
+        { path: 'book/chapters/001.md', content: '第一章' },
+        { path: 'book/chapters/002.md', content: '第二章' },
+        { path: 'book/outline.md', content: '大纲' },
+    ];
+    const firstModel = collectStudioFileSectionModels({
+        files,
+        selectedPath: 'book/chapters/001.md',
+    });
+    const nextModel = collectStudioFileSectionModels({
+        files,
+        selectedPath: 'book/chapters/002.md',
+    });
+    const firstChapters = firstModel.groups.find((group) => group.key === 'chapters');
+    const nextChapters = nextModel.groups.find((group) => group.key === 'chapters');
+    const firstOutline = firstModel.groups.find((group) => group.key === 'settings').files[0];
+    const nextOutline = nextModel.groups.find((group) => group.key === 'settings').files[0];
+
+    assert.notEqual(firstChapters.files[0].signature, nextChapters.files[0].signature);
+    assert.notEqual(firstChapters.files[1].signature, nextChapters.files[1].signature);
+    assert.equal(firstOutline.signature, nextOutline.signature);
+    assert.match(firstChapters.scaffoldHtml, /data-file-group-key="chapters"/);
+    assert.match(firstChapters.html, /data-file-group-key="chapters"/);
+    assert.match(firstChapters.html, /data-file-static-signature="chapters:/);
+    assert.match(firstChapters.html, /data-file-signature="book\/chapters\/001\.md:第 1 章:active"/);
+    assert.match(firstChapters.html, /data-file-signature="book\/chapters\/002\.md:第 2 章:"/);
+
+    const sourcesGroup = firstModel.groups.find((group) => group.key === 'sources');
+    assert.match(sourcesGroup.html, /data-file-group-empty="true"/);
+});
+
 test('Reader renders a mobile table-of-contents drawer', () => {
     const state = {
         book: { id: 'book-reader-toc', title: '目录测试' },
@@ -1524,6 +1563,107 @@ test('Book draw cooldown progress includes a countdown', () => {
         formatDrawProgress('cooldown', { duration: 18500, nextIndex: 3, total: 4 }),
         '等待下一张配图 3/4，剩余 18.5s',
     );
+});
+
+test('Book draw progress patches the studio surface without full rerender', () => {
+    const state = {
+        isDrawingChapter: true,
+        drawProgressText: '',
+    };
+    let renderCount = 0;
+    let surfaceCount = 0;
+    const controller = createBookController({
+        state,
+        render() {
+            renderCount += 1;
+        },
+        renderStudioSurface() {
+            surfaceCount += 1;
+            return true;
+        },
+        requestHost() {},
+        showToast() {},
+    });
+
+    controller.handleDrawProgress({ state: 'llm' });
+
+    assert.equal(state.drawProgressText, '正在分析章节画面...');
+    assert.equal(surfaceCount, 1);
+    assert.equal(renderCount, 0);
+});
+
+test('Book editor surface keeps focused textarea draft while patching progress', () => {
+    const previousDocument = globalThis.document;
+    const editor = {
+        value: '用户正在输入的未保存内容',
+        disabled: false,
+    };
+    const saveButton = { disabled: false };
+    const drawButton = {
+        disabled: false,
+        textContent: '',
+        title: '',
+        setAttribute(name, value) {
+            this[name] = value;
+        },
+    };
+    const editorMeta = { textContent: '' };
+    const mobileTitle = { textContent: '' };
+    const pathNode = { textContent: '' };
+    let fullRenderCount = 0;
+    const root = {
+        set innerHTML(_value) {
+            fullRenderCount += 1;
+        },
+        get innerHTML() {
+            return '';
+        },
+        querySelector(selector) {
+            if (selector === '.xb-studio-shell') return {};
+            if (selector === '#xb-editor-text') return editor;
+            if (selector === '#xb-save') return saveButton;
+            if (selector === '#xb-draw-chapter') return drawButton;
+            if (selector === '#xb-editor-meta') return editorMeta;
+            if (selector === '#xb-mobile-file-picker strong') return mobileTitle;
+            if (selector === '.xb-path') return pathNode;
+            return null;
+        },
+    };
+    globalThis.document = {
+        activeElement: editor,
+        getElementById(id) {
+            return id === 'ebook-root' ? root : null;
+        },
+    };
+
+    try {
+        const app = createEbookApp({
+            rootId: 'ebook-root',
+            hostBridge: {
+                postToHost() {},
+                requestHost() {},
+            },
+        });
+        Object.assign(app.state, {
+            book: { id: 'book-editor-surface', title: '编辑器 surface 测试' },
+            viewMode: 'studio',
+            selectedPath: 'book/chapters/001.md',
+            editorContent: '数据库里的正文',
+            savedContent: '数据库里的正文',
+            isBusy: false,
+            isDrawingChapter: true,
+            drawStatus: { enabled: true, ready: true },
+            drawProgressText: '',
+        });
+
+        app.handleDrawProgress({ state: 'llm' });
+
+        assert.equal(editor.value, '用户正在输入的未保存内容');
+        assert.match(editorMeta.textContent, /正在分析章节画面/);
+        assert.equal(fullRenderCount, 0);
+    } finally {
+        globalThis.document = previousDocument;
+    }
 });
 
 test('Book controller draws current chapter and inserts ebook image markers by anchor', async () => {
@@ -2319,11 +2459,14 @@ test('Book renderer defers stored tool round details while keeping folded previe
     });
 
     assert.match(foldedHtml, /data-lazy-tool-turn="true"/);
+    assert.match(foldedHtml, /data-tool-detail-mode="preview"/);
     assert.match(foldedHtml, /展开查看思考、说明和完整工具轮次/);
     assert.match(foldedHtml, /UNIQUE_LAZY_TOOL_DETAIL/);
     assert.match(foldedHtml, /UNIQUE_LAZY_PREFACE/);
     assert.doesNotMatch(foldedHtml, /UNIQUE_LAZY_THOUGHT/);
 
+    const storedMessagesBeforeToggle = JSON.stringify(state.messages);
+    const providerMessagesBeforeToggle = JSON.stringify(buildEbookProviderMessagesFromHistory(state.messages));
     state.openToolTurnKeys = ['tool-turn:call-lazy-tool'];
     const openHtml = renderEbookShell({
         state,
@@ -2333,9 +2476,89 @@ test('Book renderer defers stored tool round details while keeping folded previe
     });
 
     assert.doesNotMatch(openHtml, /data-lazy-tool-turn="true"/);
+    assert.match(openHtml, /data-tool-detail-mode="full"/);
     assert.match(openHtml, /UNIQUE_LAZY_TOOL_DETAIL/);
     assert.match(openHtml, /UNIQUE_LAZY_PREFACE/);
     assert.match(openHtml, /UNIQUE_LAZY_THOUGHT/);
+
+    state.openToolTurnKeys = [];
+    const closedAgainHtml = renderEbookShell({
+        state,
+        providerConfig: { provider: 'test', model: 'demo' },
+        providerLabel: '测试',
+        dirty: false,
+    });
+
+    assert.match(closedAgainHtml, /data-lazy-tool-turn="true"/);
+    assert.match(closedAgainHtml, /data-tool-detail-mode="preview"/);
+    assert.doesNotMatch(closedAgainHtml, /UNIQUE_LAZY_THOUGHT/);
+    assert.equal(JSON.stringify(state.messages), storedMessagesBeforeToggle);
+    assert.equal(JSON.stringify(buildEbookProviderMessagesFromHistory(state.messages)), providerMessagesBeforeToggle);
+});
+
+test('Book renderer keeps large folded tool previews lightweight until opened', async () => {
+    await resetDb();
+    const book = await createBook('大型工具折叠测试');
+    const largePayload = `{"ok":true,"summary":"LARGE_TOOL_SUMMARY","content":"${'x'.repeat(30000)}UNIQUE_LARGE_TOOL_DETAIL"}`;
+    const state = {
+        book,
+        books: [book],
+        files: await listBookFiles(book.id),
+        selectedPath: 'book/chapters/001.md',
+        readerPath: '',
+        viewMode: 'studio',
+        editorContent: '',
+        savedContent: '',
+        messages: [
+            { role: 'user', content: '读取长文件。' },
+            {
+                role: 'assistant',
+                content: '',
+                toolCalls: [{
+                    id: 'call-large-tool',
+                    name: EBOOK_TOOL_NAMES.READ,
+                    arguments: '{"filePath":"book/chapters/001.md"}',
+                }],
+            },
+            {
+                role: 'tool',
+                toolCallId: 'call-large-tool',
+                toolName: EBOOK_TOOL_NAMES.READ,
+                content: largePayload,
+            },
+            { role: 'assistant', content: '读取完成。' },
+        ],
+        toolTrace: [],
+        openToolTurnKeys: [],
+        activeTurnStartIndex: -1,
+        openThoughtKeys: [],
+        historySummary: '',
+        isBusy: false,
+        status: '就绪',
+        toast: '',
+    };
+
+    const foldedHtml = renderEbookShell({
+        state,
+        providerConfig: { provider: 'test', model: 'demo' },
+        providerLabel: '测试',
+        dirty: false,
+    });
+
+    assert.match(foldedHtml, /LARGE_TOOL_SUMMARY/);
+    assert.doesNotMatch(foldedHtml, /UNIQUE_LARGE_TOOL_DETAIL/);
+
+    state.openToolTurnKeys = ['tool-turn:call-large-tool'];
+    const openHtml = renderEbookShell({
+        state,
+        providerConfig: { provider: 'test', model: 'demo' },
+        providerLabel: '测试',
+        dirty: false,
+    });
+
+    assert.match(openHtml, /第 1 轮 · 1 个工具/);
+    assert.match(openHtml, /LARGE_TOOL_SUMMARY/);
+    assert.doesNotMatch(openHtml, /data-lazy-tool-turn="true"/);
 });
 
 test('Book renderer shows plan update results as checklist items', async () => {
@@ -2468,16 +2691,20 @@ test('Book tool turn auto-open does not persist as a manual fold state', () => {
             autoOpenToolTurn: 'true',
         },
         open: true,
-        addEventListener(_eventName, handler) {
-            this.handler = handler;
+        matches(selector) {
+            return selector.includes('.xb-tool-turn');
         },
     };
+    const listeners = {};
     const root = {
         querySelectorAll(selector) {
             return selector === '.xb-tool-turn[data-tool-turn-key]' ? [details] : [];
         },
         querySelector() {
             return null;
+        },
+        addEventListener(eventName, handler) {
+            listeners[eventName] = handler;
         },
     };
 
@@ -2493,7 +2720,7 @@ test('Book tool turn auto-open does not persist as a manual fold state', () => {
         showToast() {},
     });
 
-    details.handler();
+    listeners.toggle({ target: details });
 
     assert.deepEqual(state.openToolTurnKeys, []);
 });
@@ -2510,16 +2737,20 @@ test('Book lazy tool turns request rerender when opened or closed', () => {
             lazyToolTurn: 'true',
         },
         open: true,
-        addEventListener(_eventName, handler) {
-            this.handler = handler;
+        matches(selector) {
+            return selector.includes('.xb-tool-turn');
         },
     };
+    const listeners = {};
     const root = {
         querySelectorAll(selector) {
             return selector === '.xb-tool-turn[data-tool-turn-key]' ? [details] : [];
         },
         querySelector() {
             return null;
+        },
+        addEventListener(eventName, handler) {
+            listeners[eventName] = handler;
         },
     };
 
@@ -2537,17 +2768,207 @@ test('Book lazy tool turns request rerender when opened or closed', () => {
         showToast() {},
     });
 
-    details.handler();
+    listeners.toggle({ target: details });
 
     assert.deepEqual(state.openToolTurnKeys, ['tool-turn:call-read-lazy']);
     assert.equal(renderCount, 1);
 
     details.dataset.lazyToolTurn = '';
     details.open = false;
-    details.handler();
+    listeners.toggle({ target: details });
 
     assert.deepEqual(state.openToolTurnKeys, []);
     assert.equal(renderCount, 2);
+});
+
+test('Book file and import actions use delegated clicks after local file rerenders', () => {
+    const listeners = {};
+    const selectedPaths = [];
+    const importedKinds = [];
+    const shell = {
+        removedClasses: [],
+        classList: {
+            remove(value) {
+                shell.removedClasses.push(value);
+            },
+        },
+    };
+    const fileButton = {
+        dataset: { path: 'book/chapters/002.md' },
+        disabled: false,
+    };
+    const importButton = {
+        dataset: { import: 'summary' },
+        disabled: false,
+    };
+    const root = {
+        contains(node) {
+            return node === fileButton || node === importButton;
+        },
+        querySelector(selector) {
+            if (selector === '.xb-studio-shell') return shell;
+            return null;
+        },
+        querySelectorAll() {
+            return [];
+        },
+        addEventListener(eventName, handler) {
+            listeners[eventName] = handler;
+        },
+    };
+
+    bindEbookEvents({
+        root,
+        state: {},
+        render() {},
+        postToHost() {},
+        bookController: {
+            selectFile(path) {
+                selectedPaths.push(path);
+            },
+            importMaterial(kind) {
+                importedKinds.push(kind);
+            },
+        },
+        agentRunner: {},
+        persistConversation() {},
+        clearConversation() {},
+        showToast() {},
+    });
+
+    listeners.click({
+        target: {
+            closest(selector) {
+                return selector === '.xb-file[data-path]' ? fileButton : null;
+            },
+        },
+        preventDefault() {},
+    });
+    listeners.click({
+        target: {
+            closest(selector) {
+                return selector === '[data-import]' ? importButton : null;
+            },
+        },
+        preventDefault() {},
+    });
+
+    assert.deepEqual(selectedPaths, ['book/chapters/002.md']);
+    assert.deepEqual(shell.removedClasses, ['is-file-drawer-open']);
+    assert.deepEqual(importedKinds, ['summary']);
+});
+
+test('Book delegated root actions are not duplicated across full rerenders', () => {
+    const listeners = {
+        click: [],
+        toggle: [],
+    };
+    const importedKinds = [];
+    const importButton = {
+        dataset: { import: 'summary' },
+        disabled: false,
+    };
+    const root = {
+        contains(node) {
+            return node === importButton;
+        },
+        querySelector() {
+            return null;
+        },
+        querySelectorAll() {
+            return [];
+        },
+        addEventListener(eventName, handler) {
+            listeners[eventName].push(handler);
+        },
+        removeEventListener(eventName, handler) {
+            listeners[eventName] = listeners[eventName].filter((item) => item !== handler);
+        },
+    };
+    const bindOptions = {
+        root,
+        state: {},
+        render() {},
+        postToHost() {},
+        bookController: {
+            importMaterial(kind) {
+                importedKinds.push(kind);
+            },
+        },
+        agentRunner: {},
+        persistConversation() {},
+        clearConversation() {},
+        showToast() {},
+    };
+
+    bindEbookEvents(bindOptions);
+    bindEbookEvents(bindOptions);
+
+    assert.equal(listeners.click.length, 1);
+    assert.equal(listeners.toggle.length, 1);
+
+    listeners.click[0]({
+        target: {
+            closest(selector) {
+                return selector === '[data-import]' ? importButton : null;
+            },
+        },
+        preventDefault() {},
+    });
+
+    assert.deepEqual(importedKinds, ['summary']);
+});
+
+test('Book reader image hydration ignores stale chapter figures', async () => {
+    let replaceCount = 0;
+    let imageRequests = 0;
+    const staleFigure = {
+        isConnected: false,
+        dataset: { ebookImageSlot: 'slot-old' },
+        classList: { add() {} },
+        replaceChildren() {
+            replaceCount += 1;
+        },
+    };
+    const root = {
+        contains() {
+            return false;
+        },
+        querySelector() {
+            return null;
+        },
+        querySelectorAll(selector) {
+            return selector === '[data-ebook-image-slot]' ? [staleFigure] : [];
+        },
+        addEventListener() {},
+        removeEventListener() {},
+    };
+
+    bindEbookEvents({
+        root,
+        state: {},
+        render() {},
+        postToHost() {},
+        bookController: {
+            async getDrawImage(slotId) {
+                imageRequests += 1;
+                return {
+                    hasData: true,
+                    url: `blob:${slotId}`,
+                    tags: '测试',
+                };
+            },
+        },
+        agentRunner: {},
+        persistConversation() {},
+        clearConversation() {},
+        showToast() {},
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    assert.equal(imageRequests, 1);
+    assert.equal(replaceCount, 0);
 });
 
 test('Book thought auto-open does not persist as a manual fold state', () => {
@@ -2561,16 +2982,20 @@ test('Book thought auto-open does not persist as a manual fold state', () => {
             autoOpenThought: 'true',
         },
         open: true,
-        addEventListener(_eventName, handler) {
-            this.handler = handler;
+        matches(selector) {
+            return selector.includes('.xb-thought-details');
         },
     };
+    const listeners = {};
     const root = {
         querySelectorAll(selector) {
             return selector === '.xb-thought-details[data-thought-key]' ? [details] : [];
         },
         querySelector() {
             return null;
+        },
+        addEventListener(eventName, handler) {
+            listeners[eventName] = handler;
         },
     };
 
@@ -2586,7 +3011,7 @@ test('Book thought auto-open does not persist as a manual fold state', () => {
         showToast() {},
     });
 
-    details.handler();
+    listeners.toggle({ target: details });
 
     assert.deepEqual(state.openThoughtKeys, []);
 });
@@ -3187,6 +3612,33 @@ test('Book renderer keeps recent conversation mounted before compaction without 
     assert.equal(state.messages.length, 10);
 });
 
+test('Book agent render units keep stable messages reusable while streaming changes', () => {
+    const state = {
+        messages: [
+            { role: 'user', content: '写第一章。' },
+            { role: 'assistant', content: '正在写第一段。', streaming: true },
+        ],
+        toolTrace: [],
+        openToolTurnKeys: [],
+        openThoughtKeys: [],
+        historySummary: '',
+        isBusy: true,
+    };
+
+    const firstUnits = collectAgentRenderUnits(state);
+    state.messages[1] = {
+        ...state.messages[1],
+        content: '正在写第一段。第二句出来了。',
+    };
+    const nextUnits = collectAgentRenderUnits(state);
+
+    assert.equal(firstUnits.length, 2);
+    assert.equal(nextUnits.length, 2);
+    assert.equal(firstUnits[0].signature, nextUnits[0].signature);
+    assert.notEqual(firstUnits[1].signature, nextUnits[1].signature);
+    assert.match(nextUnits[1].html, /第二句出来了/);
+});
+
 test('Book renderer keeps assistant actions on error bubbles so failed turns can reroll', async () => {
     await resetDb();
     const book = await createBook('失败气泡操作测试');
@@ -3251,16 +3703,20 @@ test('Book message actions handle error bubbles instead of dropping the click', 
             messageAction: 'reroll',
             messageIndex: '1',
         },
-        addEventListener(_eventName, handler) {
-            this.handler = handler;
+        closest(selector) {
+            return selector === '[data-message-action][data-message-index]' ? this : null;
         },
     };
+    const listeners = {};
     const root = {
         querySelectorAll(selector) {
             return selector === '[data-message-action][data-message-index]' ? [button] : [];
         },
         querySelector() {
             return null;
+        },
+        addEventListener(eventName, handler) {
+            listeners[eventName] = handler;
         },
     };
     let rerunIndex = -1;
@@ -3284,7 +3740,11 @@ test('Book message actions handle error bubbles instead of dropping the click', 
         showToast() {},
     });
 
-    await button.handler();
+    listeners.click({
+        target: button,
+        preventDefault() {},
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     assert.equal(rerunIndex, 1);
 });
@@ -3403,6 +3863,55 @@ test('Ebook settings open as an in-app shared config panel instead of jumping to
     assert.doesNotMatch(html, /JavaScript API 权限/);
     assert.doesNotMatch(html, /先到小白助手配置当前模型预设/);
     assert.doesNotMatch(html, /请先到小白助手补好/);
+});
+
+test('Book settings button opens the config overlay without rerendering the studio', () => {
+    const state = {
+        isSettingsOpen: false,
+        configFormSyncPending: false,
+    };
+    const listeners = {};
+    const settingsButton = {
+        addEventListener(eventName, handler) {
+            listeners[eventName] = handler;
+        },
+    };
+    const root = {
+        querySelector(selector) {
+            return selector === '#xb-agent-open-settings' ? settingsButton : null;
+        },
+        querySelectorAll() {
+            return [];
+        },
+        addEventListener() {},
+    };
+    let renderCount = 0;
+    let settingsSurfaceCount = 0;
+
+    bindEbookEvents({
+        root,
+        state,
+        render() {
+            renderCount += 1;
+        },
+        renderSettingsSurface() {
+            settingsSurfaceCount += 1;
+            return true;
+        },
+        postToHost() {},
+        bookController: {},
+        agentRunner: {},
+        persistConversation() {},
+        clearConversation() {},
+        showToast() {},
+    });
+
+    listeners.click();
+
+    assert.equal(state.isSettingsOpen, true);
+    assert.equal(state.configFormSyncPending, true);
+    assert.equal(settingsSurfaceCount, 1);
+    assert.equal(renderCount, 0);
 });
 
 test('Book renderer reuses assistant markdown rendering for tables', async () => {
@@ -3673,6 +4182,212 @@ test('Book agent stores a multi-tool batch only after all tool results exist', a
     assert.equal(state.messages.filter((message) => message.role === 'tool').length, 2);
     assert.equal(state.toolTrace.length, 0);
     assert.equal(state.activeTurnStartIndex, -1);
+});
+
+test('Book agent renders read-only tool progress through local surfaces', async () => {
+    await resetDb();
+    const book = await createBook('只读工具局部刷新测试');
+    const state = {
+        config: {},
+        book,
+        books: [book],
+        files: await listBookFiles(book.id),
+        selectedPath: 'book/chapters/001.md',
+        readerPath: '',
+        viewMode: 'studio',
+        editorContent: '',
+        savedContent: '',
+        messages: [],
+        toolTrace: [],
+        historySummary: '',
+        archivedTurnCount: 0,
+        isBusy: false,
+        activeController: null,
+        status: '就绪',
+        toast: '',
+    };
+    let round = 0;
+    let fullRenders = 0;
+    let agentSurfaces = 0;
+    let toolSurfaces = 0;
+    let fileSurfaces = 0;
+    let editorSurfaces = 0;
+    let secondRoundMessages = [];
+    const runner = createEbookAgentRunner({
+        state,
+        async refreshBooksAndFiles() {
+            state.files = await listBookFiles(book.id);
+        },
+        render() {
+            fullRenders += 1;
+        },
+        renderAgentSurface() {
+            agentSurfaces += 1;
+            return true;
+        },
+        renderToolTraceSurface() {
+            toolSurfaces += 1;
+            return true;
+        },
+        renderFilesSurface() {
+            fileSurfaces += 1;
+            return true;
+        },
+        renderEditorFileSurface() {
+            editorSurfaces += 1;
+            return true;
+        },
+        showToast() {},
+        persistConversation() {},
+        isEditorDirty() {
+            return false;
+        },
+        getActiveProviderConfig() {
+            return {
+                provider: 'test',
+                temperature: 0.2,
+                maxTokens: 1000,
+                reasoningEnabled: false,
+                reasoningEffort: 'medium',
+            };
+        },
+        createAdapter() {
+            return {
+                async chat(task) {
+                    round += 1;
+                    if (round === 1) {
+                        return {
+                            text: '',
+                            toolCalls: [{
+                                id: 'call-read-outline',
+                                name: EBOOK_TOOL_NAMES.READ,
+                                arguments: '{"filePath":"book/outline.md","limit":2}',
+                            }],
+                        };
+                    }
+                    secondRoundMessages = task.messages;
+                    return {
+                        text: '已读取大纲。',
+                        toolCalls: [],
+                    };
+                },
+            };
+        },
+    });
+
+    await runner.runAgent('读取大纲。');
+
+    assert.equal(fullRenders, 2);
+    assert.equal(agentSurfaces >= 2, true);
+    assert.equal(toolSurfaces >= 2, true);
+    assert.equal(fileSurfaces, 0);
+    assert.equal(editorSurfaces, 0);
+    assert.deepEqual(state.messages.map((message) => message.role), ['user', 'assistant', 'tool', 'assistant']);
+    assert.equal(state.messages[2].toolName, EBOOK_TOOL_NAMES.READ);
+    assert.match(state.messages[2].content, /book\/outline\.md/);
+    assert.equal(secondRoundMessages.filter((message) => message.role === 'tool').length, 1);
+    assert.equal(secondRoundMessages.find((message) => message.role === 'tool')?.content, state.messages[2].content);
+});
+
+test('Book agent refreshes file surfaces for write tools without extra full renders', async () => {
+    await resetDb();
+    const book = await createBook('写入工具局部刷新测试');
+    const state = {
+        config: {},
+        book,
+        books: [book],
+        files: await listBookFiles(book.id),
+        selectedPath: 'book/chapters/001.md',
+        readerPath: '',
+        viewMode: 'studio',
+        editorContent: '',
+        savedContent: '',
+        messages: [],
+        toolTrace: [],
+        historySummary: '',
+        archivedTurnCount: 0,
+        isBusy: false,
+        activeController: null,
+        status: '就绪',
+        toast: '',
+    };
+    let round = 0;
+    let fullRenders = 0;
+    let toolSurfaces = 0;
+    let fileSurfaces = 0;
+    let editorSurfaces = 0;
+    const runner = createEbookAgentRunner({
+        state,
+        async refreshBooksAndFiles() {
+            state.files = await listBookFiles(book.id);
+        },
+        render() {
+            fullRenders += 1;
+        },
+        renderAgentSurface() {
+            return true;
+        },
+        renderToolTraceSurface() {
+            toolSurfaces += 1;
+            return true;
+        },
+        renderFilesSurface() {
+            fileSurfaces += 1;
+            return true;
+        },
+        renderEditorFileSurface() {
+            editorSurfaces += 1;
+            return true;
+        },
+        showToast() {},
+        persistConversation() {},
+        isEditorDirty() {
+            return false;
+        },
+        getActiveProviderConfig() {
+            return {
+                provider: 'test',
+                temperature: 0.2,
+                maxTokens: 1000,
+                reasoningEnabled: false,
+                reasoningEffort: 'medium',
+            };
+        },
+        createAdapter() {
+            return {
+                async chat() {
+                    round += 1;
+                    if (round === 1) {
+                        return {
+                            text: '',
+                            toolCalls: [{
+                                id: 'call-write-chapter',
+                                name: EBOOK_TOOL_NAMES.WRITE,
+                                arguments: JSON.stringify({
+                                    filePath: 'book/chapters/001.md',
+                                    content: '# 第 1 章\n\n新的正文。',
+                                }),
+                            }],
+                        };
+                    }
+                    return {
+                        text: '已写入第一章。',
+                        toolCalls: [],
+                    };
+                },
+            };
+        },
+    });
+
+    await runner.runAgent('写第一章。');
+
+    assert.equal(fullRenders, 2);
+    assert.equal(toolSurfaces >= 2, true);
+    assert.equal(fileSurfaces, 1);
+    assert.equal(editorSurfaces, 1);
+    assert.deepEqual(state.messages.map((message) => message.role), ['user', 'assistant', 'tool', 'assistant']);
+    assert.equal(JSON.parse(state.messages[2].content).ok, true);
+    assert.equal((await getBookFile(book.id, 'book/chapters/001.md')).content, '# 第 1 章\n\n新的正文。');
 });
 
 test('Book agent uses Google-style session tool loop without rebuilding replay history', async () => {

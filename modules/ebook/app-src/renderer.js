@@ -52,6 +52,43 @@ const FILE_ORDER = [
     'book/sources/',
 ];
 
+const TOOL_PREVIEW_PARSE_LIMIT = 24000;
+const renderObjectIds = new WeakMap();
+const renderSignatureCache = new WeakMap();
+let nextRenderObjectId = 1;
+
+function getRenderObjectId(value) {
+    if (!value || typeof value !== 'object') return '0';
+    if (!renderObjectIds.has(value)) {
+        renderObjectIds.set(value, nextRenderObjectId);
+        nextRenderObjectId += 1;
+    }
+    return renderObjectIds.get(value);
+}
+
+function hashString(value = '') {
+    const text = String(value || '');
+    let hash = 2166136261;
+    for (let index = 0; index < text.length; index += 1) {
+        hash ^= text.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+}
+
+function getCachedTextSignature(owner, key = '', value = '') {
+    const text = String(value || '');
+    if (!owner || typeof owner !== 'object') {
+        return `${text.length}:${hashString(text)}`;
+    }
+    const cache = renderSignatureCache.get(owner) || {};
+    if (cache[key]?.text === text) return cache[key].signature;
+    const signature = `${text.length}:${hashString(text)}`;
+    cache[key] = { text, signature };
+    renderSignatureCache.set(owner, cache);
+    return signature;
+}
+
 function getFileOrder(path = '') {
     const index = FILE_ORDER.findIndex((prefix) => path === prefix || path.startsWith(prefix));
     return index >= 0 ? index : FILE_ORDER.length;
@@ -91,7 +128,7 @@ function formatChapterLabel(path = '') {
     return raw;
 }
 
-function formatFileTitle(path = '') {
+export function formatFileTitle(path = '') {
     const known = {
         'book/outline.md': '大纲',
         'book/style.md': '文风规则',
@@ -132,7 +169,7 @@ function formatBookDate(timestamp = 0) {
     });
 }
 
-function renderProviderReadiness(providerConfig = {}) {
+export function renderProviderReadiness(providerConfig = {}) {
     const provider = String(providerConfig.provider || '');
     const missing = [];
     if (!String(providerConfig.model || '').trim()) missing.push('模型');
@@ -261,6 +298,53 @@ function parseToolContent(content = '') {
     }
 }
 
+function extractJsonStringField(jsonText = '', field = '') {
+    const text = String(jsonText || '');
+    const marker = `"${field}"`;
+    const markerIndex = text.indexOf(marker);
+    if (markerIndex < 0) return '';
+    const colonIndex = text.indexOf(':', markerIndex + marker.length);
+    if (colonIndex < 0) return '';
+    let quoteIndex = colonIndex + 1;
+    while (quoteIndex < text.length && /\s/.test(text[quoteIndex])) quoteIndex += 1;
+    if (text[quoteIndex] !== '"') return '';
+    let endIndex = quoteIndex + 1;
+    let escaped = false;
+    while (endIndex < text.length) {
+        const char = text[endIndex];
+        if (escaped) {
+            escaped = false;
+        } else if (char === '\\') {
+            escaped = true;
+        } else if (char === '"') {
+            try {
+                return JSON.parse(text.slice(quoteIndex, endIndex + 1));
+            } catch {
+                return '';
+            }
+        }
+        endIndex += 1;
+    }
+    return '';
+}
+
+function parseToolPreviewContent(content = '', options = {}) {
+    const text = String(content || '');
+    if (options.forceParse || text.length <= TOOL_PREVIEW_PARSE_LIMIT) {
+        return parseToolContent(text);
+    }
+    const message = extractJsonStringField(text, 'summary')
+        || extractJsonStringField(text, 'message')
+        || extractJsonStringField(text, 'error');
+    return {
+        __previewOnly: true,
+        ok: /"ok"\s*:\s*false/.test(text) ? false : undefined,
+        summary: message,
+        message,
+        error: extractJsonStringField(text, 'error'),
+    };
+}
+
 function isPlanToolName(name = '') {
     return ['PlanCreate', 'PlanUpdate', 'PlanList', 'PlanGet'].includes(String(name || ''));
 }
@@ -367,13 +451,18 @@ function renderPlanToolBody(toolMessage = {}, parsed = parseToolContent(toolMess
     `;
 }
 
-function formatToolSummary(message = {}) {
-    const parsed = parseToolContent(message.content);
+function formatToolSummary(message = {}, parsedOverride = null) {
+    const parsed = parsedOverride && typeof parsedOverride === 'object'
+        ? parsedOverride
+        : parseToolContent(message.content);
+    const fallback = parsed.__previewOnly
+        ? `${message.toolName || '工具'} 已返回结果。`
+        : String(message.content || '');
     return trimInlineText(
         parsed.summary
         || parsed.message
         || parsed.error
-        || String(message.content || ''),
+        || fallback,
         220,
     ) || '工具已返回结果。';
 }
@@ -475,7 +564,34 @@ function renderStoredToolMessage(toolMessage = {}) {
 }
 
 function renderStoredToolPreview(toolMessage = {}) {
-    return renderStoredToolMessage(toolMessage);
+    const isPlanTool = isPlanToolName(toolMessage.toolName);
+    const parsed = parseToolPreviewContent(toolMessage.content, {
+        forceParse: isPlanTool,
+    });
+    const planBody = isPlanTool ? renderPlanToolBody(toolMessage, parsed) : '';
+    const display = toolMessage.toolDisplay && typeof toolMessage.toolDisplay === 'object'
+        ? toolMessage.toolDisplay
+        : null;
+    if (display) {
+        const statusText = display.status === 'running'
+            ? '运行中'
+            : (parsed.ok === false ? '失败' : '已返回');
+        return `
+            <div class="xb-tool ${parsed.ok === false ? 'is-error' : 'is-resolved'}">
+                <div class="xb-tool-head">
+                    <span>${escapeHtml(display.title || toolMessage.toolName || '工具结果')}</span>
+                    <em>${escapeHtml(statusText)}</em>
+                </div>
+                ${planBody || `<small>${escapeHtml(formatToolSummary(toolMessage, parsed))}</small>`}
+            </div>
+        `;
+    }
+    return `
+        <div class="xb-tool ${parsed.ok === false ? 'is-error' : ''}">
+            <div class="xb-tool-plain-title">${escapeHtml(toolMessage.toolName || '工具结果')}</div>
+            ${planBody || `<small>${escapeHtml(formatToolSummary(toolMessage, parsed))}</small>`}
+        </div>
+    `;
 }
 
 function renderToolPrefacePreview(assistantMessage = {}) {
@@ -619,14 +735,25 @@ function getFileGroup(path = '') {
     };
 }
 
+function getStudioFileSignature(file = {}, state = {}) {
+    const title = formatFileTitle(file.path);
+    const active = file.path === state.selectedPath;
+    return [
+        file.path,
+        title,
+        active ? 'active' : '',
+    ].join(':');
+}
+
 function renderSectionFiles(section = {}, files = [], state = {}) {
     if (!files.length) {
-        return `<div class="xb-section-empty">${escapeHtml(section.empty || '这里还没有文件。')}</div>`;
+        return `<div class="xb-section-empty" data-file-group-empty="true">${escapeHtml(section.empty || '这里还没有文件。')}</div>`;
     }
     return files.map((file) => {
         const active = file.path === state.selectedPath ? ' is-active' : '';
+        const signature = getStudioFileSignature(file, state);
         return `
-            <button class="xb-file${active}" data-path="${escapeHtml(file.path)}">
+            <button class="xb-file${active}" data-path="${escapeHtml(file.path)}" data-file-signature="${escapeHtml(signature)}">
                 <span class="xb-file-main">${escapeHtml(formatFileTitle(file.path))}</span>
             </button>
         `;
@@ -645,9 +772,14 @@ function renderImportActions(disabledAttr = '') {
     `;
 }
 
-function renderStudioFileSections(state = {}, options = {}) {
+export function collectStudioFileSectionModels(state = {}, options = {}) {
     const files = sortBookFiles(state.files);
-    if (!files.length) return '<div class="xb-empty">还没有书稿文件</div>';
+    if (!files.length) {
+        return {
+            emptyHtml: '<div class="xb-empty">还没有书稿文件</div>',
+            groups: [],
+        };
+    }
     const grouped = new Map();
     files.forEach((file) => {
         const group = getFileGroup(file.path);
@@ -669,25 +801,152 @@ function renderStudioFileSections(state = {}, options = {}) {
     }));
     const knownKeys = new Set(STUDIO_FILE_SECTIONS.map((section) => section.key));
     const otherSections = [...grouped.values()].filter((group) => !knownKeys.has(group.key));
+    const writeActionAttr = options.writeActionAttr || '';
 
-    return [...primarySections, ...otherSections].map((group) => `
-        <div class="xb-file-group">
-            <div class="xb-file-group-title">
-                <span>${escapeHtml(group.title)}</span>
-                <em>${escapeHtml(group.badge)}</em>
-            </div>
-            <div class="xb-file-group-desc">${escapeHtml(group.description)}</div>
-            ${group.key === 'sources' ? renderImportActions(options.writeActionAttr || '') : ''}
-            ${group.key === 'sources' ? '<div class="xb-section-subtitle">已导入</div>' : ''}
-            ${renderSectionFiles(group, group.files, state)}
-        </div>
-    `).join('');
+    return {
+        emptyHtml: '',
+        groups: [...primarySections, ...otherSections].map((group) => {
+            const filesHtml = renderSectionFiles(group, group.files, state);
+            const staticSignature = [
+                group.key,
+                group.title,
+                group.description,
+                group.badge,
+                group.key === 'sources' ? writeActionAttr : '',
+            ].join(':');
+            const fileModels = group.files.map((file) => {
+                const active = file.path === state.selectedPath;
+                const title = formatFileTitle(file.path);
+                const signature = getStudioFileSignature(file, state);
+                return {
+                    path: file.path,
+                    title,
+                    active,
+                    signature,
+                    html: `
+                        <button class="xb-file${active ? ' is-active' : ''}" data-path="${escapeHtml(file.path)}" data-file-signature="${escapeHtml(signature)}">
+                            <span class="xb-file-main">${escapeHtml(title)}</span>
+                        </button>
+                    `,
+                };
+            });
+            return {
+                key: group.key,
+                title: group.title,
+                description: group.description,
+                badge: group.badge,
+                staticSignature,
+                scaffoldHtml: `
+                    <div class="xb-file-group" data-file-group-key="${escapeHtml(group.key)}" data-file-static-signature="${escapeHtml(staticSignature)}">
+                        <div class="xb-file-group-title">
+                            <span>${escapeHtml(group.title)}</span>
+                            <em>${escapeHtml(group.badge)}</em>
+                        </div>
+                        <div class="xb-file-group-desc">${escapeHtml(group.description)}</div>
+                        ${group.key === 'sources' ? renderImportActions(writeActionAttr) : ''}
+                        ${group.key === 'sources' ? '<div class="xb-section-subtitle">已导入</div>' : ''}
+                    </div>
+                `,
+                emptyHtml: `<div class="xb-section-empty" data-file-group-empty="true">${escapeHtml(group.empty || '这里还没有文件。')}</div>`,
+                files: fileModels,
+                html: `
+                    <div class="xb-file-group" data-file-group-key="${escapeHtml(group.key)}" data-file-static-signature="${escapeHtml(staticSignature)}">
+                        <div class="xb-file-group-title">
+                            <span>${escapeHtml(group.title)}</span>
+                            <em>${escapeHtml(group.badge)}</em>
+                        </div>
+                        <div class="xb-file-group-desc">${escapeHtml(group.description)}</div>
+                        ${group.key === 'sources' ? renderImportActions(writeActionAttr) : ''}
+                        ${group.key === 'sources' ? '<div class="xb-section-subtitle">已导入</div>' : ''}
+                        ${filesHtml}
+                    </div>
+                `,
+            };
+        }),
+    };
 }
 
-function renderMessages(state = {}) {
+export function renderStudioFileSections(state = {}, options = {}) {
+    const model = collectStudioFileSectionModels(state, options);
+    if (model.emptyHtml) return model.emptyHtml;
+    return model.groups.map((group) => group.html).join('');
+}
+
+function createAgentRenderUnit(key = '', signature = '', buildHtml = undefined) {
+    const htmlFallback = String(buildHtml === undefined ? signature : buildHtml || '');
+    const build = typeof buildHtml === 'function' ? buildHtml : () => htmlFallback;
+    return {
+        key: String(key || ''),
+        signature: `${String(key || '')}:${String(signature || '')}`,
+        buildHtml: build,
+        get html() {
+            return build();
+        },
+    };
+}
+
+function getThoughtsSignature(message = {}) {
+    const thoughts = Array.isArray(message.thoughts) ? message.thoughts : [];
+    if (!thoughts.length) return 'thoughts:0';
+    const text = thoughts.map((item) => [
+        item?.kind || '',
+        item?.summary || '',
+        item?.text || '',
+        item?.content || '',
+    ].join('|')).join('\n');
+    return `thoughts:${thoughts.length}:${getCachedTextSignature(message, 'thoughts', text)}`;
+}
+
+function getMessageRenderSignature(message = {}, messageIndex = 0, state = {}) {
+    const content = String(message.content || '');
+    const isEditing = message.role === 'assistant' && state.editingMessageIndex === messageIndex;
+    const feedback = state.messageActionFeedback || {};
+    const feedbackSignature = [
+        feedback[`copy:${messageIndex}`] || '',
+        feedback[`edit:${messageIndex}`] || '',
+        feedback[`reroll:${messageIndex}`] || '',
+        feedback[`delete:${messageIndex}`] || '',
+    ].join(',');
+    return [
+        getRenderObjectId(message),
+        message.role || '',
+        message.streaming ? 'streaming' : 'done',
+        message.error ? 'error' : '',
+        isEditing ? 'editing' : '',
+        getCachedTextSignature(message, 'content', content),
+        getThoughtsSignature(message),
+        Array.isArray(state.openThoughtKeys) ? state.openThoughtKeys.join('|') : '',
+        feedbackSignature,
+    ].join(':');
+}
+
+function getToolRunSignature(batches = [], turnKey = '', state = {}, isOpen = false, autoOpen = false) {
+    const parts = batches.map((batch) => {
+        const assistantMessage = batch.assistantMessage || {};
+        const toolMessages = Array.isArray(batch.toolMessages) ? batch.toolMessages : [];
+        return [
+            getMessageRenderSignature(assistantMessage, 0, state),
+            toolMessages.map((message) => [
+                getRenderObjectId(message),
+                message.toolName || '',
+                getCachedTextSignature(message, 'content', message.content || ''),
+                getCachedTextSignature(message, 'toolDisplay', JSON.stringify(message.toolDisplay || null)),
+            ].join(':')).join(','),
+        ].join('|');
+    }).join('||');
+    return [
+        turnKey,
+        isOpen ? 'open' : 'folded',
+        autoOpen ? 'auto' : 'manual',
+        Array.isArray(state.openThoughtKeys) ? state.openThoughtKeys.join('|') : '',
+        parts,
+    ].join(':');
+}
+
+export function collectAgentRenderUnits(state = {}) {
     const memoryHint = state.historySummary
-        ? '<div class="xb-agent-memory">已整理较早创作记录，后续写作会继续参考。</div>'
-        : '';
+        ? createAgentRenderUnit('memory', '<div class="xb-agent-memory">已整理较早创作记录，后续写作会继续参考。</div>')
+        : null;
     const messages = Array.isArray(state.messages) ? state.messages : [];
     const units = [];
 
@@ -778,39 +1037,47 @@ function renderMessages(state = {}) {
         const toolCount = batches.reduce((sum, batch) => (
             sum + (batch.toolMessages.length || batch.assistantMessage.toolCalls.length || 0)
         ), 0);
-        const previewHtml = batches.map((batch) => [
-            renderToolPrefacePreview(batch.assistantMessage),
-            batch.toolMessages.map((toolMessage) => renderStoredToolPreview(toolMessage)).join(''),
-        ].filter(Boolean).join('')).join('');
-        const bodyHtml = isOpen
-            ? `
-                <div class="xb-tool-trace-body">
-                    ${batches.map((batch, batchIndex) => `
-                        <div class="xb-tool-round">
-                            <div class="xb-tool-round-title">第 ${batchIndex + 1} 轮 · ${batch.toolMessages.length || batch.assistantMessage.toolCalls.length} 个工具</div>
-                            ${renderThoughtDetails(batch.assistantMessage, {
-                                key: `${turnKey}:thought:${batchIndex + 1}`,
-                                openThoughtKeys: state.openThoughtKeys,
-                            })}
-                            ${String(batch.assistantMessage.content || '').trim() ? `<div class="xb-tool-preface xb-tool-preface-markdown xb-assistant-markdown">${renderMessageMarkdownHtml(batch.assistantMessage.content)}</div>` : ''}
-                            ${batch.toolMessages.map((toolMessage) => renderStoredToolMessage(toolMessage)).join('')}
-                        </div>
-                    `).join('')}
-                </div>
-            `
-            : `
-                <div class="xb-tool-trace-body xb-tool-trace-preview">
-                    ${previewHtml || `<div class="xb-tool-lazy-note">展开查看 ${toolCount || 0} 个工具结果</div>`}
-                    <div class="xb-tool-lazy-note">展开查看思考、说明和完整工具轮次</div>
-                </div>
-            `;
-        const html = `
-            <details class="xb-tool-trace xb-tool-turn" data-tool-turn-key="${escapeHtml(turnKey)}"${autoOpenAttr}${lazyAttr}${openAttr}>
-                <summary><span>已创作 ${batches.length || 1} 轮</span><span class="xb-tool-fold-indicator" aria-hidden="true"></span></summary>
-                ${bodyHtml}
-            </details>
-        `;
-        return { html, nextIndex: index };
+        const buildToolBodyHtml = () => {
+            const previewHtml = batches.map((batch) => [
+                renderToolPrefacePreview(batch.assistantMessage),
+                batch.toolMessages.map((toolMessage) => renderStoredToolPreview(toolMessage)).join(''),
+            ].filter(Boolean).join('')).join('');
+            return isOpen
+                ? `
+                    <div class="xb-tool-trace-body" data-tool-detail-mode="full">
+                        ${batches.map((batch, batchIndex) => `
+                            <div class="xb-tool-round">
+                                <div class="xb-tool-round-title">第 ${batchIndex + 1} 轮 · ${batch.toolMessages.length || batch.assistantMessage.toolCalls.length} 个工具</div>
+                                ${renderThoughtDetails(batch.assistantMessage, {
+                                    key: `${turnKey}:thought:${batchIndex + 1}`,
+                                    openThoughtKeys: state.openThoughtKeys,
+                                })}
+                                ${String(batch.assistantMessage.content || '').trim() ? `<div class="xb-tool-preface xb-tool-preface-markdown xb-assistant-markdown">${renderMessageMarkdownHtml(batch.assistantMessage.content)}</div>` : ''}
+                                ${batch.toolMessages.map((toolMessage) => renderStoredToolMessage(toolMessage)).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                `
+                : `
+                    <div class="xb-tool-trace-body xb-tool-trace-preview" data-tool-detail-mode="preview">
+                        ${previewHtml || `<div class="xb-tool-lazy-note">展开查看 ${toolCount || 0} 个工具结果</div>`}
+                        <div class="xb-tool-lazy-note">展开查看思考、说明和完整工具轮次</div>
+                    </div>
+                `;
+        };
+        return {
+            unit: createAgentRenderUnit(
+                `tool:${turnKey}`,
+                getToolRunSignature(batches, turnKey, state, isOpen, autoOpen),
+                () => `
+                    <details class="xb-tool-trace xb-tool-turn" data-tool-turn-key="${escapeHtml(turnKey)}"${autoOpenAttr}${lazyAttr}${openAttr}>
+                        <summary><span>已创作 ${batches.length || 1} 轮</span><span class="xb-tool-fold-indicator" aria-hidden="true"></span></summary>
+                        ${buildToolBodyHtml()}
+                    </details>
+                `,
+            ),
+            nextIndex: index,
+        };
     };
 
     for (let index = 0; index < messages.length; index += 1) {
@@ -818,23 +1085,52 @@ function renderMessages(state = {}) {
         if (!message || !['user', 'assistant', 'tool'].includes(message.role)) continue;
         if (message.role === 'assistant' && Array.isArray(message.toolCalls) && message.toolCalls.length) {
             const unit = renderToolRun(index);
-            units.push(unit.html);
+            units.push(unit.unit);
             index = unit.nextIndex - 1;
             continue;
         }
         if (message.role === 'tool') continue;
-        units.push(renderPlainMessage(message, index));
+        units.push(createAgentRenderUnit(
+            `message:${index}`,
+            getMessageRenderSignature(message, index, state),
+            () => renderPlainMessage(message, index),
+        ));
     }
 
-    const liveToolTurnHtml = state.isBusy ? renderLiveToolTurn(state) : '';
-    if (!units.length && !liveToolTurnHtml) {
-        return `${memoryHint}<div class="xb-agent-empty">这里是写作助手记录。可以先导入资料，也可以直接说“我想试试写一本书”。</div>`;
+    const hasLiveToolTurn = !!(state.isBusy && Array.isArray(state.toolTrace) && state.toolTrace.length);
+    if (!units.length && !hasLiveToolTurn) {
+        return [
+            memoryHint,
+            createAgentRenderUnit('empty', '<div class="xb-agent-empty">这里是写作助手记录。可以先导入资料，也可以直接说“我想试试写一本书”。</div>'),
+        ].filter(Boolean);
     }
     const messageWindow = getMessageWindow(state, units.length);
-    const historyGateHtml = messageWindow.hiddenBefore
-        ? `<div class="xb-agent-history-gate">较早记录 ${messageWindow.hiddenBefore} 条</div>`
+    const historyGate = messageWindow.hiddenBefore
+        ? createAgentRenderUnit(
+            `history-gate:${messageWindow.hiddenBefore}`,
+            `<div class="xb-agent-history-gate">较早记录 ${messageWindow.hiddenBefore} 条</div>`,
+        )
+        : null;
+    const liveTraceSignature = hasLiveToolTurn
+        ? getCachedTextSignature(state, 'liveToolTurn', JSON.stringify({
+            trace: (state.toolTrace || []).slice(-8),
+            live: state.liveToolTurn || null,
+            openThoughtKeys: state.openThoughtKeys || [],
+        }))
         : '';
-    return `${memoryHint}${historyGateHtml}${units.slice(messageWindow.startIndex).join('')}${liveToolTurnHtml}`;
+    const liveToolTurn = hasLiveToolTurn
+        ? createAgentRenderUnit('live-tool-turn', liveTraceSignature, () => renderLiveToolTurn(state))
+        : null;
+    return [
+        memoryHint,
+        historyGate,
+        ...units.slice(messageWindow.startIndex),
+        liveToolTurn,
+    ].filter(Boolean);
+}
+
+export function renderAgentMessages(state = {}) {
+    return collectAgentRenderUnits(state).map((unit) => unit.html).join('');
 }
 
 export function countMessageWindowUnits(messages = []) {
@@ -904,7 +1200,7 @@ function renderDraftStats(state = {}) {
     return formatDraftMetrics(state.editorContent || '');
 }
 
-function renderSettingsDialog(state = {}) {
+export function renderSettingsDialog(state = {}) {
     if (!state.isSettingsOpen) return '';
     return `
         <div class="xb-ebook-settings-overlay" id="xb-agent-settings-overlay">
@@ -1055,7 +1351,7 @@ function renderStudioShell(options = {}) {
                                     <button data-action="opening-options" ${agentActionAttr}>试写开场</button>
                                 </div>
                             </details>
-                            <div class="xb-agent-log">${renderMessages(state)}</div>
+                            <div class="xb-agent-log">${renderAgentMessages(state)}</div>
                         </div>
                         <div class="xb-agent-scroll-helpers" id="xb-agent-scroll-helpers">
                             <button id="xb-agent-scroll-top" type="button" class="xb-agent-scroll-btn" title="回到顶部" aria-label="回到顶部">▲</button>

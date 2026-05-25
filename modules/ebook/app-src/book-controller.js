@@ -194,10 +194,16 @@ export function createBookController(deps = {}) {
     const {
         state,
         render,
+        renderStudioSurface,
         requestHost,
         showToast,
         conversationStore,
     } = deps;
+    const renderDrawSurface = typeof renderStudioSurface === 'function'
+        ? () => {
+            if (!renderStudioSurface()) render();
+        }
+        : render;
     let drawCooldownTimer = null;
     let drawCompletionNoticeTimer = null;
     let drawAbortController = null;
@@ -223,11 +229,11 @@ export function createBookController(deps = {}) {
             drawCompletionNoticeTimer = null;
             if (!state.isDrawingChapter && state.drawProgressText === message) {
                 state.drawProgressText = '';
-                render();
+                renderDrawSurface();
             }
         }, DRAW_COMPLETION_NOTICE_MS);
         drawCompletionNoticeTimer?.unref?.();
-        render();
+        renderDrawSurface();
     }
 
     function startDrawCooldownCountdown(data = {}) {
@@ -240,7 +246,7 @@ export function createBookController(deps = {}) {
                 ...data,
                 remainingMs,
             });
-            render();
+            renderDrawSurface();
             if (remainingMs <= 0) {
                 clearDrawCooldownTimer();
             }
@@ -536,7 +542,7 @@ export function createBookController(deps = {}) {
         }
         clearDrawCooldownTimer();
         state.drawProgressText = formatDrawProgress(payload.state, payload.data || {});
-        render();
+        renderDrawSurface();
     }
 
     function cancelCurrentChapterDraw() {
@@ -545,7 +551,7 @@ export function createBookController(deps = {}) {
         clearDrawCooldownTimer();
         clearDrawCompletionNoticeTimer();
         state.drawProgressText = '正在停止配图...';
-        render();
+        renderDrawSurface();
         return true;
     }
 
@@ -584,7 +590,7 @@ export function createBookController(deps = {}) {
         const activeDrawController = drawAbortController;
         state.isDrawingChapter = true;
         state.drawProgressText = '正在准备章节配图...';
-        render();
+        renderDrawSurface();
 
         try {
             const result = await requestHost('xb-ebook:draw-generate', {
@@ -653,7 +659,7 @@ export function createBookController(deps = {}) {
                 showTemporaryDrawNotice(completionNotice);
             } else {
                 state.drawProgressText = '';
-                render();
+                renderDrawSurface();
             }
         }
     }

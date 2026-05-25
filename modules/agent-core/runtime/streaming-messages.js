@@ -10,10 +10,12 @@ export function createStreamingMessageController(deps) {
         persistSession = () => {},
         createRequestId = (prefix = 'tool') => `${prefix}-${Date.now()}`,
         filterThoughtsForCurrentTurn = normalizeThoughtBlocks,
+        minRenderIntervalMs = 0,
     } = deps;
 
     let streamRenderScheduled = false;
     let lastStreamPersistAt = 0;
+    let lastStreamRenderAt = 0;
 
     function normalizeStreamingToolCalls(toolCalls) {
         return normalizeToolCalls(toolCalls, {
@@ -32,8 +34,15 @@ export function createStreamingMessageController(deps) {
         streamRenderScheduled = true;
         const flush = () => {
             streamRenderScheduled = false;
+            lastStreamRenderAt = Date.now();
             render();
         };
+        const delay = Math.max(0, Number(minRenderIntervalMs) || 0);
+        const remaining = delay ? delay - (now - lastStreamRenderAt) : 0;
+        if (remaining > 0) {
+            setTimeout(flush, remaining);
+            return;
+        }
         if (typeof requestAnimationFrame === 'function') {
             requestAnimationFrame(flush);
             return;

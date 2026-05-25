@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-25T13:39:21.955Z",
+  "generatedAt": "2026-05-25T14:52:01.708Z",
   "version": 2,
   "files": [
     {
@@ -294,7 +294,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/agent-core/runtime/streaming-messages.js",
       "relativePath": "modules/agent-core/runtime/streaming-messages.js",
       "extension": ".js",
-      "sizeBytes": 2799
+      "sizeBytes": 3153
     },
     {
       "source": "littlewhitebox",
@@ -1148,14 +1148,14 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/app-src/agent-runner.js",
       "relativePath": "modules/ebook/app-src/agent-runner.js",
       "extension": ".js",
-      "sizeBytes": 28408
+      "sizeBytes": 28741
     },
     {
       "source": "littlewhitebox",
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/app-src/book-controller.js",
       "relativePath": "modules/ebook/app-src/book-controller.js",
       "extension": ".js",
-      "sizeBytes": 30587
+      "sizeBytes": 30861
     },
     {
       "source": "littlewhitebox",
@@ -1176,7 +1176,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/app-src/ebook-app.js",
       "relativePath": "modules/ebook/app-src/ebook-app.js",
       "extension": ".js",
-      "sizeBytes": 11712
+      "sizeBytes": 19672
     },
     {
       "source": "littlewhitebox",
@@ -1218,7 +1218,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/app-src/renderer.js",
       "relativePath": "modules/ebook/app-src/renderer.js",
       "extension": ".js",
-      "sizeBytes": 54903
+      "sizeBytes": 68409
     },
     {
       "source": "littlewhitebox",
@@ -1232,7 +1232,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/app-src/styles.js",
       "relativePath": "modules/ebook/app-src/styles.js",
       "extension": ".js",
-      "sizeBytes": 105563
+      "sizeBytes": 107103
     },
     {
       "source": "littlewhitebox",
@@ -1253,7 +1253,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/app-src/ui-bindings.js",
       "relativePath": "modules/ebook/app-src/ui-bindings.js",
       "extension": ".js",
-      "sizeBytes": 27523
+      "sizeBytes": 27539
     },
     {
       "source": "littlewhitebox",
@@ -1330,7 +1330,7 @@
       "publicPath": "scripts/extensions/third-party/LittleWhiteBox/modules/ebook/tests/book-tools.test.js",
       "relativePath": "modules/ebook/tests/book-tools.test.js",
       "extension": ".js",
-      "sizeBytes": 154609
+      "sizeBytes": 162960
     },
     {
       "source": "littlewhitebox",

@@ -34,6 +34,7 @@ import {
 import { safeJsonParse, safeJsonStringify } from './text-utils.js';
 
 const MAX_TOOL_ROUNDS = 48;
+const EBOOK_STREAM_RENDER_INTERVAL_MS = 80;
 function findLastUserMessageIndex(messages = []) {
     for (let index = messages.length - 1; index >= 0; index -= 1) {
         if (messages[index]?.role === 'user') return index;
@@ -163,6 +164,16 @@ function buildToolDisplayFromTrace(entry = {}) {
     };
 }
 
+function toolChangesBookFiles(toolName = '') {
+    return [
+        EBOOK_TOOL_NAMES.WRITE,
+        EBOOK_TOOL_NAMES.EDIT,
+        EBOOK_TOOL_NAMES.DELETE,
+        EBOOK_TOOL_NAMES.MOVE,
+        EBOOK_TOOL_NAMES.RENAME_BOOK,
+    ].includes(toolName);
+}
+
 function isAbortError(error) {
     return error?.name === 'AbortError' || /aborted|assistant_aborted/i.test(String(error?.message || error || ''));
 }
@@ -179,12 +190,36 @@ export function createEbookAgentRunner(deps = {}) {
         state,
         refreshBooksAndFiles,
         render,
+        renderAgentSurface,
+        renderToolTraceSurface,
+        renderFilesSurface,
+        renderEditorFileSurface,
         showToast,
         persistConversation,
         isEditorDirty,
         getActiveProviderConfig,
         createAdapter,
     } = deps;
+    const renderStreamingSurface = typeof renderAgentSurface === 'function'
+        ? () => {
+            if (!renderAgentSurface()) render();
+        }
+        : render;
+    const renderToolSurface = typeof renderToolTraceSurface === 'function'
+        ? () => {
+            if (!renderToolTraceSurface()) renderStreamingSurface();
+        }
+        : renderStreamingSurface;
+    const renderBookFileSurfaces = () => {
+        let rendered = false;
+        if (typeof renderFilesSurface === 'function') {
+            rendered = renderFilesSurface() || rendered;
+        }
+        if (typeof renderEditorFileSurface === 'function') {
+            rendered = renderEditorFileSurface() || rendered;
+        }
+        if (!rendered) render();
+    };
 
     async function buildCurrentPlansContext(bookId = state.book?.id) {
         if (!bookId) return '';
@@ -340,11 +375,12 @@ export function createEbookAgentRunner(deps = {}) {
             updateStreamingAssistantMessage: updateStreamingMessage,
         } = createStreamingMessageController({
             state,
-            render,
+            render: renderStreamingSurface,
             persistSession: () => {
                 void persistConversation?.(runBookId);
             },
             filterThoughtsForCurrentTurn,
+            minRenderIntervalMs: EBOOK_STREAM_RENDER_INTERVAL_MS,
         });
 
         try {
@@ -416,7 +452,7 @@ export function createEbookAgentRunner(deps = {}) {
 
             for (let round = 1; round <= MAX_TOOL_ROUNDS; round += 1) {
                 state.status = round === 1 ? 'AI 正在思考...' : `AI 正在处理工具结果（${round}/${MAX_TOOL_ROUNDS}）...`;
-                render();
+                renderStreamingSurface();
                 let result;
                 try {
                     const requestTask = {
@@ -495,7 +531,7 @@ export function createEbookAgentRunner(deps = {}) {
                         thoughts: visibleThoughts,
                     }, toolCalls);
                     state.liveToolTurn = storedAssistantToolMessage;
-                    render();
+                    renderToolSurface();
                     const storedToolMessages = [];
                     const toolResponses = [];
                     for (const toolCall of toolCalls) {
@@ -505,7 +541,7 @@ export function createEbookAgentRunner(deps = {}) {
                         const liveTraceEntry = isDelegateTool ? buildRunningToolTraceEntry(toolCall, args, round) : null;
                         if (liveTraceEntry) {
                             state.toolTrace.push(liveTraceEntry);
-                            render();
+                            renderToolSurface();
                         }
                         let toolResult;
                         if (!allowedToolNames.has(toolCall.name)) {
@@ -541,8 +577,10 @@ export function createEbookAgentRunner(deps = {}) {
                             response: toolResult,
                         });
                         recordToolResultForLightBrake(toolCall, toolResult);
-                        await refreshBooksAndFiles();
-                        render();
+                        if (toolChangesBookFiles(toolCall.name)) {
+                            renderBookFileSurfaces();
+                        }
+                        renderToolSurface();
                     }
                     state.messages.push(storedAssistantToolMessage, ...storedToolMessages);
                     await persistConversation?.(runBookId);
