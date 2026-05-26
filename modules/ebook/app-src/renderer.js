@@ -442,24 +442,25 @@ function formatPlanSummary(parsed = {}, toolName = '') {
         return `计划列表：${Number(parsed.count) || plans.length || 0} 项`;
     }
     if (toolName === 'PlanGet') {
-        return plan ? `计划：${plan.title || plan.id || ''}`.trim() : '计划不存在';
+        return plan ? `计划：${plan.title || '未命名计划'}`.trim() : '计划不存在';
     }
     if (toolName === 'PlanCreate') {
-        return `计划已创建：${plan?.title || plan?.id || ''}`.trim();
+        return `计划已创建：${plan?.title || '未命名计划'}`.trim();
     }
     if (toolName === 'PlanUpdate') {
-        return `计划已更新：${plan?.title || plan?.id || ''}`.trim();
+        return `计划已更新：${plan?.title || '未命名计划'}`.trim();
     }
     return parsed.summary || '计划已返回';
 }
 
 function renderPlanItem(plan = {}) {
-    const title = String(plan.title || plan.id || '未命名计划').trim();
+    const title = String(plan.title || '未命名计划').trim();
     const status = String(plan.status || '').trim();
+    const blockerCount = Array.isArray(plan.blockedBy) ? plan.blockedBy.length : 0;
     const meta = [
         status ? `状态：${formatPlanStatusLabel(status)}` : '',
         plan.priority ? `优先级：${plan.priority}` : '',
-        Array.isArray(plan.blockedBy) && plan.blockedBy.length ? `依赖：${plan.blockedBy.join('、')}` : '',
+        blockerCount ? `依赖：${blockerCount} 项` : '',
     ].filter(Boolean).join('，');
     const detail = [
         meta,
@@ -470,7 +471,7 @@ function renderPlanItem(plan = {}) {
         <div class="xb-tool-plan-item">
             <span class="xb-tool-plan-box">${escapeHtml(formatPlanMark(status))}</span>
             <p>
-                <strong>${escapeHtml(title)}${plan.id ? ` <em>${escapeHtml(plan.id)}</em>` : ''}</strong>
+                <strong>${escapeHtml(title)}</strong>
                 ${detail ? `<small>${escapeHtml(detail)}</small>` : ''}
             </p>
         </div>

@@ -260,6 +260,8 @@ export function getEbookToolDefinitions(options = {}) {
                         'Use for multi-step writing, long revisions, blockers, or tasks that need later continuation.',
                         'Plans only record state. They do not automatically review, draft prose, or call other tools.',
                         'Use only when the task needs multi-step tracking. Short direct writing or one-off answers do not need a plan.',
+                        'PlanCreate always creates a new item. The returned id is only an internal handle for later PlanUpdate/PlanGet, not evidence that a plan already existed.',
+                        'Do not expose plan ids to the user unless they explicitly ask for debugging details.',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
@@ -286,6 +288,7 @@ export function getEbookToolDefinitions(options = {}) {
                         'Mark completed only after the corresponding writing, review, or revision is actually done.',
                         'If dependencies are not complete, the item cannot move to in_progress.',
                         'The `id` must come from PlanCreate or PlanList. Do not invent an id-like value.',
+                        'The id is an internal handle for tools. Do not present it to the user as meaningful content.',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
@@ -315,6 +318,7 @@ export function getEbookToolDefinitions(options = {}) {
                         'Use when continuing writing, continuing revisions, avoiding duplicate plans, choosing next steps, or checking blockers.',
                         'Without filters, returns current plans. Use status, priority, or owner only when narrowing the result.',
                         'If you are unsure whether a related plan already exists, use PlanList before creating or updating.',
+                        'Plan ids in the result are internal handles for future tool calls. Summarize plans by title/status for the user.',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
@@ -336,6 +340,7 @@ export function getEbookToolDefinitions(options = {}) {
                         'Read the full record of one writing plan item for the current book.',
                         'Use when the plan summary is not enough and you need details, blockers, notes, result, or error.',
                         'The `id` must come from PlanCreate or PlanList.',
+                        'The id is an internal handle for tools. Do not present it to the user as meaningful content.',
                     ].join('\n'),
                     parameters: {
                         type: 'object',

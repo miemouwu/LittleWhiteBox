@@ -2764,7 +2764,74 @@ test('Book renderer shows plan update results as checklist items', async () => {
     assert.match(html, /完成第一章细纲/);
     assert.match(html, /状态：已完成/);
     assert.match(html, /✓/);
+    assert.doesNotMatch(html, /完成第一章细纲\s*<em>plan-1<\/em>/);
     assert.doesNotMatch(html, /&quot;plan&quot;/);
+});
+
+test('Book renderer hides internal plan ids in visible plan checklist', async () => {
+    await resetDb();
+    const book = await createBook('计划 ID 隐藏测试');
+    const state = {
+        book,
+        books: [book],
+        files: await listBookFiles(book.id),
+        selectedPath: 'book/chapters/001.md',
+        readerPath: '',
+        viewMode: 'studio',
+        editorContent: '',
+        savedContent: '',
+        messages: [
+            { role: 'user', content: '测试计划显示。' },
+            {
+                role: 'assistant',
+                content: '',
+                toolCalls: [{
+                    id: 'call-plan-create',
+                    name: EBOOK_TOOL_NAMES.PLAN_CREATE,
+                    arguments: '{"title":"完成新书开书定位"}',
+                }],
+            },
+            {
+                role: 'tool',
+                toolCallId: 'call-plan-create',
+                toolName: EBOOK_TOOL_NAMES.PLAN_CREATE,
+                content: JSON.stringify({
+                    ok: true,
+                    plan: {
+                        id: 'plan-1779809298711-xr8w6z',
+                        title: '完成新书开书定位',
+                        status: 'pending',
+                        priority: 'normal',
+                        owner: 'assistant',
+                        blockedBy: ['plan-hidden-a', 'plan-hidden-b'],
+                    },
+                    blockers: [],
+                }),
+            },
+            { role: 'assistant', content: '计划已创建。' },
+        ],
+        toolTrace: [],
+        openToolTurnKeys: [],
+        activeTurnStartIndex: -1,
+        openThoughtKeys: [],
+        historySummary: '',
+        isBusy: false,
+        status: '就绪',
+        toast: '',
+    };
+
+    const html = renderEbookShell({
+        state,
+        providerConfig: { provider: 'test', model: 'demo' },
+        providerLabel: '测试',
+        dirty: false,
+    });
+
+    assert.match(html, /计划已创建：完成新书开书定位/);
+    assert.match(html, /完成新书开书定位/);
+    assert.match(html, /状态：待办，优先级：normal，依赖：2 项/);
+    assert.doesNotMatch(html, /<em>plan-1779809298711-xr8w6z<\/em>/);
+    assert.doesNotMatch(html, /依赖：plan-hidden-a/);
 });
 
 test('Book renderer falls back for malformed plan tool results', async () => {

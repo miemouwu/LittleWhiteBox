@@ -1,16 +1,16 @@
-var uw = Object.create, Cg = Object.defineProperty, cw = Object.getOwnPropertyDescriptor, dw = Object.getOwnPropertyNames, fw = Object.getPrototypeOf, pw = Object.prototype.hasOwnProperty, Ua = (e, t) => () => (t || e((t = { exports: {} }).exports, t), t.exports), hw = (e, t, n, r) => {
+var u0 = Object.create, Cg = Object.defineProperty, c0 = Object.getOwnPropertyDescriptor, d0 = Object.getOwnPropertyNames, f0 = Object.getPrototypeOf, p0 = Object.prototype.hasOwnProperty, Ua = (e, t) => () => (t || e((t = { exports: {} }).exports, t), t.exports), h0 = (e, t, n, r) => {
   if (t && typeof t == "object" || typeof t == "function")
-    for (var o = dw(t), i = 0, s = o.length, u; i < s; i++)
-      u = o[i], !pw.call(e, u) && u !== n && Cg(e, u, {
+    for (var o = d0(t), i = 0, s = o.length, u; i < s; i++)
+      u = o[i], !p0.call(e, u) && u !== n && Cg(e, u, {
         get: ((l) => t[l]).bind(null, u),
-        enumerable: !(r = cw(t, u)) || r.enumerable
+        enumerable: !(r = c0(t, u)) || r.enumerable
       });
   return e;
-}, mw = (e, t, n) => (n = e != null ? uw(fw(e)) : {}, hw(t || !e || !e.__esModule ? Cg(n, "default", {
+}, m0 = (e, t, n) => (n = e != null ? u0(f0(e)) : {}, h0(t || !e || !e.__esModule ? Cg(n, "default", {
   value: e,
   enumerable: !0
-}) : n, e)), gw = "xb-ebook-root";
-var yw = 600 * 1e3, bf = 1e4, Vi = Object.freeze({
+}) : n, e)), g0 = "xb-ebook-root";
+var y0 = 600 * 1e3, bf = 1e4, Vi = Object.freeze({
   CREATE: "PlanCreate",
   UPDATE: "PlanUpdate",
   LIST: "PlanList",
@@ -31,8 +31,8 @@ var yw = 600 * 1e3, bf = 1e4, Vi = Object.freeze({
   "completed",
   "failed",
   "cancelled"
-]), bw = "completed";
-function vw(e = "plan") {
+]), b0 = "completed";
+function v0(e = "plan") {
   return `${e}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 function Ie(e = "", t = 4e3) {
@@ -46,7 +46,7 @@ function Pg(e = "", t = "pending") {
   const n = Ie(e, 32);
   return kg.includes(n) ? n : t;
 }
-function xw(e = "", t = "normal") {
+function x0(e = "", t = "normal") {
   const n = Ie(e, 32);
   return Ig.includes(n) ? n : t;
 }
@@ -114,7 +114,7 @@ function Vn(e) {
     title: String(e.title || ""),
     detail: String(e.detail || ""),
     status: Pg(e.status),
-    priority: xw(e.priority),
+    priority: x0(e.priority),
     owner: Hc(e.owner),
     blockedBy: pi(e.blockedBy),
     notes: Ng(e.notes),
@@ -132,8 +132,8 @@ function Fe(e, t = {}) {
     ...t
   };
 }
-function _w(e) {
-  return Pg(e?.status) === bw;
+function _0(e) {
+  return Pg(e?.status) === b0;
 }
 async function Dg(e, t, n = []) {
   const r = pi(n);
@@ -143,7 +143,7 @@ async function Dg(e, t, n = []) {
   }));
 }
 async function pl(e, t, n = []) {
-  return (await Dg(e, t, n)).filter((r) => !_w(r.plan)).map((r) => ({
+  return (await Dg(e, t, n)).filter((r) => !_0(r.plan)).map((r) => ({
     id: r.id,
     title: r.plan?.title || "",
     status: r.plan?.status || "missing"
@@ -156,7 +156,7 @@ async function xf(e, t, n = []) {
     entries: r
   };
 }
-async function ww(e, t, n, r = []) {
+async function w0(e, t, n, r = []) {
   const o = Ie(n, 160);
   if (!o) return !1;
   const i = /* @__PURE__ */ new Set(), s = pi(r);
@@ -171,7 +171,7 @@ async function ww(e, t, n, r = []) {
   }
   return !1;
 }
-function Sw(e = {}) {
+function S0(e = {}) {
   const t = Ie(e.title, 400), n = Ie(e.detail, 4e3), r = Mg(e.blockedBy);
   if (!r.ok) return r;
   const o = yt(e, "priority") ? Vc(e.priority) : {
@@ -188,7 +188,7 @@ function Sw(e = {}) {
     note: Ie(e.note || e.notes, 2e3)
   } : o;
 }
-function Tw(e = {}) {
+function T0(e = {}) {
   const t = Ie(e.id, 160), n = yt(e, "blockedBy"), r = yt(e, "status"), o = yt(e, "priority"), i = r ? Rg(e.status) : {
     ok: !0,
     status: void 0
@@ -227,12 +227,12 @@ function Tw(e = {}) {
   };
 }
 function $g(e = {}) {
-  const t = typeof e.now == "function" ? e.now : () => Date.now(), n = typeof e.createId == "function" ? e.createId : vw, r = e.plansTable;
+  const t = typeof e.now == "function" ? e.now : () => Date.now(), n = typeof e.createId == "function" ? e.createId : v0, r = e.plansTable;
   if (!r) throw new Error("plan_ledger_table_required");
   async function o(p, f = {}) {
     const h = mo(p);
     if (!h) return Fe("assistant_session_required");
-    const m = Sw(f);
+    const m = S0(f);
     if (!m.ok) return Fe(m.error, { value: m.value || "" });
     if (!m.title) return Fe("plan_title_required");
     const y = await xf(r, h, m.blockedBy);
@@ -262,7 +262,7 @@ function $g(e = {}) {
   async function i(p, f = {}) {
     const h = mo(p);
     if (!h) return Fe("assistant_session_required");
-    const m = Tw(f);
+    const m = T0(f);
     if (!m.ok) return Fe(m.error, {
       id: m.id || "",
       value: m.value || ""
@@ -278,7 +278,7 @@ function $g(e = {}) {
       if (m.blockedBy.includes(g.id)) return Fe("plan_self_blocked", { id: g.id });
       const _ = await xf(r, h, m.blockedBy);
       if (!_.ok) return _;
-      if (await ww(r, h, g.id, m.blockedBy)) return Fe("plan_blocked_by_cycle", {
+      if (await w0(r, h, g.id, m.blockedBy)) return Fe("plan_blocked_by_cycle", {
         id: g.id,
         blockedBy: m.blockedBy
       });
@@ -368,7 +368,7 @@ function hl(e = "", t = 400) {
   const n = String(e || "").replace(/\s+/g, " ").trim();
   return n.length > t ? n.slice(0, t) : n;
 }
-function Ew(e = {}) {
+function E0(e = {}) {
   const t = hl(e.id, 160), n = String(e.status || "").trim(), r = hl(e.title, 400), o = Number(e.updatedAt) || 0, i = Array.isArray(e.blockedBy) ? e.blockedBy.map((s) => hl(s, 160)).filter(Boolean) : [];
   return !t || !r || !uu.has(n) ? null : {
     id: t,
@@ -378,8 +378,8 @@ function Ew(e = {}) {
     blockedBy: i
   };
 }
-function Aw(e = []) {
-  const t = (Array.isArray(e) ? e : []).map(Ew).filter(Boolean).sort((r, o) => {
+function A0(e = []) {
+  const t = (Array.isArray(e) ? e : []).map(E0).filter(Boolean).sort((r, o) => {
     const i = uu.get(r.status) - uu.get(o.status);
     return i || o.updatedAt - r.updatedAt;
   }).slice(0, Bg);
@@ -391,11 +391,11 @@ function Aw(e = []) {
   }), n.join(`
 `).trim();
 }
-async function Cw(e = {}) {
+async function C0(e = {}) {
   const t = String(e.sessionId || "").trim();
   if (!t) return "";
   const n = e.ledger || (e.plansTable ? $g({ plansTable: e.plansTable }) : null);
-  return n ? Aw((await Promise.all(Lg.map(async (r) => {
+  return n ? A0((await Promise.all(Lg.map(async (r) => {
     const o = await n.listPlans(t, {
       status: r,
       limit: Bg
@@ -427,7 +427,7 @@ function ml(...e) {
     t.has(o) || (t.add(o), n.push(r));
   }), n;
 }
-function kw(e = [], t = [], n = {}) {
+function k0(e = [], t = [], n = {}) {
   const r = An(e);
   if (!r.length) return r;
   const o = n.currentMessage || null, i = /* @__PURE__ */ new Set();
@@ -437,7 +437,7 @@ function kw(e = [], t = [], n = {}) {
     });
   }), r.filter((s) => !i.has(cu(s)));
 }
-function Iw(e, t = {}) {
+function I0(e, t = {}) {
   return (Array.isArray(e?.googleContent?.parts) ? e.googleContent.parts : []).filter((n) => n?.functionCall?.name).map((n, r) => ({
     id: String(n.functionCall.id || `${t.fallbackPrefix || "google-tool"}-${r + 1}`),
     name: String(n.functionCall.name || ""),
@@ -446,7 +446,7 @@ function Iw(e, t = {}) {
 }
 function Ug(e = {}, t = {}, n = {}) {
   const r = hi(e?.toolCalls, n);
-  return r.length ? r : String(e?.provider || t?.provider || "").toLowerCase() !== "google" ? [] : hi(Iw(e?.providerPayload, n), n);
+  return r.length ? r : String(e?.provider || t?.provider || "").toLowerCase() !== "google" ? [] : hi(I0(e?.providerPayload, n), n);
 }
 function Fg(e = {}, t = [], n = {}) {
   return {
@@ -463,14 +463,14 @@ function Fg(e = {}, t = [], n = {}) {
     }))
   };
 }
-function Pw(e = {}) {
+function P0(e = {}) {
   return {
     role: "tool",
     tool_call_id: String(e.toolCallId || e.tool_call_id || ""),
     content: String(e.content || "")
   };
 }
-function Rw(e = [], t = {}) {
+function R0(e = [], t = {}) {
   const n = typeof t.includeMessage == "function" ? t.includeMessage : () => !0, r = typeof t.buildUserContent == "function" ? t.buildUserContent : (i) => i.content, o = {
     fallbackPrefix: t.fallbackPrefix || "history-tool",
     createId: t.createId
@@ -478,7 +478,7 @@ function Rw(e = [], t = {}) {
   return (Array.isArray(e) ? e : []).filter((i) => i && n(i)).map((i) => i.role === "assistant" && Array.isArray(i.toolCalls) && i.toolCalls.length ? Fg({
     text: i.content || "",
     providerPayload: i.providerPayload
-  }, i.toolCalls, o) : i.role === "tool" ? Pw(i) : {
+  }, i.toolCalls, o) : i.role === "tool" ? P0(i) : {
     role: i.role || "user",
     providerPayload: i.providerPayload,
     content: i.role === "user" ? r(i) : String(i.content || "")
@@ -487,7 +487,7 @@ function Rw(e = [], t = {}) {
 function du(e) {
   return typeof e == "string" && e.trim().length > 0;
 }
-var Mw = 16, Nw = 420, _f = 240, Rs = 24;
+var M0 = 16, N0 = 420, _f = 240, Rs = 24;
 function Ms(e = "", t = 4e3) {
   const n = String(e || "").trim();
   return n.length > t ? n.slice(0, t) : n;
@@ -496,17 +496,17 @@ function ra(e = "", t = 400) {
   const n = String(e || "").replace(/\s+/g, " ").trim();
   return n.length > t ? n.slice(0, t) : n;
 }
-function Dw(e = "") {
+function D0(e = "") {
   return String(e).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-function $w(e) {
+function $0(e) {
   try {
     return JSON.stringify(e, null, 2);
   } catch {
     return String(e || "");
   }
 }
-function Lw(e = {}) {
+function L0(e = {}) {
   return {
     task: Ms(e.task, 6e3),
     context: Ms(e.context, Number.POSITIVE_INFINITY),
@@ -516,7 +516,7 @@ function Lw(e = {}) {
 function Og(e = {}) {
   return String(e?.function?.name || "").trim();
 }
-function Bw(e = "", t = {}) {
+function B0(e = "", t = {}) {
   return [
     t.PLAN_CREATE,
     t.PLAN_UPDATE,
@@ -524,27 +524,27 @@ function Bw(e = "", t = {}) {
     t.PLAN_GET
   ].includes(String(e || "").trim());
 }
-function Uw(e = "", t = {}) {
+function U0(e = "", t = {}) {
   const n = String(e || "").trim();
-  return !n || n === t.DELEGATE_RUN || Bw(n, t);
+  return !n || n === t.DELEGATE_RUN || B0(n, t);
 }
-function Fw(e = [], t = {}) {
-  return (Array.isArray(e) ? e : []).filter((n) => !Uw(Og(n), t));
+function F0(e = [], t = {}) {
+  return (Array.isArray(e) ? e : []).filter((n) => !U0(Og(n), t));
 }
-function Ow(e = "", t = "") {
-  const n = Dw(t), r = new RegExp(`(^|\\n)## ${n}\\n[\\s\\S]*?(?=\\n## |\\n# |$)`, "g");
+function O0(e = "", t = "") {
+  const n = D0(t), r = new RegExp(`(^|\\n)## ${n}\\n[\\s\\S]*?(?=\\n## |\\n# |$)`, "g");
   return String(e || "").replace(r, "$1").replace(/\n{3,}/g, `
 
 `).trim();
 }
-function qw(e = "") {
+function q0(e = "") {
   let t = Ms(e, 8e4);
   return ["Using Plans", "Using Delegates"].forEach((n) => {
-    t = Ow(t, n);
+    t = O0(t, n);
   }), t;
 }
-function Gw(e = "") {
-  return [qw(e), [
+function G0(e = "") {
+  return [q0(e), [
     "# 子任务执行规则",
     " - 只处理 [Task] 里的子任务；[Context] 和 [Expected deliverable] 是主助手显式交给你的背景和边界。",
     " - 不默认知道主对话、[Current context]、[Current plans] 或主助手未写出的推理。",
@@ -557,7 +557,7 @@ function Gw(e = "") {
 
 `);
 }
-function Hw(e = {}) {
+function H0(e = {}) {
   return [
     ["[Task]", e.task],
     ["[Context]", e.context],
@@ -584,17 +584,17 @@ function fu(e = {}) {
     typeof e[n] == "string" && e[n].trim() && t.push(`${n}: ${ra(e[n], 120)}`);
   }), typeof e.patchText == "string" && t.push(`patchLength: ${e.patchText.length}`), t.join("; ");
 }
-function Vw(e = {}) {
+function V0(e = {}) {
   return ra(!e || typeof e != "object" ? e : e.summary || e.message || e.note || e.error || e.path || e.command || "", _f);
 }
-function Kw(e = {}, t = {}, n = {}) {
+function K0(e = {}, t = {}, n = {}) {
   const r = !(n && typeof n == "object" && n.ok === !1);
   return {
     name: String(e.name || ""),
     ok: r,
     args: fu(t),
     error: r ? "" : String(n?.error || "tool_failed"),
-    summary: Vw(n)
+    summary: V0(n)
   };
 }
 function pr(e = {}, t = {}) {
@@ -604,10 +604,10 @@ function pr(e = {}, t = {}) {
     } catch {
     }
 }
-function Ww(e = "") {
-  return ra(e, Nw);
+function W0(e = "") {
+  return ra(e, N0);
 }
-function zw(e = "") {
+function z0(e = "") {
   return {
     ok: !1,
     error: "delegate_tool_not_available",
@@ -615,7 +615,7 @@ function zw(e = "") {
     message: "该工具不在子任务工具列表中。"
   };
 }
-function Jw(e = 0, t = 0, n = []) {
+function J0(e = 0, t = 0, n = []) {
   return {
     ok: !1,
     status: "round_limit",
@@ -627,10 +627,10 @@ function Jw(e = 0, t = 0, n = []) {
     error: "delegate_round_limit"
   };
 }
-function Yw(e = {}) {
-  const { createAdapter: t, executeToolCall: n, getActiveProviderConfig: r, getDelegateProviderConfig: o, getSystemPrompt: i, resolveToolDefinitions: s, safeJsonParse: u, isAbortError: l, TOOL_NAMES: d } = e, p = Math.max(1, Number(e.maxRounds) || Mw);
+function Y0(e = {}) {
+  const { createAdapter: t, executeToolCall: n, getActiveProviderConfig: r, getDelegateProviderConfig: o, getSystemPrompt: i, resolveToolDefinitions: s, safeJsonParse: u, isAbortError: l, TOOL_NAMES: d } = e, p = Math.max(1, Number(e.maxRounds) || M0);
   async function f(h = {}, m = {}) {
-    const y = Lw(h);
+    const y = L0(h);
     if (!y.task) return {
       ok: !1,
       status: "failed",
@@ -641,12 +641,12 @@ function Yw(e = {}) {
       toolTrace: [],
       error: "delegate_task_required"
     };
-    const g = typeof o == "function" ? o(m) : r({ role: "delegate" }), b = t(g), _ = Gw(i()), v = Fw(s(), d), x = new Set(v.map(Og).filter(Boolean)), S = [{
+    const g = typeof o == "function" ? o(m) : r({ role: "delegate" }), b = t(g), _ = G0(i()), v = F0(s(), d), x = new Set(v.map(Og).filter(Boolean)), S = [{
       role: "system",
       content: _
     }, {
       role: "user",
-      content: Hw(y)
+      content: H0(y)
     }], T = [];
     let w = 0, C = 0, A = !1, P = !1, N = null, H = "";
     const G = () => {
@@ -713,12 +713,12 @@ function Yw(e = {}) {
             args: U,
             argsSummary: fu(U),
             summary: `${$.name} ${fu(U) || ""}`.trim()
-          }), W = await n($, U, m)) : W = zw($.name), S.push({
+          }), W = await n($, U, m)) : W = z0($.name), S.push({
             role: "tool",
             tool_call_id: $.id,
-            content: $w(W)
+            content: $0(W)
           });
-          const ne = Kw($, U, W);
+          const ne = K0($, U, W);
           T.push(ne), pr(m, {
             type: "tool_result",
             round: C,
@@ -764,18 +764,18 @@ function Yw(e = {}) {
         ok: !0,
         status: "completed",
         result: J,
-        summary: Ww(J),
+        summary: W0(J),
         rounds: C,
         toolCallCount: w,
         toolTrace: T.slice(-Rs),
         error: ""
       };
     }
-    return Jw(C, w, T);
+    return J0(C, w, T);
   }
   return { runDelegate: f };
 }
-function Xw(e) {
+function X0(e) {
   const { state: t, render: n, persistSession: r = () => {
   }, createRequestId: o = (g = "tool") => `${g}-${Date.now()}`, filterThoughtsForCurrentTurn: i = An, minRenderIntervalMs: s = 0 } = e;
   let u = !1, l = 0, d = 0;
@@ -828,7 +828,7 @@ function Xw(e) {
     updateStreamingAssistantMessage: m
   };
 }
-function Qw(e = {}) {
+function Q0(e = {}) {
   let t = "", n = 0, r = "", o = "";
   const { getMessageText: i = u, threshold: s = 3 } = e;
   function u(f, h, m) {
@@ -853,7 +853,7 @@ function Qw(e = {}) {
     getMessage: p
   };
 }
-var Zw = "web_search", jw = "https://api.tavily.com", qg = 5, e0 = 8;
+var Z0 = "web_search", j0 = "https://api.tavily.com", qg = 5, ew = 8;
 function mi(e = "") {
   return String(e || "").trim();
 }
@@ -862,12 +862,12 @@ function tt(e = "") {
 }
 function Kc(e, t = qg) {
   const n = Math.floor(Number(e));
-  return !Number.isFinite(n) || n <= 0 ? t : Math.max(1, Math.min(e0, n));
+  return !Number.isFinite(n) || n <= 0 ? t : Math.max(1, Math.min(ew, n));
 }
 function oa(e = {}) {
   return !!mi(e.tavilyApiKey);
 }
-function t0(e = {}) {
+function tw(e = {}) {
   return {
     title: String(e.title || "").trim(),
     url: String(e.url || "").trim(),
@@ -875,7 +875,7 @@ function t0(e = {}) {
     score: Number(e.score || 0)
   };
 }
-async function n0(e = {}, t = {}) {
+async function nw(e = {}, t = {}) {
   const n = String(t.query || "").trim();
   if (!n) throw new Error("empty_query");
   const r = mi(e.tavilyApiKey);
@@ -903,7 +903,7 @@ async function n0(e = {}, t = {}) {
   } catch (l) {
     throw new Error(`tavily_search_invalid_json:${l instanceof Error ? l.message : String(l || "json_parse_failed")}`);
   }
-  return (Array.isArray(u?.results) ? u.results : []).map((l) => t0(l)).filter((l) => l.title || l.content || l.url);
+  return (Array.isArray(u?.results) ? u.results : []).map((l) => tw(l)).filter((l) => l.title || l.content || l.url);
 }
 function Gg(e = {}) {
   const t = [], n = String(e.query || "").trim();
@@ -920,7 +920,7 @@ function Gg(e = {}) {
     text: r.join("；")
   }), t;
 }
-function r0(e = "", t = [], n = qg) {
+function rw(e = "", t = [], n = qg) {
   const r = String(e || "").trim(), o = Array.isArray(t) ? t : [], i = o.length;
   return {
     ok: !0,
@@ -965,12 +965,12 @@ function gl(e = "", t) {
     message: n
   };
 }
-async function o0(e = {}, t = {}, n = {}) {
+async function ow(e = {}, t = {}, n = {}) {
   const r = String(t.query || "").trim(), o = Kc(t.maxResults);
   if (!r) return gl(r, "empty_query");
   if (!oa(e)) return gl(r, "web_search_not_configured");
   try {
-    return r0(r, await n0(e, {
+    return rw(r, await nw(e, {
       query: r,
       maxResults: o,
       signal: n.signal
@@ -996,7 +996,7 @@ function Hg(e = {}, t = 0, n = {}) {
     total: r
   };
 }
-function i0(e = {}, t = 0, n = {}) {
+function iw(e = {}, t = 0, n = {}) {
   const r = Math.max(0, Number(t) || 0), o = Hg(e, r, n);
   if (!o.hiddenBefore) return !1;
   const i = ia(n.chunk, 20);
@@ -1012,7 +1012,7 @@ var pu = function(e, t) {
     for (var o in r) Object.prototype.hasOwnProperty.call(r, o) && (n[o] = r[o]);
   }, pu(e, t);
 };
-function s0(e, t) {
+function sw(e, t) {
   if (typeof t != "function" && t !== null) throw new TypeError("Class extends value " + String(t) + " is not a constructor or null");
   pu(e, t);
   function n() {
@@ -1041,9 +1041,9 @@ function xt(e, t) {
     e[n] = t[n];
   }), e;
 }
-var Kr = Object.getPrototypeOf, a0 = {}.hasOwnProperty;
+var Kr = Object.getPrototypeOf, aw = {}.hasOwnProperty;
 function st(e, t) {
-  return a0.call(e, t);
+  return aw.call(e, t);
 }
 function Wr(e, t) {
   typeof t == "function" && (t = t(Kr(e))), (typeof Reflect > "u" ? He : Reflect.ownKeys)(t).forEach(function(n) {
@@ -1067,14 +1067,14 @@ function Xr(e) {
     return e.prototype = Object.create(t.prototype), Cn(e.prototype, "constructor", e), { extend: Wr.bind(null, e.prototype) };
   } };
 }
-var l0 = Object.getOwnPropertyDescriptor;
+var lw = Object.getOwnPropertyDescriptor;
 function Kg(e, t) {
-  var n = l0(e, t), r;
+  var n = lw(e, t), r;
   return n || (r = Kr(e)) && Kg(r, t);
 }
-var u0 = [].slice;
+var uw = [].slice;
 function Fa(e, t, n) {
-  return u0.call(e, t, n);
+  return uw.call(e, t, n);
 }
 function Wg(e, t) {
   return t(e);
@@ -1085,7 +1085,7 @@ function $o(e) {
 function zg(e) {
   ze.setImmediate ? setImmediate(e) : setTimeout(e, 0);
 }
-function c0(e, t) {
+function cw(e, t) {
   return e.reduce(function(n, r, o) {
     var i = t(r, o);
     return i && (n[i[0]] = i[1]), n;
@@ -1124,7 +1124,7 @@ function vt(e, t, n) {
       } else n === void 0 ? ke(e) && !isNaN(parseInt(t)) ? e.splice(t, 1) : delete e[t] : e[t] = n;
     }
 }
-function d0(e, t) {
+function dw(e, t) {
   typeof t == "string" ? vt(e, t, void 0) : "length" in t && [].map.call(t, function(n) {
     vt(e, n, void 0);
   });
@@ -1134,11 +1134,11 @@ function Jg(e) {
   for (var n in e) st(e, n) && (t[n] = e[n]);
   return t;
 }
-var f0 = [].concat;
+var fw = [].concat;
 function Yg(e) {
-  return f0.apply([], e);
+  return fw.apply([], e);
 }
-var p0 = "BigUint64Array,BigInt64Array,Array,Boolean,String,Date,RegExp,Blob,File,FileList,FileSystemFileHandle,FileSystemDirectoryHandle,ArrayBuffer,DataView,Uint8ClampedArray,ImageBitmap,ImageData,Map,Set,CryptoKey".split(",").concat(Yg([
+var pw = "BigUint64Array,BigInt64Array,Array,Boolean,String,Date,RegExp,Blob,File,FileList,FileSystemFileHandle,FileSystemDirectoryHandle,ArrayBuffer,DataView,Uint8ClampedArray,ImageBitmap,ImageData,Map,Set,CryptoKey".split(",").concat(Yg([
   8,
   16,
   32,
@@ -1153,7 +1153,7 @@ var p0 = "BigUint64Array,BigInt64Array,Array,Boolean,String,Date,RegExp,Blob,Fil
   });
 }))).filter(function(e) {
   return ze[e];
-}), Xg = new Set(p0.map(function(e) {
+}), Xg = new Set(pw.map(function(e) {
   return ze[e];
 }));
 function Qg(e) {
@@ -1164,7 +1164,7 @@ function Qg(e) {
   }
   return t;
 }
-function h0(e) {
+function hw(e) {
   for (var t in e) if (st(e, t)) return !1;
   return !0;
 }
@@ -1189,11 +1189,11 @@ function hu(e) {
   }
   return t;
 }
-var m0 = {}.toString;
+var mw = {}.toString;
 function mu(e) {
-  return m0.call(e).slice(8, -1);
+  return mw.call(e).slice(8, -1);
 }
-var gu = typeof Symbol < "u" ? Symbol.iterator : "@@iterator", g0 = typeof gu == "symbol" ? function(e) {
+var gu = typeof Symbol < "u" ? Symbol.iterator : "@@iterator", gw = typeof gu == "symbol" ? function(e) {
   var t;
   return e != null && (t = e[gu]) && t.apply(e);
 } : function() {
@@ -1209,7 +1209,7 @@ function rn(e) {
   if (arguments.length === 1) {
     if (ke(e)) return e.slice();
     if (this === kr && typeof e == "string") return [e];
-    if (o = g0(e)) {
+    if (o = gw(e)) {
       for (n = []; r = o.next(), !r.done; ) n.push(r.value);
       return n;
     }
@@ -1227,7 +1227,7 @@ var zc = typeof Symbol < "u" ? function(e) {
   return e[Symbol.toStringTag] === "AsyncFunction";
 } : function() {
   return !1;
-}, y0 = [
+}, yw = [
   "Modify",
   "Bulk",
   "OpenFailed",
@@ -1259,7 +1259,7 @@ var zc = typeof Symbol < "u" ? function(e) {
   "QuotaExceeded",
   "Syntax",
   "DataClone"
-], Jc = y0.concat(Zg), b0 = {
+], Jc = yw.concat(Zg), bw = {
   VersionChanged: "Database version changed by other database connection",
   DatabaseClosed: "Database has been closed",
   Abort: "Transaction aborted",
@@ -1292,13 +1292,13 @@ function Lr(e, t) {
 Xr(Lr).from(Qr);
 var Yc = Jc.reduce(function(e, t) {
   return e[t] = t + "Error", e;
-}, {}), v0 = Qr, ae = Jc.reduce(function(e, t) {
+}, {}), vw = Qr, ae = Jc.reduce(function(e, t) {
   var n = t + "Error";
   function r(o, i) {
     this.name = n, o ? typeof o == "string" ? (this.message = "".concat(o).concat(i ? `
- ` + i : ""), this.inner = i || null) : typeof o == "object" && (this.message = "".concat(o.name, " ").concat(o.message), this.inner = o) : (this.message = b0[t] || n, this.inner = null);
+ ` + i : ""), this.inner = i || null) : typeof o == "object" && (this.message = "".concat(o.name, " ").concat(o.message), this.inner = o) : (this.message = bw[t] || n, this.inner = null);
   }
-  return Xr(r).from(v0), e[t] = r, e;
+  return Xr(r).from(vw), e[t] = r, e;
 }, {});
 ae.Syntax = SyntaxError;
 ae.Type = TypeError;
@@ -1306,7 +1306,7 @@ ae.Range = RangeError;
 var wf = Zg.reduce(function(e, t) {
   return e[t + "Error"] = ae[t], e;
 }, {});
-function x0(e, t) {
+function xw(e, t) {
   if (!e || e instanceof Qr || e instanceof TypeError || e instanceof SyntaxError || !e.name || !wf[e.name]) return e;
   var n = new wf[e.name](t || e.message, e);
   return "stack" in e && Cn(n, "stack", { get: function() {
@@ -1328,7 +1328,7 @@ function Te() {
 function Pi(e) {
   return e;
 }
-function _0(e, t) {
+function _w(e, t) {
   return e == null || e === Pi ? t : function(n) {
     return t(e(n));
   };
@@ -1338,7 +1338,7 @@ function rr(e, t) {
     e.apply(this, arguments), t.apply(this, arguments);
   };
 }
-function w0(e, t) {
+function ww(e, t) {
   return e === Te ? t : function() {
     var n = e.apply(this, arguments);
     n !== void 0 && (arguments[0] = n);
@@ -1348,14 +1348,14 @@ function w0(e, t) {
     return r && (this.onsuccess = this.onsuccess ? rr(r, this.onsuccess) : r), o && (this.onerror = this.onerror ? rr(o, this.onerror) : o), i !== void 0 ? i : n;
   };
 }
-function S0(e, t) {
+function Sw(e, t) {
   return e === Te ? t : function() {
     e.apply(this, arguments);
     var n = this.onsuccess, r = this.onerror;
     this.onsuccess = this.onerror = null, t.apply(this, arguments), n && (this.onsuccess = this.onsuccess ? rr(n, this.onsuccess) : n), r && (this.onerror = this.onerror ? rr(r, this.onerror) : r);
   };
 }
-function T0(e, t) {
+function Tw(e, t) {
   return e === Te ? t : function(n) {
     var r = e.apply(this, arguments);
     xt(n, r);
@@ -1365,7 +1365,7 @@ function T0(e, t) {
     return o && (this.onsuccess = this.onsuccess ? rr(o, this.onsuccess) : o), i && (this.onerror = this.onerror ? rr(i, this.onerror) : i), r === void 0 ? s === void 0 ? void 0 : s : xt(r, s);
   };
 }
-function E0(e, t) {
+function Ew(e, t) {
   return e === Te ? t : function() {
     return t.apply(this, arguments) === !1 ? !1 : e.apply(this, arguments);
   };
@@ -1399,12 +1399,12 @@ var gi = {}, ty = 100, Qc = typeof Promise > "u" ? [] : (function() {
     Kr(t),
     e
   ];
-})(), Sf = Qc[0], Tf = Qc[1], A0 = Qc[2], C0 = Tf && Tf.then, Kn = Sf && Sf.constructor, Zc = !!A0;
-function k0() {
-  queueMicrotask(P0);
+})(), Sf = Qc[0], Tf = Qc[1], Aw = Qc[2], Cw = Tf && Tf.then, Kn = Sf && Sf.constructor, Zc = !!Aw;
+function kw() {
+  queueMicrotask(Pw);
 }
 var yi = function(e, t) {
-  Lo.push([e, t]), la && (k0(), la = !1);
+  Lo.push([e, t]), la && (kw(), la = !1);
 }, yu = !0, la = !0, jn = [], Ns = [], bu = Pi, En = {
   id: "global",
   global: !0,
@@ -1548,7 +1548,7 @@ Wr(Z, {
         var s = oe;
         s.unhandleds = [], s.onunhandled = i, s.finalize = rr(function() {
           var u = this;
-          R0(function() {
+          Rw(function() {
             u.unhandleds.length === 0 ? o() : i(u.unhandleds[0]);
           });
         }, s.finalize), e();
@@ -1609,7 +1609,7 @@ function ry(e, t) {
 function xu(e, t) {
   if (Ns.push(t), e._state === null) {
     var n = e._lib && Zr();
-    t = bu(t), e._state = !1, e._value = t, M0(e), oy(e), n && jr();
+    t = bu(t), e._state = !1, e._value = t, Mw(e), oy(e), n && jr();
   }
 }
 function oy(e) {
@@ -1628,25 +1628,25 @@ function jc(e, t) {
   }
   var n = e._state ? t.onFulfilled : t.onRejected;
   if (n === null) return (e._state ? t.resolve : t.reject)(e._value);
-  ++t.psd.ref, ++er, yi(I0, [
+  ++t.psd.ref, ++er, yi(Iw, [
     n,
     e,
     t
   ]);
 }
-function I0(e, t, n) {
+function Iw(e, t, n) {
   try {
     var r, o = t._value;
     !t._state && Ns.length && (Ns = []), r = Kt && t._consoleTask ? t._consoleTask.run(function() {
       return e(o);
-    }) : e(o), !t._state && Ns.indexOf(o) === -1 && N0(t), n.resolve(r);
+    }) : e(o), !t._state && Ns.indexOf(o) === -1 && Nw(t), n.resolve(r);
   } catch (i) {
     n.reject(i);
   } finally {
     --er === 0 && ed(), --n.psd.ref || n.psd.finalize();
   }
 }
-function P0() {
+function Pw() {
   or(En, function() {
     Zr() && jr();
   });
@@ -1673,7 +1673,7 @@ function ed() {
   });
   for (var t = Ds.slice(0), n = t.length; n; ) t[--n]();
 }
-function R0(e) {
+function Rw(e) {
   function t() {
     e(), Ds.splice(Ds.indexOf(t), 1);
   }
@@ -1681,12 +1681,12 @@ function R0(e) {
     --er === 0 && ed();
   }, []);
 }
-function M0(e) {
+function Mw(e) {
   jn.some(function(t) {
     return t._value === e._value;
   }) || jn.push(e);
 }
-function N0(e) {
+function Nw(e) {
   for (var t = jn.length; t; ) if (jn[--t]._value === e._value) {
     jn.splice(t, 1);
     return;
@@ -1712,10 +1712,10 @@ var qe = {
   awaits: 0,
   echoes: 0,
   id: 0
-}, D0 = 0, Ls = [], Bs = 0, ua = 0, $0 = 0;
+}, Dw = 0, Ls = [], Bs = 0, ua = 0, $w = 0;
 function kn(e, t, n, r) {
   var o = oe, i = Object.create(o);
-  i.parent = o, i.ref = 0, i.global = !1, i.id = ++$0, En.env, i.env = Zc ? {
+  i.parent = o, i.ref = 0, i.global = !1, i.id = ++$w, En.env, i.env = Zc ? {
     Promise: Z,
     PromiseProp: {
       value: Z,
@@ -1735,12 +1735,12 @@ function kn(e, t, n, r) {
   return i.ref === 0 && i.finalize(), s;
 }
 function eo() {
-  return qe.id || (qe.id = ++D0), ++qe.awaits, qe.echoes += ty, qe.id;
+  return qe.id || (qe.id = ++Dw), ++qe.awaits, qe.echoes += ty, qe.id;
 }
 function In() {
   return qe.awaits ? (--qe.awaits === 0 && (qe.id = 0), qe.echoes = qe.awaits * ty, !0) : !1;
 }
-("" + C0).indexOf("[native code]") === -1 && (eo = In = Te);
+("" + Cw).indexOf("[native code]") === -1 && (eo = In = Te);
 function ca(e) {
   return qe.echoes && e && e.constructor === Kn ? (eo(), e.then(function(t) {
     return In(), t;
@@ -1748,16 +1748,16 @@ function ca(e) {
     return In(), Me(t);
   })) : e;
 }
-function L0(e) {
+function Lw(e) {
   ++ua, (!qe.echoes || --qe.echoes === 0) && (qe.echoes = qe.awaits = qe.id = 0), Ls.push(oe), Pn(e, !0);
 }
-function B0() {
+function Bw() {
   var e = Ls[Ls.length - 1];
   Ls.pop(), Pn(e, !1);
 }
 function Pn(e, t) {
   var n = oe;
-  if ((t ? qe.echoes && (!Bs++ || e !== oe) : Bs && (!--Bs || e !== oe)) && queueMicrotask(t ? L0.bind(null, e) : B0), e !== oe && (oe = e, n === En && (En.env = iy()), Zc)) {
+  if ((t ? qe.echoes && (!Bs++ || e !== oe) : Bs && (!--Bs || e !== oe)) && queueMicrotask(t ? Lw.bind(null, e) : Bw), e !== oe && (oe = e, n === En && (En.env = iy()), Zc)) {
     var r = En.env.Promise, o = e.env;
     (n.global || e.global) && (Object.defineProperty(ze, "Promise", o.PromiseProp), r.all = o.all, r.race = o.race, r.resolve = o.resolve, r.reject = o.reject, o.allSettled && (r.allSettled = o.allSettled), o.any && (r.any = o.any));
   }
@@ -1852,7 +1852,7 @@ function Ki(e) {
     return t;
   };
 }
-function U0() {
+function Uw() {
   throw ae.Type();
 }
 function ve(e, t) {
@@ -1866,22 +1866,22 @@ function ve(e, t) {
       case "string":
         return e > t ? 1 : e < t ? -1 : 0;
       case "binary":
-        return O0(kf(e), kf(t));
+        return Ow(kf(e), kf(t));
       case "Array":
-        return F0(e, t);
+        return Fw(e, t);
     }
   } catch {
   }
   return NaN;
 }
-function F0(e, t) {
+function Fw(e, t) {
   for (var n = e.length, r = t.length, o = n < r ? n : r, i = 0; i < o; ++i) {
     var s = ve(e[i], t[i]);
     if (s !== 0) return s;
   }
   return n === r ? 0 : n < r ? -1 : 1;
 }
-function O0(e, t) {
+function Ow(e, t) {
   for (var n = e.length, r = t.length, o = n < r ? n : r, i = 0; i < o; ++i) if (e[i] !== t[i]) return e[i] < t[i] ? -1 : 1;
   return n === r ? 0 : n < r ? -1 : 1;
 }
@@ -1987,8 +1987,8 @@ var ly = (function() {
     return this.toCollection().reverse();
   }, e.prototype.mapToClass = function(t) {
     var n = this, r = n.db, o = n.name;
-    this.schema.mappedClass = t, t.prototype instanceof U0 && (t = (function(l) {
-      s0(d, l);
+    this.schema.mappedClass = t, t.prototype instanceof Uw && (t = (function(l) {
+      sw(d, l);
       function d() {
         return l !== null && l.apply(this, arguments) || this;
       }
@@ -2213,7 +2213,7 @@ function Ri(e) {
   return n;
   function i(u, l, d) {
     if (typeof u == "object") return s(u);
-    l || (l = E0), d || (d = Te);
+    l || (l = Ew), d || (d = Te);
     var p = {
       subscribers: [],
       fire: d,
@@ -2247,13 +2247,13 @@ function Ri(e) {
 function Mi(e, t) {
   return Xr(t).from({ prototype: e }), t;
 }
-function q0(e) {
+function qw(e) {
   return Mi(ly.prototype, function(n, r, o) {
     this.db = e, this._tx = o, this.name = n, this.schema = r, this.hook = e._allTables[n] ? e._allTables[n].hook : Ri(null, {
-      creating: [w0, Te],
-      reading: [_0, Pi],
-      updating: [T0, Te],
-      deleting: [S0, Te]
+      creating: [ww, Te],
+      reading: [_w, Pi],
+      updating: [Tw, Te],
+      deleting: [Sw, Te]
     });
   });
 }
@@ -2269,7 +2269,7 @@ function _l(e, t, n) {
     return ir(r(), t());
   } : t, e.justLimit = n && !r;
 }
-function G0(e, t) {
+function Gw(e, t) {
   e.isMatch = ir(e.isMatch, t);
 }
 function Us(e, t) {
@@ -2329,7 +2329,7 @@ function Pf(e, t, n, r) {
     });
   });
 }
-var H0 = (function() {
+var Hw = (function() {
   function e(t) {
     Object.assign(this, t);
   }
@@ -2362,7 +2362,7 @@ var H0 = (function() {
     var i = (n = this.replacePrefix) === null || n === void 0 ? void 0 : n[0];
     return i && typeof t == "string" && t.startsWith(i) ? this.replacePrefix[1] + t.substring(i.length) : t;
   }, e;
-})(), V0 = (function() {
+})(), Vw = (function() {
   function e() {
   }
   return e.prototype._read = function(t, n) {
@@ -2480,7 +2480,7 @@ var H0 = (function() {
   }, e.prototype.filter = function(t) {
     return xl(this._ctx, function(n) {
       return t(n.value);
-    }), G0(this._ctx, t), this;
+    }), Gw(this._ctx, t), this;
   }, e.prototype.and = function(t) {
     return this.filter(t);
   }, e.prototype.or = function(t) {
@@ -2559,7 +2559,7 @@ var H0 = (function() {
         i = function(v) {
           for (var x = !1, S = 0; S < u; ++S) {
             var T = s[S], w = t[T], C = sn(v, T);
-            w instanceof H0 ? (vt(v, T, w.execute(C)), x = !0) : C !== w && (vt(v, T, w), x = !0);
+            w instanceof Hw ? (vt(v, T, w.execute(C)), x = !0) : C !== w && (vt(v, T, w), x = !0);
           }
           return x;
         };
@@ -2662,8 +2662,8 @@ var H0 = (function() {
 })(), wl = function(e, t) {
   return t.value = null;
 };
-function K0(e) {
-  return Mi(V0.prototype, function(n, r) {
+function Kw(e) {
+  return Mi(Vw.prototype, function(n, r) {
     this.db = e;
     var o = ay, i = null;
     if (r) try {
@@ -2693,10 +2693,10 @@ function K0(e) {
     };
   });
 }
-function W0(e, t) {
+function Ww(e, t) {
   return e < t ? -1 : e === t ? 0 : 1;
 }
-function z0(e, t) {
+function zw(e, t) {
   return e > t ? -1 : e === t ? 0 : 1;
 }
 function ut(e, t, n) {
@@ -2708,21 +2708,21 @@ function mr(e) {
     return uy("");
   }).limit(0);
 }
-function J0(e) {
+function Jw(e) {
   return e === "next" ? function(t) {
     return t.toUpperCase();
   } : function(t) {
     return t.toLowerCase();
   };
 }
-function Y0(e) {
+function Yw(e) {
   return e === "next" ? function(t) {
     return t.toLowerCase();
   } : function(t) {
     return t.toUpperCase();
   };
 }
-function X0(e, t, n, r, o, i) {
+function Xw(e, t, n, r, o, i) {
   for (var s = Math.min(e.length, r.length), u = -1, l = 0; l < s; ++l) {
     var d = t[l];
     if (d !== r[l])
@@ -2737,7 +2737,7 @@ function zi(e, t, n, r) {
     return typeof g == "string";
   })) return ut(e, sy);
   function h(g) {
-    o = J0(g), i = Y0(g), s = g === "next" ? W0 : z0;
+    o = Jw(g), i = Yw(g), s = g === "next" ? Ww : zw;
     var b = n.map(function(_) {
       return {
         lower: i(_),
@@ -2766,7 +2766,7 @@ function zi(e, t, n, r) {
     var x = i(v);
     if (t(x, l, y)) return !0;
     for (var S = null, T = y; T < f; ++T) {
-      var w = X0(v, x, u[T], l[T], s, d);
+      var w = Xw(v, x, u[T], l[T], s, d);
       w === null && S === null ? y = T + 1 : (S === null || s(S, w) > 0) && (S = w);
     }
     return b(S !== null ? function() {
@@ -2954,7 +2954,7 @@ var cy = (function() {
     })) : ut(this, "startsWithAnyOf() only works with strings");
   }, e;
 })();
-function Q0(e) {
+function Qw(e) {
   return Mi(cy.prototype, function(n, r, o) {
     if (this.db = e, this._ctx = {
       table: n,
@@ -2977,7 +2977,7 @@ function Gt(e) {
 function bi(e) {
   e.stopPropagation && e.stopPropagation(), e.preventDefault && e.preventDefault();
 }
-var Ni = "storagemutated", Su = "x-storagemutated-1", Rn = Ri(null, Ni), Z0 = (function() {
+var Ni = "storagemutated", Su = "x-storagemutated-1", Rn = Ri(null, Ni), Zw = (function() {
   function e() {
   }
   return e.prototype._lock = function() {
@@ -3074,8 +3074,8 @@ var Ni = "storagemutated", Su = "x-storagemutated-1", Rn = Ri(null, Ni), Z0 = (f
     return o.core = this.db.core.table(t), n[t] = o, o;
   }, e;
 })();
-function j0(e) {
-  return Mi(Z0.prototype, function(n, r, o, i, s) {
+function jw(e) {
+  return Mi(Zw.prototype, function(n, r, o, i, s) {
     var u = this;
     this.db = e, this.mode = n, this.storeNames = r, this.schema = o, this.chromeTransactionDurability = i, this.idbtrans = null, this.on = Ri(this, "complete", "error", "abort"), this.parent = s || null, this.active = !0, this._reculock = 0, this._blockedFuncs = [], this._resolve = null, this._reject = null, this._waitingFor = null, this._waitingQueue = null, this._spinCount = 0, this._completion = new Z(function(l, d) {
       u._resolve = l, u._reject = d;
@@ -3107,7 +3107,7 @@ function td(e, t, n) {
     primKey: t,
     indexes: n,
     mappedClass: null,
-    idxByName: c0(n, function(r) {
+    idxByName: cw(n, function(r) {
       return [r.name, r];
     })
   };
@@ -4801,7 +4801,7 @@ var _i = (function() {
           }
         });
       };
-    }), this.Collection = K0(this), this.Table = q0(this), this.Transaction = j0(this), this.Version = mS(this), this.WhereClause = Q0(this), this.on("versionchange", function(l) {
+    }), this.Collection = Kw(this), this.Table = qw(this), this.Transaction = jw(this), this.Version = mS(this), this.WhereClause = Qw(this), this.on("versionchange", function(l) {
       l.newVersion > 0 ? console.warn("Another connection wants to upgrade database '".concat(r.name, "'. Closing db now to resume the upgrade.")) : console.warn("Another connection wants to delete database '".concat(r.name, "'. Closing db now to resume the delete request.")), r.close({ disableAutoOpen: !1 });
     }), this.on("blocked", function(l) {
       !l.newVersion || l.newVersion < l.oldVersion ? console.warn("Dexie.delete('".concat(r.name, "') was blocked")) : console.warn("Upgrade '".concat(r.name, "' blocked by other connection holding version ").concat(l.oldVersion / 10));
@@ -5034,7 +5034,7 @@ function qS(e) {
           trans: null
         }, x = s(v);
         Promise.resolve(x).then(function(S) {
-          t = !0, n = S, !(u || v.signal.aborted) && (d = {}, p = _, !h0(p) && !h && (Rn(Ni, g), h = !0), yl(function() {
+          t = !0, n = S, !(u || v.signal.aborted) && (d = {}, p = _, !hw(p) && !h && (Rn(Ni, g), h = !0), yl(function() {
             return !u && o.next && o.next(S);
           }));
         }, function(S) {
@@ -5125,7 +5125,7 @@ Wr(Wn, he(he({}, Oa), {
   extendObservabilitySet: Ha,
   getByKeyPath: sn,
   setByKeyPath: vt,
-  delByKeyPath: d0,
+  delByKeyPath: dw,
   shallowClone: Jg,
   deepClone: nr,
   getObjectDiff: ud,
@@ -5179,7 +5179,7 @@ typeof addEventListener < "u" && (addEventListener("pagehide", function(e) {
 }), addEventListener("pageshow", function(e) {
   !_i.disableBfCache && e.persisted && (Kt && console.debug("Dexie: handling persisted pageshow"), Iu(), dd({ all: new je(-1 / 0, [[]]) }));
 }));
-Z.rejectionMapper = x0;
+Z.rejectionMapper = xw;
 ey(Kt);
 var GS = /* @__PURE__ */ new Set([
   ".js",
@@ -6467,7 +6467,7 @@ var re = Object.freeze({
   GLOB: "Glob",
   GREP: "Grep",
   READ: "Read",
-  WEB_SEARCH: Zw,
+  WEB_SEARCH: Z0,
   WRITE: "Write",
   EDIT: "Edit",
   DELETE: "Delete",
@@ -6806,7 +6806,9 @@ function Du(e = {}) {
         "Create a writing plan item for the current book.",
         "Use for multi-step writing, long revisions, blockers, or tasks that need later continuation.",
         "Plans only record state. They do not automatically review, draft prose, or call other tools.",
-        "Use only when the task needs multi-step tracking. Short direct writing or one-off answers do not need a plan."
+        "Use only when the task needs multi-step tracking. Short direct writing or one-off answers do not need a plan.",
+        "PlanCreate always creates a new item. The returned id is only an internal handle for later PlanUpdate/PlanGet, not evidence that a plan already existed.",
+        "Do not expose plan ids to the user unless they explicitly ask for debugging details."
       ].join(`
 `),
       parameters: {
@@ -6857,7 +6859,8 @@ function Du(e = {}) {
         "Use status for progress, note for short progress notes, and result/error for final outcome or failure reason.",
         "Mark completed only after the corresponding writing, review, or revision is actually done.",
         "If dependencies are not complete, the item cannot move to in_progress.",
-        "The `id` must come from PlanCreate or PlanList. Do not invent an id-like value."
+        "The `id` must come from PlanCreate or PlanList. Do not invent an id-like value.",
+        "The id is an internal handle for tools. Do not present it to the user as meaningful content."
       ].join(`
 `),
       parameters: {
@@ -6931,7 +6934,8 @@ function Du(e = {}) {
         "List writing plans for the current book.",
         "Use when continuing writing, continuing revisions, avoiding duplicate plans, choosing next steps, or checking blockers.",
         "Without filters, returns current plans. Use status, priority, or owner only when narrowing the result.",
-        "If you are unsure whether a related plan already exists, use PlanList before creating or updating."
+        "If you are unsure whether a related plan already exists, use PlanList before creating or updating.",
+        "Plan ids in the result are internal handles for future tool calls. Summarize plans by title/status for the user."
       ].join(`
 `),
       parameters: {
@@ -6978,7 +6982,8 @@ function Du(e = {}) {
       description: [
         "Read the full record of one writing plan item for the current book.",
         "Use when the plan summary is not enough and you need details, blockers, notes, result, or error.",
-        "The `id` must come from PlanCreate or PlanList."
+        "The `id` must come from PlanCreate or PlanList.",
+        "The id is an internal handle for tools. Do not present it to the user as meaningful content."
       ].join(`
 `),
       parameters: {
@@ -7148,7 +7153,7 @@ function Kf(e = {}) {
       case re.READ:
         return await p.executeRead(m);
       case re.WEB_SEARCH:
-        return await o0(o(), m, {
+        return await ow(o(), m, {
           signal: e.signal,
           isAbortError: e.isAbortError
         });
@@ -7347,7 +7352,7 @@ var IT = [
   " - Inspect book content: Grep / Read search and read chapters, settings, sources, and review notes.",
   " - Modify the current book: Edit / Write / Move / Delete save, revise, and organize files. Use Edit for small in-sentence or multi-spot local revisions; use Write for large sections or whole-chapter rewrites.",
   " - Rename the current book: RenameBook changes only the book title. It does not move chapters, sources, or setting files.",
-  " - Manage writing plans: PlanCreate / PlanUpdate / PlanList / PlanGet only track plans for the current book. They do not draft prose automatically.",
+  " - Manage writing plans: PlanCreate / PlanUpdate / PlanList / PlanGet only track plans for the current book. They do not draft prose automatically. Plan ids are internal handles for later tool calls; do not explain or show them to the user unless the user asks for debugging details.",
   " - Independent review: DelegateRun asks the read-only reviewer delegate to inspect the book and return findings. The delegate reviews and reports only; you perform any actual writes.",
   " - The ebook currently has only one delegate type: read-only reviewer. Do not treat DelegateRun as a drafting delegate, setting-organizing delegate, or file-editing delegate.",
   "",
@@ -7356,6 +7361,7 @@ var IT = [
   " - If you do not know where a file is, use LS / Glob first. If you know a keyword, use Grep first. If you know the exact path, use Read.",
   " - Read may return only part of a large file. Continue with nextOffset when needed, or use tail to read the end.",
   " - For multi-step writing, long revisions, blockers, or work that must be resumed later, use Plan tools and update the plan after real progress.",
+  " - After PlanCreate, treat the returned id as the newly created plan handle. Do not say the plan already existed unless you first used PlanList/PlanGet and actually found an older matching plan.",
   " - Use DelegateRun when you need a second review perspective, continuity check, or independent verification.",
   " - The DelegateRun reviewer automatically receives core settings, story state, review rules, and creative record. Do not paste those fixed files again.",
   " - When calling DelegateRun, provide only the review task, focus, paths or sources to read, and expected deliverable format.",
@@ -7891,7 +7897,7 @@ function WT(e = [], t = "") {
   });
 }
 function zT(e = [], t = {}) {
-  return Rw(WT(e, t.latestUserContextText));
+  return R0(WT(e, t.latestUserContextText));
 }
 function qy(e = {}, t = {}, n = {}) {
   const r = e.name === re.DELEGATE_RUN, o = e.name === re.WEB_SEARCH;
@@ -8027,7 +8033,7 @@ function iE(e = {}) {
     typeof s == "function" && (J = s() || J), typeof u == "function" && (J = u() || J), J || r();
   };
   async function _(J = t.book?.id) {
-    return J ? await Cw({
+    return J ? await C0({
       sessionId: J,
       ledger: Ay
     }) : "";
@@ -8118,7 +8124,7 @@ function iE(e = {}) {
     onCompactionUnable: (J = {}) => {
       w(J), C(1600);
     }
-  }), H = Yw({
+  }), H = Y0({
     createAdapter: h,
     executeToolCall: async (J, Y, $ = {}) => {
       const U = Kf({
@@ -8187,9 +8193,9 @@ ${W}` : ""].filter(Boolean).join(`
     }
     function I(ye = [], xe = null) {
       const Ae = Os(t.messages);
-      return kw(ye, Ae.length ? Ae[Ae.length - 1] : [], { currentMessage: xe });
+      return k0(ye, Ae.length ? Ae[Ae.length - 1] : [], { currentMessage: xe });
     }
-    const { createStreamingAssistantMessage: K, finalizeStreamingAssistantMessage: D, scheduleStreamRender: L, updateStreamingAssistantMessage: se } = Xw({
+    const { createStreamingAssistantMessage: K, finalizeStreamingAssistantMessage: D, scheduleStreamRender: L, updateStreamingAssistantMessage: se } = X0({
       state: t,
       render: y,
       persistSession: () => {
@@ -8230,7 +8236,7 @@ ${W}` : ""].filter(Boolean).join(`
         })
       }), Ae = xe.getToolDefinitions(), It = new Set(Ae.map((Se) => Se.function.name));
       let Dn = !1, at = !1, Pt = null, Jt = "";
-      const cn = { finalAnswerReminderText: "" }, dn = Qw();
+      const cn = { finalAnswerReminderText: "" }, dn = Q0();
       async function uo() {
         let Se = "";
         try {
@@ -8297,7 +8303,7 @@ ${W}` : ""].filter(Boolean).join(`
           const be = Yt.map((Re) => ({
             toolCall: Re,
             parsedArguments: nE(Re)
-          })), iw = be.map(({ toolCall: Re, parsedArguments: po }) => {
+          })), i0 = be.map(({ toolCall: Re, parsedArguments: po }) => {
             if (po.ok) return Re;
             const Xt = String(Re.arguments || "");
             return {
@@ -8308,13 +8314,13 @@ ${W}` : ""].filter(Boolean).join(`
                 argumentPreview: Xt.slice(0, 500)
               })
             };
-          }), sw = String(we.text || k?.content || ""), aw = I(ml(k?.thoughts, we.thoughts), k);
+          }), s0 = String(we.text || k?.content || ""), a0 = I(ml(k?.thoughts, we.thoughts), k);
           $n();
           const hf = VT({
             ...we,
-            text: sw,
-            thoughts: aw
-          }, iw);
+            text: s0,
+            thoughts: a0
+          }, i0);
           t.liveToolTurn = hf, g();
           const mf = [], gf = [];
           for (const { toolCall: Re, parsedArguments: po } of be) {
@@ -8349,13 +8355,13 @@ ${W}` : ""].filter(Boolean).join(`
               round: Se
             }, Xt, Ft);
             fr || t.toolTrace.push(yf);
-            const lw = KT({
+            const l0 = KT({
               toolCallId: Re.id,
               toolName: Re.name,
               toolResult: Ft,
               toolDisplay: fl ? XT(yf) : null
             });
-            mf.push(lw), gf.push({
+            mf.push(l0), gf.push({
               id: Re.id,
               name: Re.name,
               response: Ft
@@ -8820,7 +8826,7 @@ function yE(e = {}) {
         chapterPath: le,
         chapterTitle: de
       }, {
-        timeoutMs: yw,
+        timeoutMs: y0,
         signal: xe.signal
       });
       if (xe.signal.aborted || Ae?.aborted) {
@@ -9388,7 +9394,7 @@ function VE(e = {}, t, n) {
     const l = o?.[u]?.tavilyBaseUrl;
     if (r(l)) return tt(l);
   }
-  return r(e?.delegateConfig?.tavilyBaseUrl) ? tt(e.delegateConfig.tavilyBaseUrl) : jw;
+  return r(e?.delegateConfig?.tavilyBaseUrl) ? tt(e.delegateConfig.tavilyBaseUrl) : j0;
 }
 function KE(e = {}, t, n) {
   return {
@@ -12772,7 +12778,7 @@ var WA = class {
     });
   });
   t.exports = u, t.exports.default = u, t.exports.AbortError = o;
-})), Cp = /* @__PURE__ */ mw(XA(), 1), QA = void 0, ZA = void 0;
+})), Cp = /* @__PURE__ */ m0(XA(), 1), QA = void 0, ZA = void 0;
 function jA() {
   return {
     geminiUrl: QA,
@@ -19228,10 +19234,10 @@ function XM(e, t) {
   const g = a(e, ["tools"]);
   if (t !== void 0 && g != null) {
     let A = ro(g);
-    Array.isArray(A) && (A = A.map((P) => tN(no(P)))), c(t, ["setup", "tools"], A);
+    Array.isArray(A) && (A = A.map((P) => t1(no(P)))), c(t, ["setup", "tools"], A);
   }
   const b = a(e, ["sessionResumption"]);
-  t !== void 0 && b != null && c(t, ["setup", "sessionResumption"], eN(b));
+  t !== void 0 && b != null && c(t, ["setup", "sessionResumption"], e1(b));
   const _ = a(e, ["inputAudioTranscription"]);
   t !== void 0 && _ != null && c(t, ["setup", "inputAudioTranscription"], sm(_));
   const v = a(e, ["outputAudioTranscription"]);
@@ -19293,12 +19299,12 @@ function jM(e) {
   const r = a(e, ["threshold"]);
   return r != null && c(t, ["threshold"], r), t;
 }
-function eN(e) {
+function e1(e) {
   const t = {}, n = a(e, ["handle"]);
   if (n != null && c(t, ["handle"], n), a(e, ["transparent"]) !== void 0) throw new Error("transparent parameter is not supported in Gemini API.");
   return t;
 }
-function tN(e) {
+function t1(e) {
   const t = {};
   if (a(e, ["retrieval"]) !== void 0) throw new Error("retrieval parameter is not supported in Gemini API.");
   const n = a(e, ["computerUse"]);
@@ -19327,7 +19333,7 @@ function tN(e) {
   }
   return t;
 }
-function nN(e) {
+function n1(e) {
   const t = [];
   for (const n in e) if (Object.prototype.hasOwnProperty.call(e, n)) {
     const r = e[n];
@@ -19338,7 +19344,7 @@ function nN(e) {
   }
   return t.join(",");
 }
-function rN(e, t) {
+function r1(e, t) {
   let n = null;
   const r = e.bidiGenerateContentSetup;
   if (typeof r == "object" && r !== null && "setup" in r) {
@@ -19347,7 +19353,7 @@ function rN(e, t) {
   } else r !== void 0 && delete e.bidiGenerateContentSetup;
   const o = e.fieldMask;
   if (n) {
-    const i = nN(n);
+    const i = n1(n);
     if (Array.isArray(t?.lockAdditionalFields) && t?.lockAdditionalFields.length === 0) i ? e.fieldMask = i : delete e.fieldMask;
     else if (t?.lockAdditionalFields && t.lockAdditionalFields.length > 0 && o !== null && Array.isArray(o) && o.length > 0) {
       const s = [
@@ -19367,7 +19373,7 @@ function rN(e, t) {
   } else o !== null && Array.isArray(o) && o.length > 0 ? e.fieldMask = o.join(",") : delete e.fieldMask;
   return e;
 }
-var oN = class extends ln {
+var o1 = class extends ln {
   constructor(e) {
     super(), this.apiClient = e;
   }
@@ -19378,7 +19384,7 @@ var oN = class extends ln {
     {
       const s = KM(this.apiClient, e);
       o = X("auth_tokens", s._url), i = s._query, delete s.config, delete s._url, delete s._query;
-      const u = rN(s, e.config);
+      const u = r1(s, e.config);
       return r = this.apiClient.request({
         path: o,
         queryParams: i,
@@ -19390,33 +19396,33 @@ var oN = class extends ln {
     }
   }
 };
-function iN(e, t) {
+function i1(e, t) {
   const n = {}, r = a(e, ["force"]);
   return t !== void 0 && r != null && c(t, ["_query", "force"], r), n;
 }
-function sN(e) {
+function s1(e) {
   const t = {}, n = a(e, ["name"]);
   n != null && c(t, ["_url", "name"], n);
   const r = a(e, ["config"]);
-  return r != null && iN(r, t), t;
+  return r != null && i1(r, t), t;
 }
-function aN(e) {
+function a1(e) {
   const t = {}, n = a(e, ["name"]);
   return n != null && c(t, ["_url", "name"], n), t;
 }
-function lN(e, t) {
+function l1(e, t) {
   const n = {}, r = a(e, ["pageSize"]);
   t !== void 0 && r != null && c(t, ["_query", "pageSize"], r);
   const o = a(e, ["pageToken"]);
   return t !== void 0 && o != null && c(t, ["_query", "pageToken"], o), n;
 }
-function uN(e) {
+function u1(e) {
   const t = {}, n = a(e, ["parent"]);
   n != null && c(t, ["_url", "parent"], n);
   const r = a(e, ["config"]);
-  return r != null && lN(r, t), t;
+  return r != null && l1(r, t), t;
 }
-function cN(e) {
+function c1(e) {
   const t = {}, n = a(e, ["sdkHttpResponse"]);
   n != null && c(t, ["sdkHttpResponse"], n);
   const r = a(e, ["nextPageToken"]);
@@ -19428,7 +19434,7 @@ function cN(e) {
   }
   return t;
 }
-var dN = class extends ln {
+var d1 = class extends ln {
   constructor(e) {
     super(), this.apiClient = e, this.list = async (t) => new cr(an.PAGED_ITEM_DOCUMENTS, (n) => this.listInternal({
       parent: t.parent,
@@ -19440,7 +19446,7 @@ var dN = class extends ln {
     let r, o = "", i = {};
     if (this.apiClient.isVertexAI()) throw new Error("This method is only supported by the Gemini Developer API.");
     {
-      const s = aN(e);
+      const s = a1(e);
       return o = X("{name}", s._url), i = s._query, delete s._url, delete s._query, r = this.apiClient.request({
         path: o,
         queryParams: i,
@@ -19456,7 +19462,7 @@ var dN = class extends ln {
     let r = "", o = {};
     if (this.apiClient.isVertexAI()) throw new Error("This method is only supported by the Gemini Developer API.");
     {
-      const i = sN(e);
+      const i = s1(e);
       r = X("{name}", i._url), o = i._query, delete i._url, delete i._query, await this.apiClient.request({
         path: r,
         queryParams: o,
@@ -19472,7 +19478,7 @@ var dN = class extends ln {
     let r, o = "", i = {};
     if (this.apiClient.isVertexAI()) throw new Error("This method is only supported by the Gemini Developer API.");
     {
-      const s = uN(e);
+      const s = u1(e);
       return o = X("{parent}/documents", s._url), i = s._query, delete s._url, delete s._query, r = this.apiClient.request({
         path: o,
         queryParams: i,
@@ -19481,13 +19487,13 @@ var dN = class extends ln {
         httpOptions: (t = e.config) === null || t === void 0 ? void 0 : t.httpOptions,
         abortSignal: (n = e.config) === null || n === void 0 ? void 0 : n.abortSignal
       }).then((u) => u.json()), r.then((u) => {
-        const l = cN(u), d = new _C();
+        const l = c1(u), d = new _C();
         return Object.assign(d, l), d;
       });
     }
   }
-}, fN = class extends ln {
-  constructor(e, t = new dN(e)) {
+}, f1 = class extends ln {
+  constructor(e, t = new d1(e)) {
     super(), this.apiClient = e, this.documents = t, this.list = async (n = {}) => new cr(an.PAGED_ITEM_FILE_SEARCH_STORES, (r) => this.listInternal(r), await this.listInternal(n), n);
   }
   async uploadToFileSearchStore(e) {
@@ -19605,7 +19611,7 @@ var dN = class extends ln {
     return Tv = e.randomUUID.bind(e), e.randomUUID();
   const t = new Uint8Array(1), n = e ? () => e.getRandomValues(t)[0] : () => Math.random() * 255 & 255;
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (r) => (+r ^ n() & 15 >> +r / 4).toString(16));
-}, pN = () => Tv();
+}, p1 = () => Tv();
 function oc(e) {
   return typeof e == "object" && e !== null && ("name" in e && e.name === "AbortError" || "message" in e && String(e.message).includes("FetchRequestCanceledException"));
 }
@@ -19662,27 +19668,27 @@ var ic = (e) => {
 }, Rv = class extends kt {
 }, Mv = class extends kt {
 }, Nv = class extends kt {
-}, hN = /^[a-z][a-z0-9+.-]*:/i, mN = (e) => hN.test(e), lc = (e) => (lc = Array.isArray, lc(e)), am = lc;
+}, h1 = /^[a-z][a-z0-9+.-]*:/i, m1 = (e) => h1.test(e), lc = (e) => (lc = Array.isArray, lc(e)), am = lc;
 function lm(e) {
   if (!e) return !0;
   for (const t in e) return !1;
   return !0;
 }
-function gN(e, t) {
+function g1(e, t) {
   return Object.prototype.hasOwnProperty.call(e, t);
 }
-var yN = (e, t) => {
+var y1 = (e, t) => {
   if (typeof t != "number" || !Number.isInteger(t)) throw new Ct(`${e} must be an integer`);
   if (t < 0) throw new Ct(`${e} must be a positive integer`);
   return t;
-}, bN = (e) => {
+}, b1 = (e) => {
   try {
     return JSON.parse(e);
   } catch {
     return;
   }
-}, vN = (e) => new Promise((t) => setTimeout(t, e));
-function xN() {
+}, v1 = (e) => new Promise((t) => setTimeout(t, e));
+function x1() {
   if (typeof fetch < "u") return fetch;
   throw new Error("`fetch` is not defined as a global; Either pass `fetch` to the client, `new GeminiNextGenAPIClient({ fetch })` or polyfill the global, `globalThis.fetch = fetch`");
 }
@@ -19691,7 +19697,7 @@ function Dv(...e) {
   if (typeof t > "u") throw new Error("`ReadableStream` is not defined as a global; You will need to polyfill it, `globalThis.ReadableStream = ReadableStream`");
   return new t(...e);
 }
-function _N(e) {
+function _1(e) {
   let t = Symbol.asyncIterator in e ? e[Symbol.asyncIterator]() : e[Symbol.iterator]();
   return Dv({
     start() {
@@ -19730,7 +19736,7 @@ function $v(e) {
     }
   };
 }
-async function wN(e) {
+async function w1(e) {
   var t, n;
   if (e === null || typeof e != "object") return;
   if (e[Symbol.asyncIterator]) {
@@ -19740,18 +19746,18 @@ async function wN(e) {
   const r = e.getReader(), o = r.cancel();
   r.releaseLock(), await o;
 }
-var SN = ({ headers: e, body: t }) => ({
+var S1 = ({ headers: e, body: t }) => ({
   bodyHeaders: { "content-type": "application/json" },
   body: JSON.stringify(t)
 });
-function TN(e) {
+function T1(e) {
   return Object.entries(e).filter(([t, n]) => typeof n < "u").map(([t, n]) => {
     if (typeof n == "string" || typeof n == "number" || typeof n == "boolean") return `${encodeURIComponent(t)}=${encodeURIComponent(n)}`;
     if (n === null) return `${encodeURIComponent(t)}=`;
     throw new Ct(`Cannot stringify type ${typeof n}; Expected string, number, boolean, or null. If you need to pass nested query parameters, you can manually encode them, e.g. { query: { 'foo[key1]': value1, 'foo[key2]': value2 } }, and please open a GitHub issue requesting better support for your use case.`);
   }).join("&");
 }
-var EN = "0.0.1", Lv = () => {
+var E1 = "0.0.1", Lv = () => {
   var e;
   if (typeof File > "u") {
     const { process: t } = globalThis, n = typeof ((e = t?.versions) === null || e === void 0 ? void 0 : e.node) == "string" && parseInt(t.versions.node.split(".")) < 20;
@@ -19761,19 +19767,19 @@ var EN = "0.0.1", Lv = () => {
 function Gl(e, t, n) {
   return Lv(), new File(e, t ?? "unknown_file", n);
 }
-function AN(e) {
+function A1(e) {
   return (typeof e == "object" && e !== null && ("name" in e && e.name && String(e.name) || "url" in e && e.url && String(e.url) || "filename" in e && e.filename && String(e.filename) || "path" in e && e.path && String(e.path)) || "").split(/[\\/]/).pop() || void 0;
 }
-var CN = (e) => e != null && typeof e == "object" && typeof e[Symbol.asyncIterator] == "function", Bv = (e) => e != null && typeof e == "object" && typeof e.size == "number" && typeof e.type == "string" && typeof e.text == "function" && typeof e.slice == "function" && typeof e.arrayBuffer == "function", kN = (e) => e != null && typeof e == "object" && typeof e.name == "string" && typeof e.lastModified == "number" && Bv(e), IN = (e) => e != null && typeof e == "object" && typeof e.url == "string" && typeof e.blob == "function";
-async function PN(e, t, n) {
-  if (Lv(), e = await e, kN(e))
+var C1 = (e) => e != null && typeof e == "object" && typeof e[Symbol.asyncIterator] == "function", Bv = (e) => e != null && typeof e == "object" && typeof e.size == "number" && typeof e.type == "string" && typeof e.text == "function" && typeof e.slice == "function" && typeof e.arrayBuffer == "function", k1 = (e) => e != null && typeof e == "object" && typeof e.name == "string" && typeof e.lastModified == "number" && Bv(e), I1 = (e) => e != null && typeof e == "object" && typeof e.url == "string" && typeof e.blob == "function";
+async function P1(e, t, n) {
+  if (Lv(), e = await e, k1(e))
     return e instanceof File ? e : Gl([await e.arrayBuffer()], e.name);
-  if (IN(e)) {
+  if (I1(e)) {
     const o = await e.blob();
     return t || (t = new URL(e.url).pathname.split(/[\\/]/).pop()), Gl(await uc(o), t, n);
   }
   const r = await uc(e);
-  if (t || (t = AN(e)), !n?.type) {
+  if (t || (t = A1(e)), !n?.type) {
     const o = r.find((i) => typeof i == "object" && "type" in i && i.type);
     typeof o == "string" && (n = Object.assign(Object.assign({}, n), { type: o }));
   }
@@ -19784,7 +19790,7 @@ async function uc(e) {
   let s = [];
   if (typeof e == "string" || ArrayBuffer.isView(e) || e instanceof ArrayBuffer) s.push(e);
   else if (Bv(e)) s.push(e instanceof Blob ? e : await e.arrayBuffer());
-  else if (CN(e)) try {
+  else if (C1(e)) try {
     for (var u = !0, l = Bt(e), d; d = await l.next(), t = d.done, !t; u = !0) {
       o = d.value, u = !1;
       const p = o;
@@ -19801,11 +19807,11 @@ async function uc(e) {
   }
   else {
     const p = (i = e?.constructor) === null || i === void 0 ? void 0 : i.name;
-    throw new Error(`Unexpected data type: ${typeof e}${p ? `; constructor: ${p}` : ""}${RN(e)}`);
+    throw new Error(`Unexpected data type: ${typeof e}${p ? `; constructor: ${p}` : ""}${R1(e)}`);
   }
   return s;
 }
-function RN(e) {
+function R1(e) {
   return typeof e != "object" || e === null ? "" : `; props: [${Object.getOwnPropertyNames(e).map((t) => `"${t}"`).join(", ")}]`;
 }
 var Ud = class {
@@ -19817,7 +19823,7 @@ Ud._key = [];
 function Uv(e) {
   return e.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
 }
-var um = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.create(null)), MN = (e = Uv) => (function(n, ...r) {
+var um = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.create(null)), M1 = (e = Uv) => (function(n, ...r) {
   if (n.length === 1) return n[0];
   let o = !1;
   const i = [], s = n.reduce((p, f, h) => {
@@ -19853,7 +19859,7 @@ ${s}
 ${f}`);
   }
   return s;
-}), Mt = /* @__PURE__ */ MN(Uv), Fv = class extends Ud {
+}), Mt = /* @__PURE__ */ M1(Uv), Fv = class extends Ud {
   create(e, t) {
     var n;
     const { api_version: r = this._client.apiVersion } = e, o = Tn(e, ["api_version"]);
@@ -19916,7 +19922,7 @@ var Ov = class extends Fv {
 qv._key = Object.freeze(["webhooks"]);
 var Gv = class extends qv {
 };
-function NN(e) {
+function N1(e) {
   let t = 0;
   for (const o of e) t += o.length;
   const n = new Uint8Array(t);
@@ -19943,10 +19949,10 @@ var Qa = class {
     var t;
     if (e == null) return [];
     const n = e instanceof ArrayBuffer ? new Uint8Array(e) : typeof e == "string" ? Fd(e) : e;
-    this.buffer = NN([this.buffer, n]);
+    this.buffer = N1([this.buffer, n]);
     const r = [];
     let o;
-    for (; (o = DN(this.buffer, (t = this.carriageReturnIndex) !== null && t !== void 0 ? t : this.searchIndex)) != null; ) {
+    for (; (o = D1(this.buffer, (t = this.carriageReturnIndex) !== null && t !== void 0 ? t : this.searchIndex)) != null; ) {
       if (o.carriage && this.carriageReturnIndex == null) {
         this.carriageReturnIndex = o.index;
         continue;
@@ -19968,7 +19974,7 @@ var Qa = class {
 Qa.NEWLINE_CHARS = /* @__PURE__ */ new Set([`
 `, "\r"]);
 Qa.NEWLINE_REGEXP = /\r\n|[\n\r]/g;
-function DN(e, t) {
+function D1(e, t) {
   const o = t ?? 0, i = e.indexOf(10, o), s = e.indexOf(13, o);
   if (i === -1 && s === -1) return null;
   let u;
@@ -19990,7 +19996,7 @@ var Ta = {
   debug: 500
 }, dm = (e, t, n) => {
   if (e) {
-    if (gN(Ta, e)) return e;
+    if (g1(Ta, e)) return e;
     Ze(n).warn(`${t} was set to ${JSON.stringify(e)}, expected one of ${JSON.stringify(Object.keys(Ta))}`);
   }
 };
@@ -19999,7 +20005,7 @@ function Oo() {
 function bs(e, t, n) {
   return !t || Ta[e] > Ta[n] ? Oo : t[e].bind(t);
 }
-var $N = {
+var $1 = {
   error: Oo,
   warn: Oo,
   info: Oo,
@@ -20008,7 +20014,7 @@ var $N = {
 function Ze(e) {
   var t;
   const n = e.logger, r = (t = e.logLevel) !== null && t !== void 0 ? t : "off";
-  if (!n) return $N;
+  if (!n) return $1;
   const o = fm.get(n);
   if (o && o[0] === r) return o[1];
   const i = {
@@ -20019,7 +20025,7 @@ function Ze(e) {
   };
   return fm.set(n, [r, i]), i;
 }
-var qn = (e) => (e.options && (e.options = Object.assign({}, e.options), delete e.options.headers), e.headers && (e.headers = Object.fromEntries((e.headers instanceof Headers ? [...e.headers] : Object.entries(e.headers)).map(([t, n]) => [t, t.toLowerCase() === "x-goog-api-key" || t.toLowerCase() === "authorization" || t.toLowerCase() === "cookie" || t.toLowerCase() === "set-cookie" ? "***" : n]))), "retryOfRequestLogID" in e && (e.retryOfRequestLogID && (e.retryOf = e.retryOfRequestLogID), delete e.retryOfRequestLogID), e), LN = class qo {
+var qn = (e) => (e.options && (e.options = Object.assign({}, e.options), delete e.options.headers), e.headers && (e.headers = Object.fromEntries((e.headers instanceof Headers ? [...e.headers] : Object.entries(e.headers)).map(([t, n]) => [t, t.toLowerCase() === "x-goog-api-key" || t.toLowerCase() === "authorization" || t.toLowerCase() === "cookie" || t.toLowerCase() === "set-cookie" ? "***" : n]))), "retryOfRequestLogID" in e && (e.retryOfRequestLogID && (e.retryOf = e.retryOfRequestLogID), delete e.retryOfRequestLogID), e), L1 = class qo {
   constructor(t, n, r) {
     this.iterator = t, this.controller = n, this.client = r;
   }
@@ -20034,7 +20040,7 @@ var qn = (e) => (e.options && (e.options = Object.assign({}, e.options), delete 
         let h = !1;
         try {
           try {
-            for (var m = !0, y = Bt(BN(t, n)), g; g = yield pe(y.next()), l = g.done, !l; m = !0) {
+            for (var m = !0, y = Bt(B1(t, n)), g; g = yield pe(y.next()), l = g.done, !l; m = !0) {
               f = g.value, m = !1;
               const b = f;
               if (!h)
@@ -20162,14 +20168,14 @@ var qn = (e) => (e.options && (e.options = Object.assign({}, e.options), delete 
     });
   }
 };
-function BN(e, t) {
+function B1(e, t) {
   return Lt(this, arguments, function* () {
     var r, o, i, s;
     if (!e.body)
       throw t.abort(), typeof globalThis.navigator < "u" && globalThis.navigator.product === "ReactNative" ? new Ct("The default react-native fetch implementation does not support streaming. Please use expo/fetch: https://docs.expo.dev/versions/latest/sdk/expo/#expofetch-api") : new Ct("Attempted to iterate over a response with no body");
-    const u = new FN(), l = new Qa(), d = $v(e.body);
+    const u = new F1(), l = new Qa(), d = $v(e.body);
     try {
-      for (var p = !0, f = Bt(UN(d)), h; h = yield pe(f.next()), r = h.done, !r; p = !0) {
+      for (var p = !0, f = Bt(U1(d)), h; h = yield pe(f.next()), r = h.done, !r; p = !0) {
         s = h.value, p = !1;
         const m = s;
         for (const y of l.decode(m)) {
@@ -20192,7 +20198,7 @@ function BN(e, t) {
     }
   });
 }
-function UN(e) {
+function U1(e) {
   return Lt(this, arguments, function* () {
     var n, r, o, i;
     try {
@@ -20212,7 +20218,7 @@ function UN(e) {
     }
   });
 }
-var FN = class {
+var F1 = class {
   constructor() {
     this.event = null, this.data = [], this.chunks = [];
   }
@@ -20228,11 +20234,11 @@ var FN = class {
       return this.event = null, this.data = [], this.chunks = [], o;
     }
     if (this.chunks.push(e), e.startsWith(":")) return null;
-    let [t, n, r] = ON(e, ":");
+    let [t, n, r] = O1(e, ":");
     return r.startsWith(" ") && (r = r.substring(1)), t === "event" ? this.event = r : t === "data" && this.data.push(r), null;
   }
 };
-function ON(e, t) {
+function O1(e, t) {
   const n = e.indexOf(t);
   return n !== -1 ? [
     e.substring(0, n),
@@ -20244,11 +20250,11 @@ function ON(e, t) {
     ""
   ];
 }
-async function qN(e, t) {
+async function q1(e, t) {
   const { response: n, requestLogID: r, retryOfRequestLogID: o, startTime: i } = t, s = await (async () => {
     var u;
     if (t.options.stream)
-      return Ze(e).debug("response", n.status, n.url, n.headers, n.body), t.options.__streamClass ? t.options.__streamClass.fromSSEResponse(n, t.controller, e) : LN.fromSSEResponse(n, t.controller, e);
+      return Ze(e).debug("response", n.status, n.url, n.headers, n.body), t.options.__streamClass ? t.options.__streamClass.fromSSEResponse(n, t.controller, e) : L1.fromSSEResponse(n, t.controller, e);
     if (n.status === 204) return null;
     if (t.options.__binaryResponse) return n;
     const l = n.headers.get("content-type"), d = (u = l?.split(";")[0]) === null || u === void 0 ? void 0 : u.trim();
@@ -20262,8 +20268,8 @@ async function qN(e, t) {
     durationMs: Date.now() - i
   })), s;
 }
-var GN = class Hv extends Promise {
-  constructor(t, n, r = qN) {
+var G1 = class Hv extends Promise {
+  constructor(t, n, r = q1) {
     super((o) => {
       o(null);
     }), this.responsePromise = n, this.parseResponse = r, this.client = t;
@@ -20294,7 +20300,7 @@ var GN = class Hv extends Promise {
     return this.parse().finally(t);
   }
 }, Vv = /* @__PURE__ */ Symbol("brand.privateNullableHeaders");
-function* HN(e) {
+function* H1(e) {
   if (!e) return;
   if (Vv in e) {
     const { values: r, nulls: o } = e;
@@ -20317,7 +20323,7 @@ var Mo = (e) => {
   const t = new Headers(), n = /* @__PURE__ */ new Set();
   for (const r of e) {
     const o = /* @__PURE__ */ new Set();
-    for (const [i, s] of HN(r)) {
+    for (const [i, s] of H1(r)) {
       const u = i.toLowerCase();
       o.has(u) || (t.delete(i), o.add(u)), s === null ? (t.delete(i), n.add(u)) : (t.append(i, s), n.delete(u));
     }
@@ -20344,7 +20350,7 @@ var Mo = (e) => {
     }, h), { baseURL: d || "https://generativelanguage.googleapis.com" });
     this.baseURL = m.baseURL, this.timeout = (r = m.timeout) !== null && r !== void 0 ? r : zv.DEFAULT_TIMEOUT, this.logger = (o = m.logger) !== null && o !== void 0 ? o : console;
     const y = "warn";
-    this.logLevel = y, this.logLevel = (s = (i = dm(m.logLevel, "ClientOptions.logLevel", this)) !== null && i !== void 0 ? i : dm(Hl("GEMINI_NEXT_GEN_API_LOG"), "process.env['GEMINI_NEXT_GEN_API_LOG']", this)) !== null && s !== void 0 ? s : y, this.fetchOptions = m.fetchOptions, this.maxRetries = (u = m.maxRetries) !== null && u !== void 0 ? u : 2, this.fetch = (l = m.fetch) !== null && l !== void 0 ? l : xN(), this.encoder = SN, this._options = m, this.apiKey = p, this.apiVersion = f, this.clientAdapter = m.clientAdapter;
+    this.logLevel = y, this.logLevel = (s = (i = dm(m.logLevel, "ClientOptions.logLevel", this)) !== null && i !== void 0 ? i : dm(Hl("GEMINI_NEXT_GEN_API_LOG"), "process.env['GEMINI_NEXT_GEN_API_LOG']", this)) !== null && s !== void 0 ? s : y, this.fetchOptions = m.fetchOptions, this.maxRetries = (u = m.maxRetries) !== null && u !== void 0 ? u : 2, this.fetch = (l = m.fetch) !== null && l !== void 0 ? l : x1(), this.encoder = S1, this._options = m, this.apiKey = p, this.apiVersion = f, this.clientAdapter = m.clientAdapter;
   }
   withOptions(t) {
     return new this.constructor(Object.assign(Object.assign(Object.assign({}, this._options), {
@@ -20377,19 +20383,19 @@ var Mo = (e) => {
     }
   }
   stringifyQuery(t) {
-    return TN(t);
+    return T1(t);
   }
   getUserAgent() {
-    return `${this.constructor.name}/JS ${EN}`;
+    return `${this.constructor.name}/JS ${E1}`;
   }
   defaultIdempotencyKey() {
-    return `stainless-node-retry-${pN()}`;
+    return `stainless-node-retry-${p1()}`;
   }
   makeStatusError(t, n, r, o) {
     return kt.generate(t, n, r, o);
   }
   buildURL(t, n, r) {
-    const o = !this.baseURLOverridden() && r || this.baseURL, i = mN(t) ? new URL(t) : new URL(o + (o.endsWith("/") && t.startsWith("/") ? t.slice(1) : t)), s = this.defaultQuery(), u = Object.fromEntries(i.searchParams);
+    const o = !this.baseURLOverridden() && r || this.baseURL, i = m1(t) ? new URL(t) : new URL(o + (o.endsWith("/") && t.startsWith("/") ? t.slice(1) : t)), s = this.defaultQuery(), u = Object.fromEntries(i.searchParams);
     return (!lm(s) || !lm(u)) && (n = Object.assign(Object.assign(Object.assign({}, u), s), n)), typeof n == "object" && n && !Array.isArray(n) && (i.search = this.stringifyQuery(n)), i.toString();
   }
   async prepareOptions(t) {
@@ -20422,7 +20428,7 @@ var Mo = (e) => {
     }, o)));
   }
   request(t, n = null) {
-    return new GN(this, this.makeRequest(t, n, void 0));
+    return new G1(this, this.makeRequest(t, n, void 0));
   }
   async makeRequest(t, n, r) {
     var o, i, s;
@@ -20465,7 +20471,7 @@ var Mo = (e) => {
       const x = await this.shouldRetry(b);
       if (n && x) {
         const A = `retrying, ${n} attempts remaining`;
-        return await wN(b.body), Ze(this).info(`${v} - ${A}`), Ze(this).debug(`[${h}] response error (${A})`, qn({
+        return await w1(b.body), Ze(this).info(`${v} - ${A}`), Ze(this).debug(`[${h}] response error (${A})`, qn({
           retryOfRequestLogID: r,
           url: b.url,
           status: b.status,
@@ -20475,7 +20481,7 @@ var Mo = (e) => {
       }
       const S = x ? "error; no more retries left" : "error; not retryable";
       Ze(this).info(`${v} - ${S}`);
-      const T = await b.text().catch((A) => ic(A).message), w = bN(T), C = w ? void 0 : T;
+      const T = await b.text().catch((A) => ic(A).message), w = b1(T), C = w ? void 0 : T;
       throw Ze(this).debug(`[${h}] response error (${S})`, qn({
         retryOfRequestLogID: r,
         url: b.url,
@@ -20532,7 +20538,7 @@ var Mo = (e) => {
       const d = (i = t.maxRetries) !== null && i !== void 0 ? i : this.maxRetries;
       s = this.calculateDefaultRetryTimeoutMillis(n, d);
     }
-    return await vN(s), this.makeRequest(t, n - 1, r);
+    return await v1(s), this.makeRequest(t, n - 1, r);
   }
   calculateDefaultRetryTimeoutMillis(t, n) {
     const i = n - t;
@@ -20541,7 +20547,7 @@ var Mo = (e) => {
   async buildRequest(t, { retryCount: n = 0 } = {}) {
     var r, o, i;
     const s = Object.assign({}, t), { method: u, path: l, query: d, defaultBaseURL: p } = s, f = this.buildURL(l, d, p);
-    "timeout" in s && yN("timeout", s.timeout), s.timeout = (r = s.timeout) !== null && r !== void 0 ? r : this.timeout;
+    "timeout" in s && y1("timeout", s.timeout), s.timeout = (r = s.timeout) !== null && r !== void 0 ? r : this.timeout;
     const { bodyHeaders: h, body: m } = this.buildBody({ options: s }), y = await this.buildHeaders({
       options: t,
       method: u,
@@ -20588,7 +20594,7 @@ var Mo = (e) => {
       body: t
     } : typeof t == "object" && (Symbol.asyncIterator in t || Symbol.iterator in t && "next" in t && typeof t.next == "function") ? {
       bodyHeaders: void 0,
-      body: _N(t)
+      body: _1(t)
     } : typeof t == "object" && r.values.get("content-type") === "application/x-www-form-urlencoded" ? {
       bodyHeaders: { "content-type": "application/x-www-form-urlencoded" },
       body: this.stringifyQuery(t)
@@ -20619,26 +20625,26 @@ Ue.AuthenticationError = Cv;
 Ue.InternalServerError = Nv;
 Ue.PermissionDeniedError = kv;
 Ue.UnprocessableEntityError = Rv;
-Ue.toFile = PN;
+Ue.toFile = P1;
 Ue.Interactions = Ov;
 Ue.Webhooks = Gv;
-function VN(e, t) {
+function V1(e, t) {
   const n = {}, r = a(e, ["name"]);
   return r != null && c(n, ["_url", "name"], r), n;
 }
-function KN(e, t) {
+function K1(e, t) {
   const n = {}, r = a(e, ["name"]);
   return r != null && c(n, ["_url", "name"], r), n;
 }
-function WN(e, t) {
+function W1(e, t) {
   const n = {}, r = a(e, ["sdkHttpResponse"]);
   return r != null && c(n, ["sdkHttpResponse"], r), n;
 }
-function zN(e, t) {
+function z1(e, t) {
   const n = {}, r = a(e, ["sdkHttpResponse"]);
   return r != null && c(n, ["sdkHttpResponse"], r), n;
 }
-function JN(e, t, n) {
+function J1(e, t, n) {
   const r = {};
   if (a(e, ["validationDataset"]) !== void 0) throw new Error("validationDataset parameter is not supported in Gemini API.");
   const o = a(e, ["tunedModelDisplayName"]);
@@ -20679,7 +20685,7 @@ function JN(e, t, n) {
   if (a(e, ["encryptionSpec"]) !== void 0) throw new Error("encryptionSpec parameter is not supported in Gemini API.");
   return r;
 }
-function YN(e, t, n) {
+function Y1(e, t, n) {
   const r = {};
   let o = a(n, ["config", "method"]);
   if (o === void 0 && (o = "SUPERVISED_FINE_TUNING"), o === "SUPERVISED_FINE_TUNING") {
@@ -20841,35 +20847,35 @@ function YN(e, t, n) {
   const T = a(e, ["encryptionSpec"]);
   return t !== void 0 && T != null && c(t, ["encryptionSpec"], T), r;
 }
-function XN(e, t) {
+function X1(e, t) {
   const n = {}, r = a(e, ["baseModel"]);
   r != null && c(n, ["baseModel"], r);
   const o = a(e, ["preTunedModel"]);
   o != null && c(n, ["preTunedModel"], o);
   const i = a(e, ["trainingDataset"]);
-  i != null && a1(i);
+  i != null && aN(i);
   const s = a(e, ["config"]);
-  return s != null && JN(s, n), n;
+  return s != null && J1(s, n), n;
 }
-function QN(e, t) {
+function Q1(e, t) {
   const n = {}, r = a(e, ["baseModel"]);
   r != null && c(n, ["baseModel"], r);
   const o = a(e, ["preTunedModel"]);
   o != null && c(n, ["preTunedModel"], o);
   const i = a(e, ["trainingDataset"]);
-  i != null && l1(i, n, t);
+  i != null && lN(i, n, t);
   const s = a(e, ["config"]);
-  return s != null && YN(s, n, t), n;
+  return s != null && Y1(s, n, t), n;
 }
-function ZN(e, t) {
+function Z1(e, t) {
   const n = {}, r = a(e, ["name"]);
   return r != null && c(n, ["_url", "name"], r), n;
 }
-function jN(e, t) {
+function j1(e, t) {
   const n = {}, r = a(e, ["name"]);
   return r != null && c(n, ["_url", "name"], r), n;
 }
-function e1(e, t, n) {
+function eN(e, t, n) {
   const r = {}, o = a(e, ["pageSize"]);
   t !== void 0 && o != null && c(t, ["_query", "pageSize"], o);
   const i = a(e, ["pageToken"]);
@@ -20877,7 +20883,7 @@ function e1(e, t, n) {
   const s = a(e, ["filter"]);
   return t !== void 0 && s != null && c(t, ["_query", "filter"], s), r;
 }
-function t1(e, t, n) {
+function tN(e, t, n) {
   const r = {}, o = a(e, ["pageSize"]);
   t !== void 0 && o != null && c(t, ["_query", "pageSize"], o);
   const i = a(e, ["pageToken"]);
@@ -20885,15 +20891,15 @@ function t1(e, t, n) {
   const s = a(e, ["filter"]);
   return t !== void 0 && s != null && c(t, ["_query", "filter"], s), r;
 }
-function n1(e, t) {
+function nN(e, t) {
   const n = {}, r = a(e, ["config"]);
-  return r != null && e1(r, n), n;
+  return r != null && eN(r, n), n;
 }
-function r1(e, t) {
+function rN(e, t) {
   const n = {}, r = a(e, ["config"]);
-  return r != null && t1(r, n), n;
+  return r != null && tN(r, n), n;
 }
-function o1(e, t) {
+function oN(e, t) {
   const n = {}, r = a(e, ["sdkHttpResponse"]);
   r != null && c(n, ["sdkHttpResponse"], r);
   const o = a(e, ["nextPageToken"]);
@@ -20905,7 +20911,7 @@ function o1(e, t) {
   }
   return n;
 }
-function i1(e, t) {
+function iN(e, t) {
   const n = {}, r = a(e, ["sdkHttpResponse"]);
   r != null && c(n, ["sdkHttpResponse"], r);
   const o = a(e, ["nextPageToken"]);
@@ -20917,13 +20923,13 @@ function i1(e, t) {
   }
   return n;
 }
-function s1(e, t) {
+function sN(e, t) {
   const n = {}, r = a(e, ["name"]);
   r != null && c(n, ["model"], r);
   const o = a(e, ["name"]);
   return o != null && c(n, ["endpoint"], o), n;
 }
-function a1(e, t) {
+function aN(e, t) {
   const n = {};
   if (a(e, ["gcsUri"]) !== void 0) throw new Error("gcsUri parameter is not supported in Gemini API.");
   if (a(e, ["vertexDatasetResource"]) !== void 0) throw new Error("vertexDatasetResource parameter is not supported in Gemini API.");
@@ -20934,7 +20940,7 @@ function a1(e, t) {
   }
   return n;
 }
-function l1(e, t, n) {
+function lN(e, t, n) {
   const r = {};
   let o = a(n, ["config", "method"]);
   if (o === void 0 && (o = "SUPERVISED_FINE_TUNING"), o === "SUPERVISED_FINE_TUNING") {
@@ -20981,7 +20987,7 @@ function Jv(e, t) {
   const f = a(e, ["baseModel"]);
   f != null && c(n, ["baseModel"], f);
   const h = a(e, ["_self"]);
-  return h != null && c(n, ["tunedModel"], s1(h)), n;
+  return h != null && c(n, ["tunedModel"], sN(h)), n;
 }
 function cc(e, t) {
   const n = {}, r = a(e, ["sdkHttpResponse"]);
@@ -21050,7 +21056,7 @@ function cc(e, t) {
   const Y = a(e, ["tuningJobMetadata"]);
   return Y != null && c(n, ["tuningJobMetadata"], Y), n;
 }
-function u1(e, t) {
+function uN(e, t) {
   const n = {}, r = a(e, ["sdkHttpResponse"]);
   r != null && c(n, ["sdkHttpResponse"], r);
   const o = a(e, ["name"]);
@@ -21068,7 +21074,7 @@ function Vl(e, t) {
   const o = a(e, ["vertexDatasetResource"]);
   return o != null && c(n, ["validationDatasetUri"], o), n;
 }
-var c1 = class extends ln {
+var cN = class extends ln {
   constructor(e) {
     super(), this.apiClient = e, this.list = async (t = {}) => new cr(an.PAGED_ITEM_TUNING_JOBS, (n) => this.listInternal(n), await this.listInternal(t), t), this.get = async (t) => await this.getInternal(t), this.tune = async (t) => {
       var n;
@@ -21095,7 +21101,7 @@ var c1 = class extends ln {
     var t, n, r, o;
     let i, s = "", u = {};
     if (this.apiClient.isVertexAI()) {
-      const l = jN(e);
+      const l = j1(e);
       return s = X("{name}", l._url), u = l._query, delete l._url, delete l._query, i = this.apiClient.request({
         path: s,
         queryParams: u,
@@ -21108,7 +21114,7 @@ var c1 = class extends ln {
         return f.sdkHttpResponse = { headers: d.headers }, f;
       })), i.then((d) => cc(d));
     } else {
-      const l = ZN(e);
+      const l = Z1(e);
       return s = X("{name}", l._url), u = l._query, delete l._url, delete l._query, i = this.apiClient.request({
         path: s,
         queryParams: u,
@@ -21126,7 +21132,7 @@ var c1 = class extends ln {
     var t, n, r, o;
     let i, s = "", u = {};
     if (this.apiClient.isVertexAI()) {
-      const l = r1(e);
+      const l = rN(e);
       return s = X("tuningJobs", l._url), u = l._query, delete l._url, delete l._query, i = this.apiClient.request({
         path: s,
         queryParams: u,
@@ -21138,11 +21144,11 @@ var c1 = class extends ln {
         const f = p;
         return f.sdkHttpResponse = { headers: d.headers }, f;
       })), i.then((d) => {
-        const p = i1(d), f = new Bh();
+        const p = iN(d), f = new Bh();
         return Object.assign(f, p), f;
       });
     } else {
-      const l = n1(e);
+      const l = nN(e);
       return s = X("tunedModels", l._url), u = l._query, delete l._url, delete l._query, i = this.apiClient.request({
         path: s,
         queryParams: u,
@@ -21154,7 +21160,7 @@ var c1 = class extends ln {
         const f = p;
         return f.sdkHttpResponse = { headers: d.headers }, f;
       })), i.then((d) => {
-        const p = o1(d), f = new Bh();
+        const p = oN(d), f = new Bh();
         return Object.assign(f, p), f;
       });
     }
@@ -21163,7 +21169,7 @@ var c1 = class extends ln {
     var t, n, r, o;
     let i, s = "", u = {};
     if (this.apiClient.isVertexAI()) {
-      const l = KN(e);
+      const l = K1(e);
       return s = X("{name}:cancel", l._url), u = l._query, delete l._url, delete l._query, i = this.apiClient.request({
         path: s,
         queryParams: u,
@@ -21175,11 +21181,11 @@ var c1 = class extends ln {
         const f = p;
         return f.sdkHttpResponse = { headers: d.headers }, f;
       })), i.then((d) => {
-        const p = zN(d), f = new Uh();
+        const p = z1(d), f = new Uh();
         return Object.assign(f, p), f;
       });
     } else {
-      const l = VN(e);
+      const l = V1(e);
       return s = X("{name}:cancel", l._url), u = l._query, delete l._url, delete l._query, i = this.apiClient.request({
         path: s,
         queryParams: u,
@@ -21191,7 +21197,7 @@ var c1 = class extends ln {
         const f = p;
         return f.sdkHttpResponse = { headers: d.headers }, f;
       })), i.then((d) => {
-        const p = WN(d), f = new Uh();
+        const p = W1(d), f = new Uh();
         return Object.assign(f, p), f;
       });
     }
@@ -21200,7 +21206,7 @@ var c1 = class extends ln {
     var t, n;
     let r, o = "", i = {};
     if (this.apiClient.isVertexAI()) {
-      const s = QN(e, e);
+      const s = Q1(e, e);
       return o = X("tuningJobs", s._url), i = s._query, delete s._url, delete s._query, r = this.apiClient.request({
         path: o,
         queryParams: i,
@@ -21219,7 +21225,7 @@ var c1 = class extends ln {
     let r, o = "", i = {};
     if (this.apiClient.isVertexAI()) throw new Error("This method is only supported by the Gemini Developer API.");
     {
-      const s = XN(e);
+      const s = X1(e);
       return o = X("tunedModels", s._url), i = s._query, delete s._url, delete s._query, r = this.apiClient.request({
         path: o,
         queryParams: i,
@@ -21230,21 +21236,21 @@ var c1 = class extends ln {
       }).then((u) => u.json().then((l) => {
         const d = l;
         return d.sdkHttpResponse = { headers: u.headers }, d;
-      })), r.then((u) => u1(u));
+      })), r.then((u) => uN(u));
     }
   }
-}, d1 = class {
+}, dN = class {
   async download(e, t) {
     throw new Error("Download to file is not supported in the browser, please use a browser compliant download like an <a> tag.");
   }
-}, f1 = 1024 * 1024 * 8, p1 = 3, h1 = 1e3, m1 = 2, Ea = "x-goog-upload-status";
-async function g1(e, t, n, r) {
+}, fN = 1024 * 1024 * 8, pN = 3, hN = 1e3, mN = 2, Ea = "x-goog-upload-status";
+async function gN(e, t, n, r) {
   var o;
   const i = await Yv(e, t, n, r), s = await i?.json();
   if (((o = i?.headers) === null || o === void 0 ? void 0 : o[Ea]) !== "final") throw new Error("Failed to upload file: Upload status is not finalized.");
   return s.file;
 }
-async function y1(e, t, n, r) {
+async function yN(e, t, n, r) {
   var o;
   const i = await Yv(e, t, n, r), s = await i?.json();
   if (((o = i?.headers) === null || o === void 0 ? void 0 : o[Ea]) !== "final") throw new Error("Failed to upload file: Upload status is not finalized.");
@@ -21261,10 +21267,10 @@ async function Yv(e, t, n, r) {
   }
   let d = 0, p = 0, f = new Zu(new Response()), h = "upload";
   for (d = e.size; p < d; ) {
-    const m = Math.min(f1, d - p), y = e.slice(p, p + m);
+    const m = Math.min(fN, d - p), y = e.slice(p, p + m);
     p + m >= d && (h += ", finalize");
-    let g = 0, b = h1;
-    for (; g < p1; ) {
+    let g = 0, b = hN;
+    for (; g < pN; ) {
       const _ = Object.assign(Object.assign({}, r?.headers || {}), {
         "X-Goog-Upload-Command": h,
         "X-Goog-Upload-Offset": String(p),
@@ -21280,40 +21286,40 @@ async function Yv(e, t, n, r) {
           headers: _
         })
       }), !((i = f?.headers) === null || i === void 0) && i[Ea]) break;
-      g++, await v1(b), b = b * m1;
+      g++, await vN(b), b = b * mN;
     }
     if (p += m, ((s = f?.headers) === null || s === void 0 ? void 0 : s[Ea]) !== "active") break;
     if (d <= p) throw new Error("All content has been uploaded, but the upload status is not finalized.");
   }
   return f;
 }
-async function b1(e) {
+async function bN(e) {
   return {
     size: e.size,
     type: e.type
   };
 }
-function v1(e) {
+function vN(e) {
   return new Promise((t) => setTimeout(t, e));
 }
-var x1 = class {
+var xN = class {
   async upload(e, t, n, r) {
     if (typeof e == "string") throw new Error("File path is not supported in browser uploader.");
-    return await g1(e, t, n, r);
+    return await gN(e, t, n, r);
   }
   async uploadToFileSearchStore(e, t, n, r) {
     if (typeof e == "string") throw new Error("File path is not supported in browser uploader.");
-    return await y1(e, t, n, r);
+    return await yN(e, t, n, r);
   }
   async stat(e) {
     if (typeof e == "string") throw new Error("File path is not supported in browser uploader.");
-    return await b1(e);
+    return await bN(e);
   }
-}, _1 = class {
+}, _N = class {
   create(e, t, n) {
-    return new w1(e, t, n);
+    return new wN(e, t, n);
   }
-}, w1 = class {
+}, wN = class {
   constructor(e, t, n) {
     this.url = e, this.headers = t, this.callbacks = n;
   }
@@ -21328,7 +21334,7 @@ var x1 = class {
     if (this.ws === void 0) throw new Error("WebSocket is not connected");
     this.ws.close();
   }
-}, pm = "x-goog-api-key", S1 = class {
+}, pm = "x-goog-api-key", SN = class {
   constructor(e) {
     this.apiKey = e;
   }
@@ -21339,7 +21345,7 @@ var x1 = class {
       e.append(pm, this.apiKey);
     }
   }
-}, T1 = "gl-node/", E1 = class {
+}, TN = "gl-node/", EN = class {
   getNextGenClient() {
     var e;
     const t = this.httpOptions;
@@ -21370,17 +21376,17 @@ var x1 = class {
     this.vertexai = (t = e.vertexai) !== null && t !== void 0 ? t : !1, this.apiKey = e.apiKey;
     const n = eC(e.httpOptions, e.vertexai, void 0, void 0);
     n && (e.httpOptions ? e.httpOptions.baseUrl = n : e.httpOptions = { baseUrl: n }), this.apiVersion = e.apiVersion, this.httpOptions = e.httpOptions;
-    const r = new S1(this.apiKey);
+    const r = new SN(this.apiKey);
     this.apiClient = new vM({
       auth: r,
       apiVersion: this.apiVersion,
       apiKey: this.apiKey,
       vertexai: this.vertexai,
       httpOptions: this.httpOptions,
-      userAgentExtra: T1 + "web",
-      uploader: new x1(),
-      downloader: new d1()
-    }), this.models = new FM(this.apiClient), this.live = new NM(this.apiClient, r, new _1()), this.batches = new Dk(this.apiClient), this.chats = new bI(this.models, this.apiClient), this.caches = new mI(this.apiClient), this.files = new PI(this.apiClient), this.operations = new OM(this.apiClient), this.authTokens = new oN(this.apiClient), this.tunings = new c1(this.apiClient), this.fileSearchStores = new fN(this.apiClient);
+      userAgentExtra: TN + "web",
+      uploader: new xN(),
+      downloader: new dN()
+    }), this.models = new FM(this.apiClient), this.live = new NM(this.apiClient, r, new _N()), this.batches = new Dk(this.apiClient), this.chats = new bI(this.models, this.apiClient), this.caches = new mI(this.apiClient), this.files = new PI(this.apiClient), this.operations = new OM(this.apiClient), this.authTokens = new o1(this.apiClient), this.tunings = new cN(this.apiClient), this.fileSearchStores = new f1(this.apiClient);
   }
 };
 function hm(e) {
@@ -21401,17 +21407,17 @@ function si(e) {
 function Xn(e) {
   return { text: String(e || "") };
 }
-function A1(e = "") {
+function AN(e = "") {
   const t = String(e || "").match(/^data:([^;,]+);base64,(.+)$/);
   return t ? { inlineData: {
     mimeType: t[1],
     data: t[2]
   } } : null;
 }
-function C1(e) {
+function CN(e) {
   if (typeof e == "string") return [Xn(e)];
   if (!Array.isArray(e)) return [Xn("")];
-  const t = e.map((n) => !n || typeof n != "object" ? null : n.type === "text" ? Xn(n.text || "") : n.type === "image_url" && n.image_url?.url ? A1(n.image_url.url) : null).filter(Boolean);
+  const t = e.map((n) => !n || typeof n != "object" ? null : n.type === "text" ? Xn(n.text || "") : n.type === "image_url" && n.image_url?.url ? AN(n.image_url.url) : null).filter(Boolean);
   return t.length ? t : [Xn("")];
 }
 function mm() {
@@ -21425,10 +21431,10 @@ function Oi(e, t = "model") {
   const n = si(e);
   return n ? (n.role || (n.role = t), n) : null;
 }
-function k1(e) {
+function kN(e) {
   return !!e?.parts?.some((t) => typeof t?.thoughtSignature == "string" && t.thoughtSignature);
 }
-function I1(e) {
+function IN(e) {
   return !!e?.parts?.some((t) => t?.functionCall?.name);
 }
 function Kl(e, t) {
@@ -21439,10 +21445,10 @@ function Kl(e, t) {
     String(t)
   ].join("\0") : "";
 }
-function P1(e = [], t = "") {
+function PN(e = [], t = "") {
   const n = e.map((l) => Oi(l, "model")).filter(Boolean);
   if (!n.length) return null;
-  const r = [...n].reverse().find((l) => k1(l)) || null, o = [...n].reverse().find((l) => I1(l)) || null, i = si(r || o || n[n.length - 1]);
+  const r = [...n].reverse().find((l) => kN(l)) || null, o = [...n].reverse().find((l) => IN(l)) || null, i = si(r || o || n[n.length - 1]);
   if (!i?.parts?.length) return n[n.length - 1];
   if (o) {
     const l = /* @__PURE__ */ new Map();
@@ -21479,7 +21485,7 @@ function ym(e) {
     arguments: JSON.stringify(r.args || {})
   })).filter((r) => r.name);
 }
-function R1(e = [], t = []) {
+function RN(e = [], t = []) {
   const n = Array.isArray(e) ? [...e] : [];
   return (Array.isArray(t) ? t : []).forEach((r) => {
     if (!r?.name) return;
@@ -21495,7 +21501,7 @@ function R1(e = [], t = []) {
     ].join("\0") === o) || n.push(r);
   }), n;
 }
-function M1(e = []) {
+function MN(e = []) {
   return {
     role: "user",
     parts: e.filter((t) => t && t.name).map((t) => ({ functionResponse: {
@@ -21504,7 +21510,7 @@ function M1(e = []) {
     } }))
   };
 }
-function N1(e) {
+function NN(e) {
   switch (e) {
     case "high":
       return ii.HIGH;
@@ -21520,21 +21526,21 @@ function bm(e) {
     text: t.text.trim()
   }));
 }
-function D1(e) {
+function DN(e) {
   const t = [String(e.systemPrompt || "").trim(), ...(e.messages || []).filter((n) => n.role === "system").map((n) => String(n.content || "").trim())].filter(Boolean);
   if (t.length)
     return [...new Set(t)].join(`
 
 `);
 }
-function $1(e) {
+function $N(e) {
   const t = e?.providerPayload?.googleContent;
   return Oi(t, "model");
 }
-function L1(e) {
+function LN(e) {
   const t = e?.providerPayload?.googleContents;
   if (!Array.isArray(t) || !t.length) {
-    const n = $1(e);
+    const n = $N(e);
     return n ? [n] : [];
   }
   return t.map((n) => Oi(n, "model")).filter(Boolean);
@@ -21547,11 +21553,11 @@ function Od(e = []) {
       googleContents: t
     };
 }
-function B1(e) {
+function BN(e) {
   const t = e?.candidates?.[0]?.content;
   return Od(t ? [t] : []);
 }
-function U1(e) {
+function UN(e) {
   return Od(e ? [e] : []);
 }
 function Xv(e) {
@@ -21562,10 +21568,10 @@ function Xv(e) {
   }
   return Array.isArray(e?.history) ? si(e.history) || [] : [];
 }
-function F1(e, t = 0) {
+function FN(e, t = 0) {
   return Xv(e).slice(Math.max(0, t)).filter((n) => n?.role === "model").map((n) => Oi(n, "model")).filter(Boolean);
 }
-function O1(e) {
+function ON(e) {
   const t = /* @__PURE__ */ new Map(), n = [], r = (e || []).filter((i) => i.role === "user" || i.role === "assistant" || i.role === "tool");
   r.forEach((i) => {
     (i.tool_calls || []).forEach((s) => {
@@ -21591,7 +21597,7 @@ function O1(e) {
       continue;
     }
     if (s.role === "assistant") {
-      const u = L1(s);
+      const u = LN(s);
       if (u.length) {
         n.push(...u);
         continue;
@@ -21609,7 +21615,7 @@ function O1(e) {
     }
     n.push({
       role: s.role === "assistant" ? "model" : "user",
-      parts: C1(s.content)
+      parts: CN(s.content)
     });
   }
   if (!n.length) return {
@@ -21625,7 +21631,7 @@ function O1(e) {
     latestMessage: mm().parts
   };
 }
-function q1(e, t) {
+function qN(e, t) {
   typeof e.onStreamProgress == "function" && e.onStreamProgress({
     ...typeof t.text == "string" ? { text: t.text } : {},
     ...Array.isArray(t.thoughts) ? { thoughts: t.thoughts } : {}
@@ -21635,9 +21641,9 @@ function vm(e, t) {
   const n = String(t || ""), r = String(e || "");
   return n ? !r || n.startsWith(r) ? n : r.endsWith(n) ? r : `${r}${n}` : r;
 }
-var G1 = class {
+var GN = class {
   constructor(e) {
-    this.config = e, this.supportsSessionToolLoop = !0, this.activeChat = null, this.client = new E1({
+    this.config = e, this.supportsSessionToolLoop = !0, this.activeChat = null, this.client = new EN({
       apiKey: e.apiKey,
       httpOptions: {
         baseUrl: String(e.baseUrl || "https://generativelanguage.googleapis.com/v1beta").replace(/\/$/, ""),
@@ -21646,14 +21652,14 @@ var G1 = class {
     });
   }
   createChat(e) {
-    const t = O1(e.messages), n = Array.isArray(e.tools) ? e.tools : [], r = D1(e), o = {
+    const t = ON(e.messages), n = Array.isArray(e.tools) ? e.tools : [], r = DN(e), o = {
       ...r ? { systemInstruction: r } : {},
       temperature: e.temperature,
       ...e.maxTokens ? { maxOutputTokens: e.maxTokens } : {}
     };
     e.reasoning?.enabled && (o.thinkingConfig = {
       includeThoughts: !0,
-      thinkingLevel: N1(e.reasoning.effort)
+      thinkingLevel: NN(e.reasoning.effort)
     }), n.length && (o.tools = [{ functionDeclarations: n.map((s) => ({
       name: s.function.name,
       description: s.function.description,
@@ -21686,9 +21692,9 @@ var G1 = class {
           id: C.id || `google-tool-${A + 1}`,
           name: C.name || "",
           arguments: JSON.stringify(C.args || {})
-        })).filter((C) => C.name), s = R1(s, _.length ? _ : ym(S));
+        })).filter((C) => C.name), s = RN(s, _.length ? _ : ym(S));
         const w = gm(S);
-        b = vm(b, w), q1(n, {
+        b = vm(b, w), qN(n, {
           text: b,
           thoughts: Array.from(g.values()).filter(Boolean).map((C, A) => ({
             label: `思考块 ${A + 1}`,
@@ -21696,13 +21702,13 @@ var G1 = class {
           }))
         });
       }
-      r = v || { functionCalls: _ }, u = P1(x, b) || r?.candidates?.[0]?.content || null, o = Array.from(g.values()).filter(Boolean).map((S, T) => ({
+      r = v || { functionCalls: _ }, u = PN(x, b) || r?.candidates?.[0]?.content || null, o = Array.from(g.values()).filter(Boolean).map((S, T) => ({
         label: `思考块 ${T + 1}`,
         text: S
       })), i = b;
     } else
       r = await e.sendMessage(l), o = bm(r), i = gm(r);
-    const f = ym(r), h = f.length ? f : s, m = F1(e, p);
+    const f = ym(r), h = f.length ? f : s, m = FN(e, p);
     return {
       text: i,
       toolCalls: h,
@@ -21710,13 +21716,13 @@ var G1 = class {
       finishReason: r.candidates?.[0]?.finishReason || "STOP",
       model: r.modelVersion || this.config.model,
       provider: "google",
-      providerPayload: Od(m) || U1(u) || B1(r)
+      providerPayload: Od(m) || UN(u) || BN(r)
     };
   }
   async chat(e) {
     if (Array.isArray(e.toolResponses) && e.toolResponses.length) {
       if (!this.activeChat) throw new Error("google_chat_session_missing");
-      return await this.sendThroughChat(this.activeChat, { message: M1(e.toolResponses) }, e);
+      return await this.sendThroughChat(this.activeChat, { message: MN(e.toolResponses) }, e);
     }
     const t = String(e.finalAnswerReminderText || "").trim();
     if (t) {
@@ -21826,11 +21832,11 @@ var fc = (e) => {
     }
     super(e, t, r, n), this.error_code = o;
   }
-}, H1 = class extends ie {
+}, HN = class extends ie {
   constructor(e, t, n) {
     super(e), this.provider = t, this.cause = n;
   }
-}, V1 = /^[a-z][a-z0-9+.-]*:/i, K1 = (e) => V1.test(e), nt = (e) => (nt = Array.isArray, nt(e)), xm = nt;
+}, VN = /^[a-z][a-z0-9+.-]*:/i, KN = (e) => VN.test(e), nt = (e) => (nt = Array.isArray, nt(e)), xm = nt;
 function ux(e) {
   return typeof e != "object" ? {} : e ?? {};
 }
@@ -21839,28 +21845,28 @@ function _m(e) {
   for (const t in e) return !1;
   return !0;
 }
-function W1(e, t) {
+function WN(e, t) {
   return Object.prototype.hasOwnProperty.call(e, t);
 }
 function Wl(e) {
   return e != null && typeof e == "object" && !Array.isArray(e);
 }
-var z1 = (e, t) => {
+var zN = (e, t) => {
   if (typeof t != "number" || !Number.isInteger(t)) throw new ie(`${e} must be an integer`);
   if (t < 0) throw new ie(`${e} must be a positive integer`);
   return t;
-}, J1 = (e) => {
+}, JN = (e) => {
   try {
     return JSON.parse(e);
   } catch {
     return;
   }
-}, qi = (e) => new Promise((t) => setTimeout(t, e)), Rr = "6.34.0", Y1 = () => typeof window < "u" && typeof window.document < "u" && typeof navigator < "u";
-function X1() {
+}, qi = (e) => new Promise((t) => setTimeout(t, e)), Rr = "6.34.0", YN = () => typeof window < "u" && typeof window.document < "u" && typeof navigator < "u";
+function XN() {
   return typeof Deno < "u" && Deno.build != null ? "deno" : typeof EdgeRuntime < "u" ? "edge" : Object.prototype.toString.call(typeof globalThis.process < "u" ? globalThis.process : 0) === "[object process]" ? "node" : "unknown";
 }
-var Q1 = () => {
-  const e = X1();
+var QN = () => {
+  const e = XN();
   if (e === "deno") return {
     "X-Stainless-Lang": "js",
     "X-Stainless-Package-Version": Rr,
@@ -21885,7 +21891,7 @@ var Q1 = () => {
     "X-Stainless-Runtime": "node",
     "X-Stainless-Runtime-Version": globalThis.process.version ?? "unknown"
   };
-  const t = Z1();
+  const t = ZN();
   return t ? {
     "X-Stainless-Lang": "js",
     "X-Stainless-Package-Version": Rr,
@@ -21902,7 +21908,7 @@ var Q1 = () => {
     "X-Stainless-Runtime-Version": "unknown"
   };
 };
-function Z1() {
+function ZN() {
   if (typeof navigator > "u" || !navigator) return null;
   for (const { key: e, pattern: t } of [
     {
@@ -21938,7 +21944,7 @@ function Z1() {
   }
   return null;
 }
-var wm = (e) => e === "x32" ? "x32" : e === "x86_64" || e === "x64" ? "x64" : e === "arm" ? "arm" : e === "aarch64" || e === "arm64" ? "arm64" : e ? `other:${e}` : "unknown", Sm = (e) => (e = e.toLowerCase(), e.includes("ios") ? "iOS" : e === "android" ? "Android" : e === "darwin" ? "MacOS" : e === "win32" ? "Windows" : e === "freebsd" ? "FreeBSD" : e === "openbsd" ? "OpenBSD" : e === "linux" ? "Linux" : e ? `Other:${e}` : "Unknown"), Tm, j1 = () => Tm ?? (Tm = Q1());
+var wm = (e) => e === "x32" ? "x32" : e === "x86_64" || e === "x64" ? "x64" : e === "arm" ? "arm" : e === "aarch64" || e === "arm64" ? "arm64" : e ? `other:${e}` : "unknown", Sm = (e) => (e = e.toLowerCase(), e.includes("ios") ? "iOS" : e === "android" ? "Android" : e === "darwin" ? "MacOS" : e === "win32" ? "Windows" : e === "freebsd" ? "FreeBSD" : e === "openbsd" ? "OpenBSD" : e === "linux" ? "Linux" : e ? `Other:${e}` : "Unknown"), Tm, jN = () => Tm ?? (Tm = QN());
 function cx() {
   if (typeof fetch < "u") return fetch;
   throw new Error("`fetch` is not defined as a global; Either pass `fetch` to the client, `new OpenAI({ fetch })` or polyfill the global, `globalThis.fetch = fetch`");
@@ -22275,7 +22281,7 @@ var Aa = {
   debug: 500
 }, Mm = (e, t, n) => {
   if (e) {
-    if (W1(Aa, e)) return e;
+    if (WN(Aa, e)) return e;
     Ve(n).warn(`${t} was set to ${JSON.stringify(e)}, expected one of ${JSON.stringify(Object.keys(Aa))}`);
   }
 };
@@ -25627,7 +25633,7 @@ var Cc, uf, ea, I_, eu = "workload-identity-auth", me = class {
       ...s,
       baseURL: e || "https://api.openai.com/v1"
     };
-    if (!u.dangerouslyAllowBrowser && Y1()) throw new ie(`It looks like you're running in a browser-like environment.
+    if (!u.dangerouslyAllowBrowser && YN()) throw new ie(`It looks like you're running in a browser-like environment.
 
 This is disabled by default, as it risks exposing your secret API credentials to attackers.
 If you understand the risks and have appropriate mitigations in place,
@@ -25692,7 +25698,7 @@ https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety
     return this.apiKey = t, !0;
   }
   buildURL(e, t, n) {
-    const r = !M(this, Cc, "m", I_).call(this) && n || this.baseURL, o = K1(e) ? new URL(e) : new URL(r + (r.endsWith("/") && e.startsWith("/") ? e.slice(1) : e)), i = this.defaultQuery(), s = Object.fromEntries(o.searchParams);
+    const r = !M(this, Cc, "m", I_).call(this) && n || this.baseURL, o = KN(e) ? new URL(e) : new URL(r + (r.endsWith("/") && e.startsWith("/") ? e.slice(1) : e)), i = this.defaultQuery(), s = Object.fromEntries(o.searchParams);
     return (!_m(i) || !_m(s)) && (t = {
       ...s,
       ...i,
@@ -25762,7 +25768,7 @@ https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety
         url: s,
         durationMs: m - p,
         message: h.message
-      })), h instanceof lx || h instanceof H1 ? h : b ? new qd() : new Za({ cause: h });
+      })), h instanceof lx || h instanceof HN ? h : b ? new qd() : new Za({ cause: h });
     }
     const y = `[${l}${d}${[...h.headers.entries()].filter(([g]) => g === "x-request-id").map(([g, b]) => ", " + g + ": " + JSON.stringify(b)).join("")}] ${i.method} ${s} ${h.ok ? "succeeded" : "failed"} with status ${h.status} in ${m - p}ms`;
     if (!h.ok) {
@@ -25787,7 +25793,7 @@ https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety
       }
       const b = g ? "error; no more retries left" : "error; not retryable";
       Ve(this).info(`${y} - ${b}`);
-      const _ = await h.text().catch((S) => fc(S).message), v = J1(_), x = v ? void 0 : _;
+      const _ = await h.text().catch((S) => fc(S).message), v = JN(_), x = v ? void 0 : _;
       throw Ve(this).debug(`[${l}] response error (${b})`, Gn({
         retryOfRequestLogID: n,
         url: h.url,
@@ -25881,7 +25887,7 @@ https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety
   }
   async buildRequest(e, { retryCount: t = 0 } = {}) {
     const n = { ...e }, { method: r, path: o, query: i, defaultBaseURL: s } = n, u = this.buildURL(o, i, s);
-    "timeout" in n && z1("timeout", n.timeout), n.timeout = n.timeout ?? this.timeout;
+    "timeout" in n && zN("timeout", n.timeout), n.timeout = n.timeout ?? this.timeout;
     const { bodyHeaders: l, body: d, isStreamingBody: p } = this.buildBody({ options: n });
     return p && (e.__metadata = {
       ...e.__metadata,
@@ -25915,7 +25921,7 @@ https://help.openai.com/en/articles/5112595-best-practices-for-api-key-safety
         "User-Agent": this.getUserAgent(),
         "X-Stainless-Retry-Count": String(r),
         ...e.timeout ? { "X-Stainless-Timeout": String(Math.trunc(e.timeout / 1e3)) } : {},
-        ...j1(),
+        ...jN(),
         "OpenAI-Organization": this.organization,
         "OpenAI-Project": this.project
       },
@@ -27328,7 +27334,7 @@ function W$(e = {}, t = {}) {
     case "anthropic":
       return new WA(e);
     case "google":
-      return new G1(e);
+      return new GN(e);
     default:
       return new f$(e);
   }
@@ -27450,7 +27456,7 @@ function j$(e, t) {
   ].find((r) => typeof r == "string" && r.trim());
   return n ? n.trim() : String(t || "").trim().slice(0, 160);
 }
-async function eL(e, t = {}) {
+async function e2(e, t = {}) {
   const n = await fetch(e, t), r = await n.text();
   let o = null, i = null;
   try {
@@ -27468,19 +27474,19 @@ async function eL(e, t = {}) {
     errorSnippet: j$(o, r)
   };
 }
-function tL(e) {
+function t2(e) {
   return Ci((e?.data || []).map((t) => String(t?.id || "").trim()).filter(Boolean));
 }
 function q_(e) {
   return Ci((e?.data || []).map((t) => String(t?.id || "").trim()).filter(Boolean));
 }
-function nL(e) {
+function n2(e) {
   return Ci((e?.models || e?.data || []).map((t) => String(t?.id || t?.name || "")).map((t) => t.split("/").pop() || "").filter(Boolean));
 }
 async function ta({ urls: e, requestOptionsList: t, extractModels: n, providerLabel: r }) {
   let o = null;
   for (const i of e) for (const s of t) {
-    const u = await eL(i, s);
+    const u = await e2(i, s);
     if (!u.ok) {
       o = u;
       continue;
@@ -27505,7 +27511,7 @@ async function ta({ urls: e, requestOptionsList: t, extractModels: n, providerLa
   }
   throw new Error(`${r} 拉取模型失败：未获取到模型列表。`);
 }
-async function rL(e) {
+async function r2(e) {
   const t = String(e.apiKey || "").trim(), n = Yr(e.baseUrl || ""), r = Yr(n || Jy.claude);
   if (t && r) try {
     return await ta({
@@ -27525,7 +27531,7 @@ async function rL(e) {
 }
 async function ag(e) {
   const t = e.provider, n = Yr(e.baseUrl || ""), r = String(e.apiKey || "").trim();
-  if (t === "sillytavern-claude") return Ci(await rL(e));
+  if (t === "sillytavern-claude") return Ci(await r2(e));
   if (Y$(t)) return Ci(await DE(e, X$(t)));
   if (!r) throw new Error("请先填写 API Key。");
   if (!n) throw new Error("请先填写 Base URL。");
@@ -27542,7 +27548,7 @@ async function ag(e) {
       } },
       { headers: { Accept: "application/json" } }
     ],
-    extractModels: nL,
+    extractModels: n2,
     providerLabel: "Google AI"
   }) : Dc(t) ? await ta({
     urls: O_(n),
@@ -27559,15 +27565,15 @@ async function ag(e) {
       Authorization: `Bearer ${r}`,
       Accept: "application/json"
     } }],
-    extractModels: tL,
+    extractModels: t2,
     providerLabel: t === "openai-responses" ? "OpenAI Responses" : "OpenAI-Compatible"
   });
 }
-function oL(e) {
+function o2(e) {
   return e instanceof Error ? e.message : String(e || "unknown_error");
 }
-function iL(e = {}) {
-  const { state: t, render: n, showToast: r, createRequestId: o = (E = "req") => `${E}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, saveConfig: i, describeError: s = oL, getRuntimeSummaryText: u } = e;
+function i2(e = {}) {
+  const { state: t, render: n, showToast: r, createRequestId: o = (E = "req") => `${E}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, saveConfig: i, describeError: s = o2, getRuntimeSummaryText: u } = e;
   function l() {
     t.configFormSyncPending = !0;
   }
@@ -28069,13 +28075,13 @@ function iL(e = {}) {
 function $c(e = {}) {
   return ri(e || {});
 }
-function sL(e = {}, t = {}) {
+function s2(e = {}, t = {}) {
   return K$(e, t);
 }
-function aL(e = {}) {
+function a2(e = {}) {
   return W$(e, { missingApiKeyMessage: "请先填写 API Key。" });
 }
-var ru = null, lg = null, ug = 0, Lc = /* @__PURE__ */ new Map(), lL = /* @__PURE__ */ new Set([
+var ru = null, lg = null, ug = 0, Lc = /* @__PURE__ */ new Map(), l2 = /* @__PURE__ */ new Set([
   "html",
   "htm",
   "xhtml",
@@ -28083,14 +28089,14 @@ var ru = null, lg = null, ug = 0, Lc = /* @__PURE__ */ new Map(), lL = /* @__PUR
   "svg",
   "vue",
   "svelte"
-]), uL = "allow-scripts";
-function cL(e) {
+]), u2 = "allow-scripts";
+function c2(e) {
   return String(e || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
-function dL() {
+function d2() {
   return ug += 1, `html-${Date.now().toString(36)}-${ug.toString(36)}`;
 }
-function fL(e = "") {
+function f2(e = "") {
   const t = String(e || "").length;
   if (t >= 1e3) {
     const n = t / 1e3;
@@ -28098,27 +28104,27 @@ function fL(e = "") {
   }
   return `${t} 字符`;
 }
-function pL() {
+function p2() {
   return {
     showdown: globalThis.parent?.showdown || globalThis.showdown,
     DOMPurify: globalThis.parent?.DOMPurify || globalThis.DOMPurify
   };
 }
-function hL(e = "") {
-  return lL.has(String(e || "").trim().toLowerCase());
+function h2(e = "") {
+  return l2.has(String(e || "").trim().toLowerCase());
 }
 function G_(e = "") {
   const t = String(e || "").trim();
   return t ? /^<!doctype\s+html/i.test(t) || /^<html[\s>]/i.test(t) ? !0 : (t.match(/<\/?[a-z][\w:-]*(?:\s[^<>]*)?>/gi) || []).length >= 3 && /<\/[a-z][\w:-]*>/i.test(t) : !1;
 }
 function H_(e = "", t = "html") {
-  const n = dL();
+  const n = d2();
   return Lc.set(n, {
     code: String(e || ""),
     language: String(t || "html").trim() || "html"
   }), `@@XB_HTML_BLOCK_${n}@@`;
 }
-function mL(e = "") {
+function m2(e = "") {
   return String(e || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 function cg(e = "") {
@@ -28127,13 +28133,13 @@ function cg(e = "") {
     const r = t.match(/^\s*/)?.[0] || "", o = t.match(/\s*$/)?.[0] || "";
     return `${r}${H_(n, "html")}${o}`;
   }
-  return mL(t);
+  return m2(t);
 }
-function gL(e = "") {
+function g2(e = "") {
   const t = String(e || ""), n = /(^|\n)(`{3,}|~{3,})[ \t]*([^\n]*)\n([\s\S]*?)\n\2[ \t]*(?=\n|$)/g;
   let r = "", o = 0, i = null;
   for (; (i = n.exec(t)) !== null; ) {
-    const s = i[1] || "", u = i.index + s.length, l = n.lastIndex, d = String(i[3] || "").trim().split(/\s+/)[0] || "", p = String(i[4] || ""), f = hL(d) || !d && G_(p);
+    const s = i[1] || "", u = i.index + s.length, l = n.lastIndex, d = String(i[3] || "").trim().split(/\s+/)[0] || "", p = String(i[4] || ""), f = h2(d) || !d && G_(p);
     r += cg(t.slice(o, u)), f ? r += H_(p, d || "html") : r += t.slice(u, l), o = l;
   }
   return r += cg(t.slice(o)), r;
@@ -28144,9 +28150,9 @@ function dg(e = "") {
 function V_(e) {
   const t = String(e || "").trim();
   if (!t) return "";
-  const n = gL(t);
+  const n = g2(t);
   try {
-    const { showdown: r, DOMPurify: o } = pL();
+    const { showdown: r, DOMPurify: o } = p2();
     if (r?.Converter && o?.sanitize) {
       (!ru || lg !== r) && (lg = r, ru = new r.Converter({
         simpleLineBreaks: !0,
@@ -28166,9 +28172,9 @@ function V_(e) {
     }
   } catch {
   }
-  return dg(cL(n).replace(/\n/g, "<br>"));
+  return dg(c2(n).replace(/\n/g, "<br>"));
 }
-async function yL(e = "") {
+async function y2(e = "") {
   const t = String(e || "");
   if (!t) return !1;
   try {
@@ -28185,7 +28191,7 @@ async function yL(e = "") {
     return !1;
   }
 }
-function bL(e, t = {}) {
+function b2(e, t = {}) {
   if (!e || typeof t.onPathClick != "function") return;
   const n = e.ownerDocument || globalThis.document, r = n?.defaultView?.NodeFilter || globalThis.NodeFilter;
   if (!n?.createTreeWalker || !r) return;
@@ -28207,7 +28213,7 @@ function bL(e, t = {}) {
     m && (h < d.length && p.appendChild(n.createTextNode(d.slice(h))), l.parentNode?.replaceChild(p, l));
   });
 }
-function vL(e, t = {}) {
+function v2(e, t = {}) {
   if (!e?.querySelectorAll) return;
   const n = e.ownerDocument || globalThis.document;
   if (!n?.createElement) return;
@@ -28218,7 +28224,7 @@ function vL(e, t = {}) {
     d.className = r;
     const p = n.createElement("button");
     p.type = "button", p.className = o, p.textContent = "⧉", p.title = i, p.setAttribute("aria-label", i), p.addEventListener("click", async () => {
-      const f = await yL(l.querySelector("code")?.textContent || l.textContent || "");
+      const f = await y2(l.querySelector("code")?.textContent || l.textContent || "");
       p.textContent = f ? "✓" : "!", p.title = f ? s : u, setTimeout(() => {
         p.textContent = "⧉", p.title = i;
       }, 1200);
@@ -28230,15 +28236,15 @@ function fg(e = [], t = null) {
     n.classList.toggle("is-active", n === t), n.setAttribute("aria-pressed", n === t ? "true" : "false");
   });
 }
-function xL(e, t = "") {
+function x2(e, t = "") {
   const n = e.createElement("pre");
   return n.className = "xb-markdown-html-code", n.textContent = String(t || ""), n;
 }
-function _L(e, t = "") {
+function _2(e, t = "") {
   const n = e.createElement("iframe");
-  return n.className = "xb-markdown-html-preview", n.setAttribute("sandbox", uL), n.referrerPolicy = "no-referrer", n.title = "HTML 渲染预览", n.srcdoc = String(t || ""), n;
+  return n.className = "xb-markdown-html-preview", n.setAttribute("sandbox", u2), n.referrerPolicy = "no-referrer", n.title = "HTML 渲染预览", n.srcdoc = String(t || ""), n;
 }
-function wL(e, t = {}) {
+function w2(e, t = {}) {
   const n = String(t.code || ""), r = e.createElement("div");
   r.className = "xb-markdown-html-block";
   const o = e.createElement("div");
@@ -28246,7 +28252,7 @@ function wL(e, t = {}) {
   const i = e.createElement("div");
   i.className = "xb-markdown-html-title", i.textContent = "HTML 片段";
   const s = e.createElement("span");
-  s.textContent = fL(n), i.appendChild(s);
+  s.textContent = f2(n), i.appendChild(s);
   const u = e.createElement("div");
   u.className = "xb-markdown-html-actions";
   const l = e.createElement("button");
@@ -28261,11 +28267,11 @@ function wL(e, t = {}) {
       f = "", p.hidden = !0, p.replaceChildren(), fg(h);
       return;
     }
-    f = y, p.hidden = !1, p.replaceChildren(y === "preview" ? _L(e, n) : xL(e, n)), fg(h, y === "preview" ? d : l);
+    f = y, p.hidden = !1, p.replaceChildren(y === "preview" ? _2(e, n) : x2(e, n)), fg(h, y === "preview" ? d : l);
   };
   return l.addEventListener("click", () => m("code")), d.addEventListener("click", () => m("preview")), r.append(o, p), r;
 }
-function SL(e) {
+function S2(e) {
   if (!e?.querySelectorAll) return;
   const t = e.ownerDocument || globalThis.document;
   t?.createElement && Array.from(e.querySelectorAll(".xb-markdown-html-placeholder[data-xb-html-block-id]")).forEach((n) => {
@@ -28274,7 +28280,7 @@ function SL(e) {
       n.remove();
       return;
     }
-    const i = wL(t, o), s = n.parentElement;
+    const i = w2(t, o), s = n.parentElement;
     if (s?.tagName === "P" && s.textContent.trim() === "") {
       s.replaceWith(i);
       return;
@@ -28283,12 +28289,12 @@ function SL(e) {
   });
 }
 function ou(e, t = {}) {
-  return e && (SL(e), vL(e, t), bL(e, t), e);
+  return e && (S2(e), v2(e, t), b2(e, t), e);
 }
 function na(e = "") {
   return String(e || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
-function TL(e = {}) {
+function T2(e = {}) {
   const t = String(e?.status || "idle");
   return t === "saving" ? {
     className: "xb-assistant-save-button is-saving",
@@ -28308,8 +28314,8 @@ function TL(e = {}) {
     html: "保存配置"
   };
 }
-function EL(e = {}) {
-  const { configSave: t = {}, runtimeText: n = "", inlineToastText: r = "", showInlineToast: o = !0, showAssistantPermissions: i = !0, showDelegateSettings: s = !0, activePage: u = "main", delegatePresetHint: l = "DelegateRun 分身会使用这里的独立 API 配置；可以和主助手使用不同 Provider、Base URL、模型和 Tool 调用格式。", isBusy: d = !1, canDeletePreset: p = !0 } = e, f = TL(t), h = d || String(t?.status || "") === "saving" ? "disabled" : "", m = d || !p ? "disabled" : "", y = u === "delegate" ? "delegate" : "main", g = y === "main", b = y === "delegate", _ = i ? `
+function E2(e = {}) {
+  const { configSave: t = {}, runtimeText: n = "", inlineToastText: r = "", showInlineToast: o = !0, showAssistantPermissions: i = !0, showDelegateSettings: s = !0, activePage: u = "main", delegatePresetHint: l = "DelegateRun 分身会使用这里的独立 API 配置；可以和主助手使用不同 Provider、Base URL、模型和 Tool 调用格式。", isBusy: d = !1, canDeletePreset: p = !0 } = e, f = T2(t), h = d || String(t?.status || "") === "saving" ? "disabled" : "", m = d || !p ? "disabled" : "", y = u === "delegate" ? "delegate" : "main", g = y === "main", b = y === "delegate", _ = i ? `
             <label>
                 <span>斜杠命令权限</span>
                 <select id="xb-assistant-permission-mode"></select>
@@ -28470,7 +28476,7 @@ function EL(e = {}) {
         </section>
     `;
 }
-function AL(e = "") {
+function A2(e = "") {
   const t = String(e || "").trim();
   if (!t) return 0;
   const n = t.match(/[\u3400-\u9fff\uf900-\ufaff]/g)?.length || 0, r = t.match(/[A-Za-z0-9_]+(?:[-'][A-Za-z0-9_]+)*/g)?.length || 0, o = t.replace(/[\u3400-\u9fff\uf900-\ufaff]/g, "").replace(/[A-Za-z0-9_]+(?:[-'][A-Za-z0-9_]+)*/g, "").replace(/\s+/g, "").length;
@@ -28483,10 +28489,10 @@ function K_(e = "") {
     lines: n ? t.replace(/\r\n?/g, `
 `).split(`
 `).length : 0,
-    tokens: AL(t)
+    tokens: A2(t)
   };
 }
-function CL(e = "") {
+function C2(e = "") {
   const t = K_(e);
   return `${t.chars} 字 · ${t.lines} 行`;
 }
@@ -28541,7 +28547,7 @@ var Bc = [
   "book/notes/",
   "book/volumes/",
   "book/sources/"
-], kL = 24e3, iu = /* @__PURE__ */ new WeakMap(), hg = /* @__PURE__ */ new WeakMap(), mg = 1;
+], k2 = 24e3, iu = /* @__PURE__ */ new WeakMap(), hg = /* @__PURE__ */ new WeakMap(), mg = 1;
 function W_(e) {
   return !e || typeof e != "object" ? "0" : (iu.has(e) || (iu.set(e, mg), mg += 1), iu.get(e));
 }
@@ -28573,11 +28579,11 @@ function z_(e = []) {
     return r !== o ? r - o : t.path.localeCompare(n.path, "zh-CN");
   });
 }
-function IL(e = []) {
+function I2(e = []) {
   return z_(e).filter((t) => /^book\/chapters\/.+\.md$/.test(t.path));
 }
-function PL(e = {}) {
-  const t = IL(e.files), n = t.some((r) => r.path === e.readerPath) ? e.readerPath : t[0]?.path || "";
+function P2(e = {}) {
+  const t = I2(e.files), n = t.some((r) => r.path === e.readerPath) ? e.readerPath : t[0]?.path || "";
   return {
     chapters: t,
     activePath: n,
@@ -28585,13 +28591,13 @@ function PL(e = {}) {
     index: Math.max(0, t.findIndex((r) => r.path === n))
   };
 }
-function RL(e = "") {
+function R2(e = "") {
   const t = e.match(/^book\/chapters\/(.+)\.md$/);
   if (!t) return "";
   const n = t[1];
   return /^\d+$/.test(n) ? `第 ${Number(n)} 章` : n;
 }
-function ML(e = "") {
+function M2(e = "") {
   const t = String(e || "").match(/^book\/volumes\/(.+)\.md$/);
   if (!t) return "";
   const n = t[1].split("/").pop() || t[1];
@@ -28612,18 +28618,18 @@ function Mn(e = "") {
     "book/sources/worldbook.md": "世界书资料"
   };
   if (t[e]) return t[e];
-  const n = RL(e);
+  const n = R2(e);
   if (n) return n;
-  const r = ML(e);
+  const r = M2(e);
   return r || (e.startsWith("book/sources/") ? e.replace(/^book\/sources\//, "").replace(/\.md$/, "").split("/").pop() || e : e.startsWith("book/reviews/") ? `审稿 ${e.replace(/^book\/reviews\//, "").replace(/\.md$/, "").split("/").pop() || ""}` : e.startsWith("book/notes/") ? e.replace(/^book\/notes\//, "").replace(/\.md$/, "").split("/").pop() || e : e.replace(/^book\//, ""));
 }
-function NL(e = "") {
+function N2(e = "") {
   return /^book\/chapters\/.+\.md$/.test(String(e || ""));
 }
 function bg(e = "") {
   return String(e || "").replace(/\[ebook-image:[a-z0-9\-_]+\]/gi, "").trim();
 }
-function DL(e = 0) {
+function D2(e = 0) {
   const t = Number(e) ? new Date(Number(e)) : null;
   return !t || Number.isNaN(t.getTime()) ? "暂无更新时间" : t.toLocaleDateString("zh-CN", {
     month: "2-digit",
@@ -28651,7 +28657,7 @@ function J_(e = {}) {
 function La(e = 0) {
   return `${Math.max(0, Math.round((Number(e) || 0) / 1e3))}k`;
 }
-function $L(e = {}) {
+function $2(e = {}) {
   const t = Ly({
     book: e.book,
     files: e.files
@@ -28678,13 +28684,13 @@ ${n}`), (e.messages || []).forEach((o) => {
 
 `));
 }
-function LL(e = {}) {
-  return `${La($L(e))}/${La($T)}`;
+function L2(e = {}) {
+  return `${La($2(e))}/${La($T)}`;
 }
-function BL(e = {}) {
+function B2(e = {}) {
   return e.historySummary?.trim() ? "当前实际送模上下文 / 188k（已整理较早创作记录）" : "当前实际送模上下文 / 188k";
 }
-function UL(e = {}) {
+function U2(e = {}) {
   const t = e.compactionOverlay || {};
   if (!t.active) return "";
   const n = La(t.currentTokens), r = Number(t.yieldTokens) > 0 ? La(t.yieldTokens) : "....", o = String(t.status || "").trim() || "正在整理较早创作记录...";
@@ -28711,7 +28717,7 @@ function UL(e = {}) {
         </div>
     `;
 }
-function FL(e = {}) {
+function F2(e = {}) {
   const t = e.protocolNotice || {}, n = String(t.message || "").trim();
   return n ? `
         <div class="xb-protocol-notice" role="status" aria-live="polite">
@@ -28744,7 +28750,7 @@ function Y_(e = [], t = 0) {
     });
   }), n.length ? `tool-turn:${n.join("|")}` : `tool-turn:fallback:${t}`;
 }
-function OL(e = {}, t = -1) {
+function O2(e = {}, t = -1) {
   return !!(e.isBusy && Number.isInteger(e.activeTurnStartIndex) && e.activeTurnStartIndex >= 0 && t > e.activeTurnStartIndex);
 }
 function cl(e = "") {
@@ -28777,9 +28783,9 @@ function Cs(e = "", t = "") {
   }
   return "";
 }
-function qL(e = "", t = {}) {
+function q2(e = "", t = {}) {
   const n = String(e || "");
-  if (t.forceParse || n.length <= kL) return cl(n);
+  if (t.forceParse || n.length <= k2) return cl(n);
   const r = Cs(n, "summary") || Cs(n, "message") || Cs(n, "error");
   return {
     __previewOnly: !0,
@@ -28797,7 +28803,7 @@ function X_(e = "") {
     "PlanGet"
   ].includes(String(e || ""));
 }
-function GL(e = "") {
+function G2(e = "") {
   switch (String(e || "").trim()) {
     case "pending":
       return "待办";
@@ -28815,20 +28821,20 @@ function GL(e = "") {
       return e || "未知";
   }
 }
-function HL(e = "") {
+function H2(e = "") {
   const t = String(e || "").trim();
   return t === "completed" ? "✓" : t === "failed" || t === "cancelled" ? "×" : "";
 }
-function VL(e = {}, t = "") {
+function V2(e = {}, t = "") {
   const n = e.plan && typeof e.plan == "object" ? e.plan : null, r = Array.isArray(e.plans) ? e.plans : [];
-  return e.ok === !1 ? e.error ? `计划工具失败：${e.error}` : "计划工具失败" : t === "PlanList" ? `计划列表：${Number(e.count) || r.length || 0} 项` : t === "PlanGet" ? n ? `计划：${n.title || n.id || ""}`.trim() : "计划不存在" : t === "PlanCreate" ? `计划已创建：${n?.title || n?.id || ""}`.trim() : t === "PlanUpdate" ? `计划已更新：${n?.title || n?.id || ""}`.trim() : e.summary || "计划已返回";
+  return e.ok === !1 ? e.error ? `计划工具失败：${e.error}` : "计划工具失败" : t === "PlanList" ? `计划列表：${Number(e.count) || r.length || 0} 项` : t === "PlanGet" ? n ? `计划：${n.title || "未命名计划"}`.trim() : "计划不存在" : t === "PlanCreate" ? `计划已创建：${n?.title || "未命名计划"}`.trim() : t === "PlanUpdate" ? `计划已更新：${n?.title || "未命名计划"}`.trim() : e.summary || "计划已返回";
 }
 function vg(e = {}) {
-  const t = String(e.title || e.id || "未命名计划").trim(), n = String(e.status || "").trim(), r = [
+  const t = String(e.title || "未命名计划").trim(), n = String(e.status || "").trim(), r = Array.isArray(e.blockedBy) ? e.blockedBy.length : 0, o = [
     [
-      n ? `状态：${GL(n)}` : "",
+      n ? `状态：${G2(n)}` : "",
       e.priority ? `优先级：${e.priority}` : "",
-      Array.isArray(e.blockedBy) && e.blockedBy.length ? `依赖：${e.blockedBy.join("、")}` : ""
+      r ? `依赖：${r} 项` : ""
     ].filter(Boolean).join("，"),
     e.result ? `结果：${sr(e.result, 180)}` : "",
     e.error ? `错误：${sr(e.error, 180)}` : ""
@@ -28836,10 +28842,10 @@ function vg(e = {}) {
 `);
   return `
         <div class="xb-tool-plan-item">
-            <span class="xb-tool-plan-box">${F(HL(n))}</span>
+            <span class="xb-tool-plan-box">${F(H2(n))}</span>
             <p>
-                <strong>${F(t)}${e.id ? ` <em>${F(e.id)}</em>` : ""}</strong>
-                ${r ? `<small>${F(r)}</small>` : ""}
+                <strong>${F(t)}</strong>
+                ${o ? `<small>${F(o)}</small>` : ""}
             </p>
         </div>
     `;
@@ -28855,7 +28861,7 @@ function Q_(e = {}, t = cl(e.content)) {
   }));
   return `
         <div class="xb-tool-plan">
-            <small>${F(VL(t, e.toolName) || "计划已返回")}</small>
+            <small>${F(V2(t, e.toolName) || "计划已返回")}</small>
             ${i.length ? `<div class="xb-tool-plan-list">${i.map(vg).join("")}</div>` : ""}
             ${s.length ? `
                 <div class="xb-tool-plan-blockers">
@@ -28871,11 +28877,11 @@ function Ba(e = {}, t = null) {
   const n = t && typeof t == "object" ? t : cl(e.content), r = n.__previewOnly ? `${e.toolName || "工具"} 已返回结果。` : String(e.content || "");
   return sr(n.summary || n.message || n.error || r, 220) || "工具已返回结果。";
 }
-function KL(e = 0) {
+function K2(e = 0) {
   const t = Number(e) || 0;
   return t ? `${(t / 1e3).toFixed(1)}s` : "";
 }
-function WL(e = {}) {
+function W2(e = {}) {
   const t = Array.isArray(e.payload) ? e.payload : [];
   return t.length ? `
         <div class="xb-tool-payload">
@@ -28888,7 +28894,7 @@ function WL(e = {}) {
         </div>
     ` : "";
 }
-function zL(e = {}) {
+function z2(e = {}) {
   const t = Array.isArray(e.progress) ? e.progress : [];
   return t.length ? `
         <div class="xb-tool-progress">
@@ -28902,7 +28908,7 @@ function zL(e = {}) {
     ` : "";
 }
 function Z_(e = {}) {
-  const t = e.status === "running" || e.status === "resolved", n = e.status === "running", r = WL(e), o = zL(e), i = !!r, s = t ? n ? "运行中" : e.ok === !1 ? "失败" : "已返回" : "", u = t && !n ? KL(e.elapsedMs) : "", l = u ? ` · ${u}` : "", d = sr(e.summary, 220) || (n ? "工具已发起，等待返回。" : "工具已返回结果。"), p = [
+  const t = e.status === "running" || e.status === "resolved", n = e.status === "running", r = W2(e), o = z2(e), i = !!r, s = t ? n ? "运行中" : e.ok === !1 ? "失败" : "已返回" : "", u = t && !n ? K2(e.elapsedMs) : "", l = u ? ` · ${u}` : "", d = sr(e.summary, 220) || (n ? "工具已发起，等待返回。" : "工具已返回结果。"), p = [
     "xb-tool",
     i ? "has-payload" : "",
     t ? n ? "is-running" : "is-resolved" : "",
@@ -28926,7 +28932,7 @@ function Z_(e = {}) {
         </div>
     `;
 }
-function JL(e = {}) {
+function J2(e = {}) {
   const t = cl(e.content), n = Q_(e, t), r = e.toolDisplay && typeof e.toolDisplay == "object" ? e.toolDisplay : null;
   return r ? n ? `
             <div class="xb-tool ${t.ok === !1 ? "is-error" : "is-resolved"}">
@@ -28951,8 +28957,8 @@ function JL(e = {}) {
             </div>
         `;
 }
-function YL(e = {}) {
-  const t = X_(e.toolName), n = qL(e.content, { forceParse: t }), r = t ? Q_(e, n) : "", o = e.toolDisplay && typeof e.toolDisplay == "object" ? e.toolDisplay : null;
+function Y2(e = {}) {
+  const t = X_(e.toolName), n = q2(e.content, { forceParse: t }), r = t ? Q_(e, n) : "", o = e.toolDisplay && typeof e.toolDisplay == "object" ? e.toolDisplay : null;
   if (o) {
     const i = o.status === "running" ? "运行中" : n.ok === !1 ? "失败" : "已返回";
     return `
@@ -28972,7 +28978,7 @@ function YL(e = {}) {
         </div>
     `;
 }
-function XL(e = {}) {
+function X2(e = {}) {
   const t = sr(String(e.content || "").trim(), 260);
   return t ? `<div class="xb-tool-preface-preview">${F(t)}</div>` : "";
 }
@@ -28982,7 +28988,7 @@ function Fc(e = "") {
 function su(e = "") {
   return F(e).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
 }
-function QL(e = "") {
+function Q2(e = "") {
   const t = String(e || "").trim();
   if (!t) return "";
   const n = t.match(/^(#{1,6})\s+(.+)$/);
@@ -28994,12 +29000,12 @@ function QL(e = "") {
 `).map((r) => r.replace(/^>\s?/, "")).join(`
 `)).replace(/\n/g, "<br>")}</blockquote>` : `<p>${su(t).replace(/\n/g, "<br>")}</p>`;
 }
-function ZL(e = "", t = 0) {
+function Z2(e = "", t = 0) {
   const n = String(e || "").trim();
   let r = V_(n);
-  return r === F(n).replace(/\n/g, "<br>") && (r = QL(n)), r ? `<div class="xb-reader-md${t === 0 ? " xb-reader-drop" : ""}">${r}</div>` : "";
+  return r === F(n).replace(/\n/g, "<br>") && (r = Q2(n)), r ? `<div class="xb-reader-md${t === 0 ? " xb-reader-drop" : ""}">${r}</div>` : "";
 }
-function jL(e = {}) {
+function j2(e = {}) {
   if (!e.books.length) return '<div class="xb-empty xb-library-empty">书架上还没有书。</div>';
   const t = !!e.isDeleteBookOpen;
   return e.books.map((n) => {
@@ -29013,13 +29019,13 @@ function jL(e = {}) {
                 </span>
                 <span class="xb-library-book-foot">
                     <em>${t ? "DELETE" : r ? "ACTIVE" : "EBOOK"}</em>
-                    <small>${F(DL(n.updatedAt))}</small>
+                    <small>${F(D2(n.updatedAt))}</small>
                 </span>
             </button>
         `;
   }).join("");
 }
-function e2(e = {}, t = 0) {
+function eL(e = {}, t = 0) {
   const n = !!e.isDeleteBookOpen, r = t > 0 && !e.isBusy;
   return `
         <div class="xb-shelf-actions" aria-label="书架操作">
@@ -29065,7 +29071,7 @@ function dl(e = "dark") {
         </svg>
     `;
 }
-function t2(e = {}) {
+function tL(e = {}) {
   const t = e.state || {}, n = Array.isArray(t.books) ? t.books.length : 0, r = t.colorTheme === "light" ? "theme-light" : "theme-dark", o = dl(t.colorTheme), i = t.colorTheme === "light" ? "切换为深色视觉" : "切换为白底黑字";
   return `
         <div class="xb-ebook-screen xb-library-screen ${F(r)}${t.isDeleteBookOpen ? " is-delete-mode" : ""}">
@@ -29084,15 +29090,15 @@ function t2(e = {}) {
             <main class="xb-shelf-container">
                 ${t.isDeleteBookOpen ? '<div class="xb-delete-mode-note">删除模式：点击一本书会清除书稿内容和写作记录。</div>' : ""}
                 <section class="xb-library-grid${n ? "" : " is-empty"}" aria-label="书籍列表">
-                    ${jL(t)}
-                    ${e2(t, n)}
+                    ${j2(t)}
+                    ${eL(t, n)}
                 </section>
             </main>
             ${t.toast ? `<div class="xb-toast">${F(t.toast)}</div>` : ""}
         </div>
     `;
 }
-function n2(e = {}) {
+function nL(e = {}) {
   const t = e.state || {}, n = t.colorTheme === "light" ? "theme-light" : "theme-dark", r = dl(t.colorTheme), o = t.colorTheme === "light" ? "切换为深色视觉" : "切换为白底黑字";
   return `
         <div class="xb-ebook-screen xb-entry-screen ${F(n)}">
@@ -29115,7 +29121,7 @@ function n2(e = {}) {
         </div>
     `;
 }
-function r2(e = "") {
+function rL(e = "") {
   return Bc.find((t) => t.matches(e)) || {
     key: "other",
     title: "其他",
@@ -29133,7 +29139,7 @@ function qc(e = {}, t = {}) {
     r ? "active" : ""
   ].join(":");
 }
-function o2(e = {}, t = [], n = {}) {
+function oL(e = {}, t = [], n = {}) {
   if (!t.length) return `<div class="xb-file-tree" data-file-tree-signature="empty"><div class="xb-section-empty" data-file-group-empty="true">${F(e.empty || "这里还没有文件。")}</div></div>`;
   const r = e.basePath || "", o = [];
   let i = "";
@@ -29167,7 +29173,7 @@ function j_(e = {}, t = {}) {
   };
   const r = /* @__PURE__ */ new Map();
   n.forEach((l) => {
-    const d = r2(l.path);
+    const d = rL(l.path);
     r.has(d.key) || r.set(d.key, {
       key: d.key,
       title: d.title,
@@ -29184,7 +29190,7 @@ function j_(e = {}, t = {}) {
   return {
     emptyHtml: "",
     groups: [...o, ...s].map((l) => {
-      const d = o2(l, l.files, e), p = [
+      const d = oL(l, l.files, e), p = [
         l.key,
         l.title,
         l.description,
@@ -29240,7 +29246,7 @@ function j_(e = {}, t = {}) {
     })
   };
 }
-function i2(e = {}, t = {}) {
+function iL(e = {}, t = {}) {
   const n = j_(e, t);
   return n.emptyHtml ? n.emptyHtml : n.groups.map((r) => r.html).join("");
 }
@@ -29255,7 +29261,7 @@ function Cr(e = "", t = "", n = void 0) {
     }
   };
 }
-function s2(e = {}) {
+function sL(e = {}) {
   const t = Array.isArray(e.thoughts) ? e.thoughts : [];
   if (!t.length) return "thoughts:0";
   const n = t.map((r) => [
@@ -29267,7 +29273,7 @@ function s2(e = {}) {
 `);
   return `thoughts:${t.length}:${Ii(e, "thoughts", n)}`;
 }
-function ew(e = {}, t = 0, n = {}) {
+function e0(e = {}, t = 0, n = {}) {
   const r = String(e.content || ""), o = ["user", "assistant"].includes(e.role) && n.editingMessageIndex === t, i = n.messageActionFeedback || {}, s = [
     i[`copy:${t}`] || "",
     i[`edit:${t}`] || "",
@@ -29281,15 +29287,15 @@ function ew(e = {}, t = 0, n = {}) {
     e.error ? "error" : "",
     o ? "editing" : "",
     Ii(e, "content", r),
-    s2(e),
+    sL(e),
     Array.isArray(n.openThoughtKeys) ? n.openThoughtKeys.join("|") : "",
     s
   ].join(":");
 }
-function a2(e = [], t = "", n = {}, r = !1, o = !1) {
+function aL(e = [], t = "", n = {}, r = !1, o = !1) {
   const i = e.map((s) => {
     const u = s.assistantMessage || {}, l = Array.isArray(s.toolMessages) ? s.toolMessages : [];
-    return [ew(u, 0, n), l.map((d) => [
+    return [e0(u, 0, n), l.map((d) => [
       W_(d),
       d.toolName || "",
       Ii(d, "content", d.content || ""),
@@ -29304,7 +29310,7 @@ function a2(e = [], t = "", n = {}, r = !1, o = !1) {
     i
   ].join(":");
 }
-function tw(e = {}) {
+function t0(e = {}) {
   const t = e.historySummary ? Cr("memory", '<div class="xb-agent-memory">已整理较早创作记录，后续写作会继续参考。</div>') : null, n = Array.isArray(e.messages) ? e.messages : [], r = [], o = (h = {}, m = 0) => {
     if (!(["user", "assistant"].includes(h.role) && !h.streaming && String(h.content || "").trim() && !(Array.isArray(h.toolCalls) && h.toolCalls.length))) return "";
     const y = e.editingMessageIndex === m, g = e.messageActionFeedback || {};
@@ -29377,8 +29383,8 @@ function tw(e = {}) {
         toolMessages: A
       }), y = P;
     }
-    const g = Y_(m, h), b = OL(e, h), _ = b || Array.isArray(e.openToolTurnKeys) && e.openToolTurnKeys.includes(g), v = b ? ' data-auto-open-tool-turn="true"' : "", x = _ ? "" : ' data-lazy-tool-turn="true"', S = _ ? " open" : "", T = m.reduce((C, A) => C + (A.toolMessages.length || A.assistantMessage.toolCalls.length || 0), 0), w = () => {
-      const C = m.map((A) => [XL(A.assistantMessage), A.toolMessages.map((P) => YL(P)).join("")].filter(Boolean).join("")).join("");
+    const g = Y_(m, h), b = O2(e, h), _ = b || Array.isArray(e.openToolTurnKeys) && e.openToolTurnKeys.includes(g), v = b ? ' data-auto-open-tool-turn="true"' : "", x = _ ? "" : ' data-lazy-tool-turn="true"', S = _ ? " open" : "", T = m.reduce((C, A) => C + (A.toolMessages.length || A.assistantMessage.toolCalls.length || 0), 0), w = () => {
+      const C = m.map((A) => [X2(A.assistantMessage), A.toolMessages.map((P) => Y2(P)).join("")].filter(Boolean).join("")).join("");
       return _ ? `
                     <div class="xb-tool-trace-body" data-tool-detail-mode="full">
                         ${m.map((A, P) => `
@@ -29389,7 +29395,7 @@ function tw(e = {}) {
         openThoughtKeys: e.openThoughtKeys
       })}
                                 ${String(A.assistantMessage.content || "").trim() ? `<div class="xb-tool-preface xb-tool-preface-markdown xb-assistant-markdown">${Fc(A.assistantMessage.content)}</div>` : ""}
-                                ${A.toolMessages.map((N) => JL(N)).join("")}
+                                ${A.toolMessages.map((N) => J2(N)).join("")}
                             </div>
                         `).join("")}
                     </div>
@@ -29401,7 +29407,7 @@ function tw(e = {}) {
                 `;
     };
     return {
-      unit: Cr(`tool:${g}`, a2(m, g, e, _, b), () => `
+      unit: Cr(`tool:${g}`, aL(m, g, e, _, b), () => `
                     <details class="xb-tool-trace xb-tool-turn" data-tool-turn-key="${F(g)}"${v}${x}${S}>
                         <summary><span>已创作 ${m.length || 1} 轮</span><span class="xb-tool-fold-indicator" aria-hidden="true"></span></summary>
                         ${w()}
@@ -29422,7 +29428,7 @@ function tw(e = {}) {
         r.push(y.unit), h = y.nextIndex - 1;
         continue;
       }
-      m.role !== "tool" && r.push(Cr(`message:${h}`, ew(m, h, e), () => i(m, h)));
+      m.role !== "tool" && r.push(Cr(`message:${h}`, e0(m, h, e), () => i(m, h)));
     }
   }
   const u = !!(e.isBusy && Array.isArray(e.toolTrace) && e.toolTrace.length);
@@ -29431,7 +29437,7 @@ function tw(e = {}) {
     trace: (e.toolTrace || []).slice(-8),
     live: e.liveToolTurn || null,
     openThoughtKeys: e.openThoughtKeys || []
-  })) : "", f = u ? Cr("live-tool-turn", p, () => c2(e)) : null;
+  })) : "", f = u ? Cr("live-tool-turn", p, () => cL(e)) : null;
   return [
     t,
     d,
@@ -29439,10 +29445,10 @@ function tw(e = {}) {
     f
   ].filter(Boolean);
 }
-function l2(e = {}) {
-  return tw(e).map((t) => t.html).join("");
+function lL(e = {}) {
+  return t0(e).map((t) => t.html).join("");
 }
-function u2(e = []) {
+function uL(e = []) {
   let t = 0;
   for (let n = 0; n < e.length; n += 1) {
     const r = e[n];
@@ -29464,7 +29470,7 @@ function u2(e = []) {
   }
   return t;
 }
-function c2(e = {}) {
+function cL(e = {}) {
   const t = Array.isArray(e.toolTrace) ? e.toolTrace.slice(-8) : [];
   if (!t.length) return "";
   const n = e.liveToolTurn && typeof e.liveToolTurn == "object" ? e.liveToolTurn : {
@@ -29494,10 +29500,10 @@ function c2(e = {}) {
         </details>
     `;
 }
-function d2(e = {}) {
+function dL(e = {}) {
   return pf(e.editorContent || "");
 }
-function nw(e = {}) {
+function n0(e = {}) {
   return e.isSettingsOpen ? `
         <div class="xb-ebook-settings-overlay" id="xb-agent-settings-overlay">
             <div class="xb-ebook-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="xb-agent-settings-title">
@@ -29509,7 +29515,7 @@ function nw(e = {}) {
                     <button id="xb-agent-settings-close" type="button" title="关闭配置" aria-label="关闭配置">关闭</button>
                 </div>
                 <div class="xb-ebook-settings-body">
-                    ${EL({
+                    ${E2({
     configSave: e.configSave,
     runtimeText: "",
     showInlineToast: !1,
@@ -29524,8 +29530,8 @@ function nw(e = {}) {
         </div>
     ` : "";
 }
-function f2(e = {}) {
-  const t = e.state || {}, n = e.providerConfig || {}, r = !!e.dirty, o = J_(n), i = t.isBusy ? "disabled" : "", s = t.isBusy || !o.canRun ? "disabled" : "", u = !t.isBusy && !o.canRun ? "disabled" : "", l = !t.isBusy && !o.canRun ? "disabled" : "", d = String(t.agentInputDraft || ""), p = !!(t.messages?.length || t.historySummary?.trim()), f = ["focus-editor", "focus-agent"].includes(t.studioLayout) ? t.studioLayout : "balanced", h = t.colorTheme === "light" ? "theme-light" : "theme-dark", m = dl(t.colorTheme), y = t.colorTheme === "light" ? "切换为深色视觉" : "切换为白底黑字", g = t.drawStatus || {}, b = NL(t.selectedPath), _ = !!g.enabled && !!g.ready, v = t.isDrawingChapter || !t.isBusy && b && _ && bg(t.editorContent) ? "" : "disabled", x = t.isDrawingChapter ? "停止当前章节配图" : b ? _ ? bg(t.editorContent) ? "为当前章节生成配图" : "当前章节没有正文" : "画图后端未启用" : "只有正文章节可以配图", S = t.isDrawingChapter ? "停止" : "配图", T = t.drawProgressText ? ` · ${t.drawProgressText}` : "";
+function fL(e = {}) {
+  const t = e.state || {}, n = e.providerConfig || {}, r = !!e.dirty, o = J_(n), i = t.isBusy ? "disabled" : "", s = t.isBusy || !o.canRun ? "disabled" : "", u = !t.isBusy && !o.canRun ? "disabled" : "", l = !t.isBusy && !o.canRun ? "disabled" : "", d = String(t.agentInputDraft || ""), p = !!(t.messages?.length || t.historySummary?.trim()), f = ["focus-editor", "focus-agent"].includes(t.studioLayout) ? t.studioLayout : "balanced", h = t.colorTheme === "light" ? "theme-light" : "theme-dark", m = dl(t.colorTheme), y = t.colorTheme === "light" ? "切换为深色视觉" : "切换为白底黑字", g = t.drawStatus || {}, b = N2(t.selectedPath), _ = !!g.enabled && !!g.ready, v = t.isDrawingChapter || !t.isBusy && b && _ && bg(t.editorContent) ? "" : "disabled", x = t.isDrawingChapter ? "停止当前章节配图" : b ? _ ? bg(t.editorContent) ? "为当前章节生成配图" : "当前章节没有正文" : "画图后端未启用" : "只有正文章节可以配图", S = t.isDrawingChapter ? "停止" : "配图", T = t.drawProgressText ? ` · ${t.drawProgressText}` : "";
   return `
         <div class="xb-ebook-shell xb-studio-shell ${F(f)} ${F(h)}">
             <header class="xb-mobile-studio-topbar">
@@ -29555,7 +29561,7 @@ function f2(e = {}) {
                     </div>
                 </div>
                 <section class="xb-panel xb-files-panel">
-                    <div class="xb-files">${i2(t, { writeActionAttr: i })}</div>
+                    <div class="xb-files">${iL(t, { writeActionAttr: i })}</div>
                 </section>
             </aside>
             <section class="xb-studio-workbench">
@@ -29578,7 +29584,7 @@ function f2(e = {}) {
                         <textarea id="xb-editor-text" spellcheck="false" ${t.isBusy ? "disabled" : ""}>${F(t.editorContent)}</textarea>
                     </div>
                     <footer class="xb-editor-foot">
-                        <div class="xb-meta" id="xb-editor-meta">${r ? "有未保存修改" : "已保存到书库"} · ${d2(t)}${F(T)}</div>
+                        <div class="xb-meta" id="xb-editor-meta">${r ? "有未保存修改" : "已保存到书库"} · ${dL(t)}${F(T)}</div>
                     </footer>
                 </main>
                 <aside class="xb-agent">
@@ -29592,7 +29598,7 @@ function f2(e = {}) {
                             </div>
                         </div>
                         <div class="xb-agent-toolbar">
-                            <div class="xb-agent-context-meter" title="${F(BL(t))}">${F(LL(t))}</div>
+                            <div class="xb-agent-context-meter" title="${F(B2(t))}">${F(L2(t))}</div>
                             <button id="xb-agent-clear" type="button" ${t.isBusy || !p ? "disabled" : ""}>清空对话</button>
                             <button id="xb-agent-open-settings" type="button">API配置</button>
                         </div>
@@ -29609,14 +29615,14 @@ function f2(e = {}) {
                                     <button data-action="opening-options" ${s}>试写开场</button>
                                 </div>
                             </details>
-                            <div class="xb-agent-log">${l2(t)}</div>
+                            <div class="xb-agent-log">${lL(t)}</div>
                         </div>
                         <div class="xb-agent-scroll-helpers" id="xb-agent-scroll-helpers">
                             <button id="xb-agent-scroll-top" type="button" class="xb-agent-scroll-btn" title="回到顶部" aria-label="回到顶部">▲</button>
                             <button id="xb-agent-scroll-bottom" type="button" class="xb-agent-scroll-btn" title="回到底部" aria-label="回到底部">▼</button>
                         </div>
-                        ${FL(t)}
-                        ${UL(t)}
+                        ${F2(t)}
+                        ${U2(t)}
                     </div>
                     <form id="xb-agent-form" class="xb-agent-form">
                         <div class="xb-agent-compose-row">
@@ -29631,7 +29637,7 @@ function f2(e = {}) {
                     </form>
                 </aside>
             </section>
-            ${nw(t)}
+            ${n0(t)}
             ${t.toast ? `<div class="xb-toast">${F(t.toast)}</div>` : ""}
         </div>
     `;
@@ -29644,14 +29650,14 @@ function _g(e = [], t = "") {
         </button>
     `).join("") : '<div class="xb-empty">还没有正文</div>';
 }
-function p2(e = "") {
+function pL(e = "") {
   const t = String(e || "").trim();
   if (!t) return "";
   const n = /\[ebook-image:([a-z0-9\-_]+)\]/gi, r = [];
   let o = 0, i = 0;
   const s = (l = "") => {
     String(l || "").split(/\n{2,}/).map((d) => d.trim()).filter(Boolean).forEach((d) => {
-      r.push(ZL(d, i)), i += 1;
+      r.push(Z2(d, i)), i += 1;
     });
   };
   let u;
@@ -29666,8 +29672,8 @@ function p2(e = "") {
   }
   return s(t.slice(o)), r.join("");
 }
-function h2(e = {}) {
-  const t = e.state || {}, { chapters: n, active: r, activePath: o, index: i } = PL(t), s = n.length > 0, u = i > 0 ? n[i - 1] : null, l = i < n.length - 1 ? n[i + 1] : null, d = s ? `第 ${i + 1} / ${n.length} 章` : "暂无章节", p = r?.content || "", f = s ? Math.round((i + 1) / n.length * 100) : 0, h = t.colorTheme === "light" ? "theme-light" : "theme-dark", m = dl(t.colorTheme), y = t.colorTheme === "light" ? "切换为深色视觉" : "切换为白底黑字", g = t.readerTtsStatus || {}, b = t.readerTtsPlayback || {}, _ = ["loading", "playing"].includes(String(b.status || "")), v = !!g.enabled && !!g.ready, x = _ || s && v ? "" : "disabled", S = _ ? "停止朗读" : s ? v ? "播放当前章节" : "TTS 语音模块未启用" : "还没有可朗读章节", T = _ ? "■" : "▶";
+function hL(e = {}) {
+  const t = e.state || {}, { chapters: n, active: r, activePath: o, index: i } = P2(t), s = n.length > 0, u = i > 0 ? n[i - 1] : null, l = i < n.length - 1 ? n[i + 1] : null, d = s ? `第 ${i + 1} / ${n.length} 章` : "暂无章节", p = r?.content || "", f = s ? Math.round((i + 1) / n.length * 100) : 0, h = t.colorTheme === "light" ? "theme-light" : "theme-dark", m = dl(t.colorTheme), y = t.colorTheme === "light" ? "切换为深色视觉" : "切换为白底黑字", g = t.readerTtsStatus || {}, b = t.readerTtsPlayback || {}, _ = ["loading", "playing"].includes(String(b.status || "")), v = !!g.enabled && !!g.ready, x = _ || s && v ? "" : "disabled", S = _ ? "停止朗读" : s ? v ? "播放当前章节" : "TTS 语音模块未启用" : "还没有可朗读章节", T = _ ? "■" : "▶";
   return `
         <div class="xb-ebook-screen xb-reader-screen ${F(h)}">
             <div class="xb-reader-backlight"></div>
@@ -29693,10 +29699,10 @@ function h2(e = {}) {
                             <div>
                                 <div class="xb-kicker">${F(t.book?.title || "未命名书稿")} · ${F(d)}</div>
                                 <h2>${F(Mn(o))}</h2>
-                                <p>${F(CL(p))}</p>
+                                <p>${F(C2(p))}</p>
                             </div>
                         </header>
-                        <div class="xb-reader-content">${p2(p)}</div>
+                        <div class="xb-reader-content">${pL(p)}</div>
                         <footer class="xb-reader-foot">
                             <button data-reader-path="${F(u?.path || "")}" ${u ? "" : "disabled"}>上一章</button>
                             <button data-reader-path="${F(l?.path || "")}" ${l ? "" : "disabled"}>下一章</button>
@@ -29722,27 +29728,27 @@ function h2(e = {}) {
         </div>
     `;
 }
-function m2(e = {}) {
+function mL(e = {}) {
   switch ((e.state || {}).viewMode) {
     case "book-entry":
-      return n2(e);
+      return nL(e);
     case "studio":
-      return f2(e);
+      return fL(e);
     case "reader":
-      return h2(e);
+      return hL(e);
     default:
-      return t2(e);
+      return tL(e);
   }
 }
-var g2 = "LittleWhiteBox_Ebook_ColorTheme";
-function y2() {
+var gL = "LittleWhiteBox_Ebook_ColorTheme";
+function yL() {
   try {
     return globalThis.localStorage?.getItem("LittleWhiteBox_Ebook_ColorTheme") === "light" ? "light" : "dark";
   } catch {
     return "dark";
   }
 }
-function b2() {
+function bL() {
   return {
     config: $c({}),
     configDraft: null,
@@ -29790,7 +29796,7 @@ function b2() {
       error: ""
     },
     studioLayout: "balanced",
-    colorTheme: y2(),
+    colorTheme: yL(),
     isSettingsOpen: !1,
     isDeleteBookOpen: !1,
     configPage: "main",
@@ -29806,7 +29812,7 @@ function b2() {
     toast: ""
   };
 }
-function v2(e = "xb-ebook-root") {
+function vL(e = "xb-ebook-root") {
   if (document.getElementById("xb-ebook-styles")) return;
   const t = document.createElement("style");
   t.id = "xb-ebook-styles", t.textContent = `
@@ -29817,46 +29823,6 @@ function v2(e = "xb-ebook-root") {
             --xb-bg-agent: #20232d;
             --xb-bg-card: #242834;
             --xb-bg-glass: rgba(255, 255, 255, 0.045);
-            --xb-surface-page: #171922;
-            --xb-surface-sidebar: #171922;
-            --xb-surface-editor: #1c1f2a;
-            --xb-surface-agent: #20232d;
-            --xb-surface-card: #242834;
-            --xb-surface-card-hover: #282c38;
-            --xb-surface-message: #282c38;
-            --xb-surface-message-assistant: #272b38;
-            --xb-surface-message-user: #303342;
-            --xb-surface-input: #282c38;
-            --xb-surface-input-focus: #2b3040;
-            --xb-surface-code: #191c25;
-            --xb-surface-control: #222631;
-            --xb-surface-control-active: rgba(184, 178, 166, 0.10);
-            --xb-surface-control-subtle: rgba(184, 178, 166, 0.06);
-            --xb-surface-error: rgba(244, 63, 94, 0.12);
-            --xb-surface-overlay: rgba(0, 0, 0, 0.62);
-            --xb-surface-dialog: rgba(14, 17, 23, 0.96);
-            --xb-surface-mobile-bar: rgba(23, 25, 34, 0.96);
-            --xb-surface-mobile-bar-soft: rgba(23, 25, 34, 0.90);
-            --xb-surface-reader: #171922;
-            --xb-surface-reader-nav: #1c1f2a;
-            --xb-surface-reader-sheet: rgba(21, 19, 17, 0.96);
-            --xb-editor-head-bg: linear-gradient(180deg, rgba(9, 11, 15, 1), rgba(9, 11, 15, 0.70), transparent);
-            --xb-border-soft: rgba(184, 178, 166, 0.08);
-            --xb-border: rgba(184, 178, 166, 0.12);
-            --xb-border-strong: rgba(184, 178, 166, 0.20);
-            --xb-border-inverse-soft: rgba(255, 255, 255, 0.055);
-            --xb-hover-bg: rgba(255, 255, 255, 0.07);
-            --xb-code-inline-bg: rgba(255, 255, 255, 0.075);
-            --xb-accent-soft: rgba(143, 183, 202, 0.12);
-            --xb-danger-soft: rgba(244, 63, 94, 0.12);
-            --xb-success-soft: rgba(34, 197, 94, 0.22);
-            --xb-shadow-card: 0 18px 46px rgba(0, 0, 0, 0.24);
-            --xb-shadow-card-hover: 0 24px 58px rgba(0, 0, 0, 0.34);
-            --xb-shadow-panel: -14px 0 36px rgba(0, 0, 0, 0.22);
-            --xb-shadow-panel-strong: -22px 0 58px rgba(0, 0, 0, 0.48);
-            --xb-shadow-sheet: 0 -18px 48px rgba(0, 0, 0, 0.42);
-            --xb-shadow-reader-nav: 20px 0 48px rgba(0, 0, 0, 0.26);
-            --xb-shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.28);
             --xb-text-main: #b8b2a6;
             --xb-text-body: #a19b90;
             --xb-text-muted: #8f8a80;
@@ -29900,7 +29866,7 @@ function v2(e = "xb-ebook-root") {
         button:hover:not(:disabled) {
             transform: translateY(-1px);
             border-color: var(--xb-line-strong);
-            background: var(--xb-hover-bg);
+            background: rgba(255, 255, 255, 0.07);
             box-shadow: none;
         }
         button:disabled { opacity: 0.56; cursor: not-allowed; }
@@ -29927,46 +29893,6 @@ function v2(e = "xb-ebook-root") {
             --xb-bg-agent: #fff8ec;
             --xb-bg-card: rgba(255, 253, 248, 0.96);
             --xb-bg-glass: rgba(87, 70, 48, 0.045);
-            --xb-surface-page: #fffaf0;
-            --xb-surface-sidebar: #fff3df;
-            --xb-surface-editor: #fffdf8;
-            --xb-surface-agent: #fff8ec;
-            --xb-surface-card: #fffdf8;
-            --xb-surface-card-hover: #fffaf2;
-            --xb-surface-message: #fffdf8;
-            --xb-surface-message-assistant: #fffdf8;
-            --xb-surface-message-user: #fff8ec;
-            --xb-surface-input: #fffdf8;
-            --xb-surface-input-focus: #fffdf8;
-            --xb-surface-code: #f8f2e8;
-            --xb-surface-control: rgba(255, 253, 248, 0.86);
-            --xb-surface-control-active: rgba(87, 70, 48, 0.10);
-            --xb-surface-control-subtle: rgba(87, 70, 48, 0.055);
-            --xb-surface-error: #fff5f6;
-            --xb-surface-overlay: rgba(255, 250, 240, 0.78);
-            --xb-surface-dialog: rgba(255, 253, 248, 0.98);
-            --xb-surface-mobile-bar: rgba(255, 248, 236, 0.96);
-            --xb-surface-mobile-bar-soft: rgba(255, 248, 236, 0.90);
-            --xb-surface-reader: #fffaf0;
-            --xb-surface-reader-nav: rgba(255, 248, 236, 0.76);
-            --xb-surface-reader-sheet: rgba(255, 248, 236, 0.96);
-            --xb-editor-head-bg: linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(255, 253, 248, 0.78), transparent);
-            --xb-border-soft: rgba(87, 70, 48, 0.10);
-            --xb-border: rgba(87, 70, 48, 0.15);
-            --xb-border-strong: rgba(87, 70, 48, 0.25);
-            --xb-border-inverse-soft: rgba(87, 70, 48, 0.12);
-            --xb-hover-bg: rgba(87, 70, 48, 0.07);
-            --xb-code-inline-bg: rgba(87, 70, 48, 0.08);
-            --xb-accent-soft: rgba(61, 124, 131, 0.12);
-            --xb-danger-soft: rgba(182, 77, 93, 0.12);
-            --xb-success-soft: rgba(50, 118, 109, 0.14);
-            --xb-shadow-card: 0 18px 38px rgba(87, 70, 48, 0.10);
-            --xb-shadow-card-hover: 0 24px 46px rgba(87, 70, 48, 0.13);
-            --xb-shadow-panel: -12px 0 30px rgba(87, 70, 48, 0.08);
-            --xb-shadow-panel-strong: -18px 0 42px rgba(87, 70, 48, 0.12);
-            --xb-shadow-sheet: 0 -18px 46px rgba(87, 70, 48, 0.12);
-            --xb-shadow-reader-nav: 20px 0 42px rgba(87, 70, 48, 0.08);
-            --xb-shadow-inset: inset 0 2px 6px rgba(87, 70, 48, 0.08);
             --xb-text-main: #24201b;
             --xb-text-body: #2e2922;
             --xb-text-muted: #665f54;
@@ -29979,12 +29905,12 @@ function v2(e = "xb-ebook-root") {
             --xb-danger: #b64d5d;
             --xb-ok: #32766d;
             --xb-shadow: 0 18px 44px rgba(87, 70, 48, 0.12);
-            background: var(--xb-surface-page);
+            background: var(--xb-bg-deep);
             color: var(--xb-text-main);
         }
         .theme-light button:hover:not(:disabled) {
             border-color: var(--xb-line-strong);
-            background: var(--xb-hover-bg);
+            background: rgba(87, 70, 48, 0.07);
             box-shadow: 0 12px 28px rgba(87, 70, 48, 0.12);
         }
         .xb-ambient-aurora {
@@ -30054,7 +29980,7 @@ function v2(e = "xb-ebook-root") {
             right: 60px;
             bottom: 0;
             height: 1px;
-            background: linear-gradient(90deg, var(--xb-border-strong), var(--xb-border) 38%, transparent);
+            background: linear-gradient(90deg, rgba(235, 231, 221, 0.32), rgba(235, 231, 221, 0.11) 38%, transparent);
         }
         .xb-archive-title-block {
             min-width: 0;
@@ -30095,7 +30021,7 @@ function v2(e = "xb-ebook-root") {
             min-height: 40px;
             padding: 0 18px;
             border-radius: 999px;
-            background: var(--xb-bg-glass);
+            background: rgba(255, 255, 255, 0.045);
             color: var(--xb-text-main);
             font-size: 13px;
             font-weight: 600;
@@ -30141,7 +30067,7 @@ function v2(e = "xb-ebook-root") {
         .xb-danger-button { color: var(--xb-danger); }
         .xb-danger-button:hover:not(:disabled) {
             border-color: rgba(244, 63, 94, 0.34);
-            background: var(--xb-danger-soft);
+            background: rgba(244, 63, 94, 0.12);
         }
         .xb-shelf-container {
             position: relative;
@@ -30165,9 +30091,9 @@ function v2(e = "xb-ebook-root") {
             min-height: 220px;
             display: grid;
             place-items: center;
-            border: 1px dashed var(--xb-border);
+            border: 1px dashed rgba(255, 255, 255, 0.12);
             border-radius: 16px;
-            background: var(--xb-bg-glass);
+            background: rgba(255, 255, 255, 0.035);
             text-align: center;
         }
         .xb-shelf-actions {
@@ -30183,8 +30109,8 @@ function v2(e = "xb-ebook-root") {
             place-items: center;
             gap: 16px;
             border-radius: 12px;
-            border: 1px dashed var(--xb-border);
-            background: var(--xb-bg-glass);
+            border: 1px dashed rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.026);
             color: var(--xb-text-main);
             text-align: center;
             transition: transform 0.28s var(--xb-fluid), border-color 0.22s ease, background 0.22s ease, color 0.22s ease, opacity 0.22s ease;
@@ -30195,8 +30121,8 @@ function v2(e = "xb-ebook-root") {
             display: grid;
             place-items: center;
             border-radius: 999px;
-            border: 1px solid var(--xb-border);
-            background: var(--xb-surface-control-active);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.055);
             font-size: 34px;
             font-weight: 300;
             line-height: 1;
@@ -30208,8 +30134,8 @@ function v2(e = "xb-ebook-root") {
         }
         .xb-shelf-action:hover:not(:disabled) {
             transform: translateY(-6px);
-            border-color: var(--xb-border-strong);
-            background: var(--xb-hover-bg);
+            border-color: rgba(255, 255, 255, 0.34);
+            background: rgba(255, 255, 255, 0.045);
         }
         .xb-shelf-action-danger {
             color: var(--xb-danger);
@@ -30217,7 +30143,7 @@ function v2(e = "xb-ebook-root") {
         .xb-shelf-action-danger:hover:not(:disabled),
         .xb-shelf-action-danger.is-active {
             border-color: rgba(244, 63, 94, 0.42);
-            background: var(--xb-danger-soft);
+            background: rgba(244, 63, 94, 0.12);
         }
         .xb-shelf-action:disabled {
             opacity: 0.34;
@@ -30237,11 +30163,11 @@ function v2(e = "xb-ebook-root") {
             justify-content: space-between;
             overflow: hidden;
             padding: 30px 24px 24px;
-            border: 1px solid var(--xb-border-soft);
+            border: 1px solid rgba(255, 255, 255, 0.045);
             border-radius: 12px;
-            background: var(--xb-surface-card);
+            background: var(--xb-bg-card);
             text-align: left;
-            box-shadow: var(--xb-shadow-card);
+            box-shadow: 0 18px 46px rgba(0, 0, 0, 0.24);
             transition: transform 0.42s var(--xb-fluid), border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
         }
         .xb-library-book::before {
@@ -30249,28 +30175,28 @@ function v2(e = "xb-ebook-root") {
             position: absolute;
             inset: 0 auto 0 -80%;
             width: 48%;
-            background: linear-gradient(90deg, transparent, var(--xb-bg-glass), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.035), transparent);
             transform: skewX(-18deg);
             transition: left 0.7s ease;
         }
         .xb-library-book:hover:not(:disabled) {
             transform: translateY(-8px);
-            border-color: var(--xb-border-strong);
-            box-shadow: var(--xb-shadow-card-hover);
+            border-color: rgba(255, 255, 255, 0.16);
+            box-shadow: 0 24px 58px rgba(0, 0, 0, 0.34);
         }
         .xb-library-book:hover::before { left: 140%; }
         .xb-library-book.is-active {
             border-color: rgba(143, 183, 202, 0.34);
-            box-shadow: var(--xb-shadow-card);
+            box-shadow: 0 20px 54px rgba(0, 0, 0, 0.30);
         }
         .xb-library-book.is-delete-target {
             border-color: rgba(244, 63, 94, 0.34);
             animation: xb-delete-vibrate 0.34s infinite alternate ease-in-out;
         }
         .xb-library-book.is-delete-target:hover:not(:disabled) {
-            background: var(--xb-danger-soft);
+            background: rgba(244, 63, 94, 0.10);
             border-color: rgba(244, 63, 94, 0.72);
-            box-shadow: var(--xb-shadow-card);
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.30);
         }
         @keyframes xb-delete-vibrate {
             0% { transform: rotate(-0.42deg); }
@@ -30309,7 +30235,7 @@ function v2(e = "xb-ebook-root") {
             justify-content: space-between;
             gap: 12px;
             padding-top: 22px;
-            border-top: 1px solid var(--xb-border-soft);
+            border-top: 1px solid rgba(255, 255, 255, 0.045);
         }
         .xb-library-book-foot em {
             display: inline-flex;
@@ -30317,7 +30243,7 @@ function v2(e = "xb-ebook-root") {
             gap: 6px;
             padding: 5px 9px;
             border-radius: 5px;
-            background: var(--xb-accent-soft);
+            background: rgba(143, 183, 202, 0.14);
             color: var(--xb-cyan);
             font-family: var(--xb-font-mono);
             font-size: 10px;
@@ -30332,7 +30258,7 @@ function v2(e = "xb-ebook-root") {
             background: currentColor;
         }
         .is-delete-target .xb-library-book-foot em {
-            background: var(--xb-danger-soft);
+            background: rgba(244, 63, 94, 0.12);
             color: var(--xb-danger);
         }
 
@@ -30349,7 +30275,7 @@ function v2(e = "xb-ebook-root") {
             padding: 0;
             border-radius: 999px;
             background: transparent;
-            color: var(--xb-text-muted);
+            color: rgba(241, 245, 249, 0.58);
             font-size: 26px;
         }
         .xb-portal-close { top: 34px; left: 50%; transform: translateX(-50%); }
@@ -30363,7 +30289,7 @@ function v2(e = "xb-ebook-root") {
             height: 36px;
             padding: 0 14px;
             border-radius: 999px;
-            background: var(--xb-bg-glass);
+            background: rgba(255, 255, 255, 0.06);
             color: var(--xb-text-main);
             font-size: 13px;
             font-weight: 700;
@@ -30388,7 +30314,7 @@ function v2(e = "xb-ebook-root") {
             justify-content: center;
             gap: 18px;
             border: 0;
-            border-right: 1px solid var(--xb-border-soft);
+            border-right: 1px solid rgba(255, 255, 255, 0.03);
             border-radius: 0;
             background: transparent;
             cursor: pointer;
@@ -30396,7 +30322,7 @@ function v2(e = "xb-ebook-root") {
             transition: flex 0.62s var(--xb-fluid), background 0.3s ease;
         }
         .xb-entry-action strong {
-            color: var(--xb-text-muted);
+            color: rgba(241, 245, 249, 0.70);
             font-family: var(--xb-font-serif);
             font-size: clamp(42px, 6vw, 78px);
             font-weight: 400;
@@ -30421,13 +30347,13 @@ function v2(e = "xb-ebook-root") {
             transform: scale(1.08);
         }
         .xb-entry-action.is-studio:hover {
-            background: radial-gradient(circle at center, var(--xb-surface-control-active), transparent 54%);
+            background: radial-gradient(circle at center, rgba(166, 171, 200, 0.07), transparent 54%);
         }
         .xb-entry-action.is-studio:hover strong {
             color: var(--xb-text-main);
         }
         .xb-entry-action.is-reader:hover {
-            background: radial-gradient(circle at center, var(--xb-bg-glass), transparent 54%);
+            background: radial-gradient(circle at center, rgba(233, 231, 227, 0.055), transparent 54%);
         }
         .xb-entry-action.is-reader:hover strong {
             color: var(--xb-text-main);
@@ -30460,8 +30386,8 @@ function v2(e = "xb-ebook-root") {
             flex-direction: column;
             gap: 20px;
             padding: 24px 16px;
-            border-right: 1px solid var(--xb-border-soft);
-            background: var(--xb-surface-sidebar);
+            border-right: 1px solid rgba(255, 255, 255, 0.04);
+            background: var(--xb-bg-deep);
         }
         .xb-brand {
             min-width: 0;
@@ -30494,7 +30420,7 @@ function v2(e = "xb-ebook-root") {
             display: inline-grid;
             place-items: center;
             border-radius: 12px;
-            background: var(--xb-bg-glass);
+            background: rgba(255, 255, 255, 0.04);
             color: var(--xb-text-muted);
             font-size: 16px;
             line-height: 1;
@@ -30536,7 +30462,7 @@ function v2(e = "xb-ebook-root") {
         .xb-file-group-title em {
             padding: 3px 8px;
             border-radius: 999px;
-            background: var(--xb-accent-soft);
+            background: rgba(143, 183, 202, 0.12);
             color: var(--xb-cyan);
             font-family: var(--xb-font-ui);
             font-size: 13px;
@@ -30563,7 +30489,7 @@ function v2(e = "xb-ebook-root") {
         .xb-file-directory {
             margin-top: 4px;
             padding: 2px 2px 0 8px;
-            border-left: 1px solid var(--xb-border);
+            border-left: 1px solid rgba(143, 183, 202, 0.18);
             color: var(--xb-text-muted);
             font-family: var(--xb-font-ui);
             font-size: 11px;
@@ -30591,8 +30517,8 @@ function v2(e = "xb-ebook-root") {
             gap: 2px;
         }
         .xb-file.is-active {
-            border-color: var(--xb-border);
-            background: var(--xb-surface-control-active);
+            border-color: rgba(255, 255, 255, 0.07);
+            background: rgba(255, 255, 255, 0.045);
             color: var(--xb-text-main);
             box-shadow: inset 2px 0 0 var(--xb-cyan);
         }
@@ -30604,7 +30530,7 @@ function v2(e = "xb-ebook-root") {
         }
         .xb-section-empty {
             padding: 10px;
-            border: 1px dashed var(--xb-border);
+            border: 1px dashed rgba(255, 255, 255, 0.08);
             border-radius: 10px;
             color: var(--xb-text-muted);
             font-size: 12px;
@@ -30618,7 +30544,7 @@ function v2(e = "xb-ebook-root") {
         .xb-imports button {
             text-align: center;
             color: var(--xb-cyan);
-            background: var(--xb-accent-soft);
+            background: rgba(143, 183, 202, 0.10);
         }
         .xb-studio-workbench {
             position: relative;
@@ -30627,16 +30553,16 @@ function v2(e = "xb-ebook-root") {
             min-height: 0;
             display: flex;
             overflow: hidden;
-            background: var(--xb-surface-editor);
+            background: var(--xb-bg-editor);
         }
         .xb-workspace-controller {
             display: flex;
             gap: 4px;
             padding: 4px;
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 999px;
-            background: var(--xb-surface-control);
-            box-shadow: var(--xb-shadow-card);
+            background: rgba(0, 0, 0, 0.58);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
             backdrop-filter: blur(14px);
         }
         .xb-layout-button {
@@ -30650,7 +30576,7 @@ function v2(e = "xb-ebook-root") {
             font-size: 12px;
         }
         .xb-layout-button.is-active {
-            background: var(--xb-surface-control-active);
+            background: rgba(255, 255, 255, 0.12);
             color: var(--xb-text-main);
         }
         .xb-editor,
@@ -30664,22 +30590,22 @@ function v2(e = "xb-ebook-root") {
         }
         .xb-editor {
             flex: 1 1 0;
-            background: var(--xb-surface-editor);
-            border-right: 1px solid var(--xb-border-soft);
+            background: var(--xb-bg-editor);
+            border-right: 1px solid rgba(255, 255, 255, 0.025);
         }
         .xb-agent {
             position: relative;
             flex: 1.08 1 0;
-            background: var(--xb-surface-agent);
-            border-left: 1px solid var(--xb-border-soft);
-            box-shadow: var(--xb-shadow-panel);
+            background: var(--xb-bg-agent);
+            border-left: 1px solid rgba(0, 0, 0, 0.48);
+            box-shadow: -14px 0 36px rgba(0, 0, 0, 0.22);
             gap: 8px;
         }
         .xb-studio-shell.focus-editor .xb-editor { flex-grow: 2.35; }
         .xb-studio-shell.focus-editor .xb-agent { flex-grow: 0.72; opacity: 0.72; }
         .xb-studio-shell.focus-editor .xb-agent:hover { opacity: 1; }
         .xb-studio-shell.focus-agent .xb-editor { flex-grow: 0.55; filter: brightness(0.74); }
-        .xb-studio-shell.focus-agent .xb-agent { flex-grow: 2.05; box-shadow: var(--xb-shadow-panel-strong); }
+        .xb-studio-shell.focus-agent .xb-agent { flex-grow: 2.05; box-shadow: -22px 0 58px rgba(0, 0, 0, 0.48); }
         .xb-editor-head {
             min-height: 70px;
             display: flex;
@@ -30687,7 +30613,7 @@ function v2(e = "xb-ebook-root") {
             justify-content: space-between;
             gap: 14px;
             padding: 20px 34px;
-            background: var(--xb-editor-head-bg);
+            background: linear-gradient(180deg, rgba(9, 11, 15, 1), rgba(9, 11, 15, 0.70), transparent);
             color: var(--xb-text-muted);
             font-family: var(--xb-font-mono);
             font-size: 12px;
@@ -30725,12 +30651,12 @@ function v2(e = "xb-ebook-root") {
         #xb-save:not(:disabled) {
             color: var(--xb-cyan);
             border-color: rgba(143, 183, 202, 0.32);
-            background: var(--xb-accent-soft);
+            background: rgba(143, 183, 202, 0.12);
         }
         #xb-draw-chapter:not(:disabled) {
             color: var(--xb-text-main);
             border-color: rgba(233, 231, 227, 0.26);
-            background: var(--xb-surface-control-active);
+            background: rgba(233, 231, 227, 0.10);
         }
         .xb-editor-body {
             min-height: 0;
@@ -30778,7 +30704,7 @@ function v2(e = "xb-ebook-root") {
             display: grid;
             gap: 10px;
             padding: 22px 30px 16px;
-            border-bottom: 1px solid var(--xb-border-soft);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.035);
         }
         .xb-agent-head-main {
             display: flex;
@@ -30809,7 +30735,7 @@ function v2(e = "xb-ebook-root") {
             padding: 0 12px;
             border: 1px solid rgba(143, 183, 202, 0.26);
             border-radius: 999px;
-            background: var(--xb-accent-soft);
+            background: rgba(143, 183, 202, 0.12);
             color: var(--xb-cyan);
             font-family: var(--xb-font-mono);
             font-size: 11px;
@@ -30818,7 +30744,7 @@ function v2(e = "xb-ebook-root") {
             min-width: 48px;
             color: var(--xb-text-main);
             border-color: rgba(143, 183, 202, 0.24);
-            background: var(--xb-accent-soft);
+            background: rgba(143, 183, 202, 0.12);
         }
         .xb-agent-global-actions #xb-agent-close {
             margin-left: 0;
@@ -30853,7 +30779,7 @@ function v2(e = "xb-ebook-root") {
         }
         .xb-agent-memory {
             padding: 0 0 12px;
-            border-bottom: 1px solid var(--xb-border-soft);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.045);
         }
         .xb-agent-history-gate {
             align-self: center;
@@ -30864,9 +30790,9 @@ function v2(e = "xb-ebook-root") {
             padding: 2px 0;
         }
         .xb-actions-panel {
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.055);
             border-radius: 12px;
-            background: var(--xb-surface-message);
+            background: rgba(0, 0, 0, 0.22);
             color: var(--xb-text-muted);
             font-size: 12px;
         }
@@ -30888,15 +30814,15 @@ function v2(e = "xb-ebook-root") {
         .xb-actions button {
             text-align: center;
             color: var(--xb-text-main);
-            background: var(--xb-bg-glass);
+            background: rgba(255, 255, 255, 0.05);
         }
         .xb-msg {
             position: relative;
             max-width: 92%;
             padding: 14px 16px;
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.055);
             border-radius: 14px;
-            background: var(--xb-surface-message-assistant);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.045), transparent);
             color: var(--xb-text-main);
             line-height: 1.65;
         }
@@ -30907,7 +30833,7 @@ function v2(e = "xb-ebook-root") {
         .xb-msg-user {
             align-self: flex-end;
             border-bottom-right-radius: 4px;
-            background: var(--xb-surface-message-user);
+            background: rgba(255, 255, 255, 0.075);
         }
         .xb-msg-assistant {
             align-self: flex-start;
@@ -30947,7 +30873,7 @@ function v2(e = "xb-ebook-root") {
             min-width: 24px;
             padding: 0;
             border-radius: 999px;
-            background: var(--xb-bg-glass);
+            background: rgba(255, 255, 255, 0.05);
             color: var(--xb-text-muted);
             font-size: 12px;
         }
@@ -30995,7 +30921,7 @@ function v2(e = "xb-ebook-root") {
         .xb-assistant-markdown code {
             padding: 0.12em 0.36em;
             border-radius: 7px;
-            background: var(--xb-code-inline-bg);
+            background: rgba(148, 163, 184, 0.12);
             color: var(--xb-text-main);
             font-family: var(--xb-font-mono);
             font-size: 0.94em;
@@ -31003,9 +30929,9 @@ function v2(e = "xb-ebook-root") {
         .xb-assistant-markdown pre {
             overflow-x: hidden;
             padding: 12px 14px;
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 10px;
-            background: var(--xb-surface-code);
+            background: rgba(0, 0, 0, 0.30);
             white-space: pre-wrap;
             word-break: break-word;
         }
@@ -31022,7 +30948,7 @@ function v2(e = "xb-ebook-root") {
             height: 24px;
             border: 0;
             border-radius: 8px;
-            background: var(--xb-surface-control-active);
+            background: rgba(255, 255, 255, 0.10);
             color: var(--xb-text-main);
             cursor: pointer;
             font-size: 12px;
@@ -31034,9 +30960,9 @@ function v2(e = "xb-ebook-root") {
             gap: 10px;
             margin: 0 0 0.8em;
             padding: 12px;
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
-            background: var(--xb-surface-message);
+            background: rgba(0, 0, 0, 0.20);
         }
         .xb-markdown-html-head,
         .xb-markdown-html-actions {
@@ -31063,14 +30989,14 @@ function v2(e = "xb-ebook-root") {
             border-radius: 999px;
             font-size: 12px;
         }
-        .xb-markdown-html-actions button.is-active { background: var(--xb-accent-soft); }
+        .xb-markdown-html-actions button.is-active { background: rgba(143, 183, 202, 0.16); }
         .xb-markdown-html-code {
             max-height: 320px;
             overflow: auto;
             margin: 0;
             padding: 12px 14px;
             border-radius: 10px;
-            background: var(--xb-surface-code);
+            background: rgba(0, 0, 0, 0.30);
             white-space: pre-wrap;
             word-break: break-all;
             font: 12px/1.55 var(--xb-font-mono);
@@ -31078,7 +31004,7 @@ function v2(e = "xb-ebook-root") {
         .xb-markdown-html-preview {
             width: 100%;
             height: 320px;
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.10);
             border-radius: 10px;
             background: #fff;
         }
@@ -31088,7 +31014,7 @@ function v2(e = "xb-ebook-root") {
         }
         .xb-assistant-markdown blockquote {
             padding-left: 14px;
-            border-left: 2px solid var(--xb-border-strong);
+            border-left: 2px solid rgba(233, 231, 227, 0.22);
             color: var(--xb-text-muted);
         }
         .xb-assistant-markdown table {
@@ -31098,13 +31024,13 @@ function v2(e = "xb-ebook-root") {
         }
         .xb-assistant-markdown th,
         .xb-assistant-markdown td {
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.10);
             padding: 6px 10px;
             text-align: left;
             vertical-align: top;
         }
         .xb-assistant-markdown th {
-            background: var(--xb-surface-control-active);
+            background: rgba(255, 255, 255, 0.055);
             font-weight: 600;
         }
         .xb-assistant-markdown a { color: var(--xb-cyan); }
@@ -31119,11 +31045,11 @@ function v2(e = "xb-ebook-root") {
             width: 100%;
             min-height: 112px;
             resize: vertical;
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
             padding: 11px 12px;
             outline: none;
-            background: var(--xb-surface-input);
+            background: rgba(0, 0, 0, 0.28);
             color: var(--xb-text-main);
             font: 13px/1.65 var(--xb-font-ui);
         }
@@ -31150,10 +31076,10 @@ function v2(e = "xb-ebook-root") {
         .xb-thought-block,
         .xb-tool-preface,
         .xb-tool {
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.055);
             border-left: 2px solid var(--xb-cyan);
             border-radius: 10px;
-            background: var(--xb-surface-message);
+            background: rgba(0, 0, 0, 0.25);
             padding: 9px 11px;
         }
         .xb-thought-label,
@@ -31186,7 +31112,7 @@ function v2(e = "xb-ebook-root") {
         .xb-tool-trace summary::after {
             content: "";
             height: 1px;
-            background: var(--xb-border);
+            background: rgba(143, 183, 202, 0.28);
         }
         .xb-tool-fold-indicator::before { content: ">"; }
         .xb-tool-trace[open] .xb-tool-fold-indicator::before { content: "v"; }
@@ -31211,7 +31137,7 @@ function v2(e = "xb-ebook-root") {
         }
         .xb-tool-round + .xb-tool-round {
             padding-top: 8px;
-            border-top: 1px solid var(--xb-border);
+            border-top: 1px solid rgba(255, 255, 255, 0.055);
         }
         .xb-tool {
             border-left-color: var(--xb-text-dim);
@@ -31253,7 +31179,7 @@ function v2(e = "xb-ebook-root") {
             gap: 5px;
             margin-top: 8px;
             padding-top: 8px;
-            border-top: 1px solid var(--xb-border);
+            border-top: 1px solid rgba(255, 255, 255, 0.055);
         }
         .xb-tool-result .xb-tool-head {
             margin-bottom: 0;
@@ -31264,7 +31190,7 @@ function v2(e = "xb-ebook-root") {
             gap: 6px;
             margin-top: 8px;
             padding-top: 8px;
-            border-top: 1px solid var(--xb-border);
+            border-top: 1px solid rgba(255, 255, 255, 0.055);
             color: var(--xb-text-muted);
         }
         .xb-tool.has-payload .xb-tool-payload {
@@ -31293,7 +31219,7 @@ function v2(e = "xb-ebook-root") {
             gap: 6px;
             margin-top: 8px;
             padding-top: 8px;
-            border-top: 1px solid var(--xb-border);
+            border-top: 1px solid rgba(255, 255, 255, 0.055);
             color: var(--xb-text-muted);
         }
         .xb-tool-progress-row {
@@ -31367,7 +31293,7 @@ function v2(e = "xb-ebook-root") {
             display: grid;
             gap: 6px;
             padding-top: 7px;
-            border-top: 1px solid var(--xb-border);
+            border-top: 1px solid rgba(255, 255, 255, 0.055);
         }
         .xb-tool-plan-blockers > span {
             color: var(--xb-text-dim);
@@ -31394,7 +31320,7 @@ function v2(e = "xb-ebook-root") {
             height: 30px;
             padding: 0;
             border-radius: 999px;
-            background: var(--xb-surface-control-active);
+            background: rgba(255, 255, 255, 0.10);
             color: var(--xb-text-main);
             pointer-events: none;
             opacity: 0;
@@ -31418,8 +31344,8 @@ function v2(e = "xb-ebook-root") {
             align-items: stretch;
             overflow: hidden;
             padding: 18px 30px 24px;
-            border-top: 1px solid var(--xb-border-soft);
-            background: linear-gradient(0deg, var(--xb-surface-agent) 74%, transparent);
+            border-top: 1px solid rgba(255, 255, 255, 0.025);
+            background: linear-gradient(0deg, var(--xb-bg-agent) 74%, transparent);
         }
         .xb-agent-compose-row {
             display: flex;
@@ -31427,14 +31353,14 @@ function v2(e = "xb-ebook-root") {
             width: 100%;
             gap: 12px;
             padding: 8px 14px;
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.09);
             border-radius: 14px;
-            background: var(--xb-surface-input);
+            background: rgba(0, 0, 0, 0.42);
             transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
         }
         .xb-agent-compose-row:focus-within {
             border-color: rgba(143, 183, 202, 0.46);
-            background: var(--xb-surface-input-focus);
+            background: rgba(0, 0, 0, 0.58);
         }
         .xb-agent-compose-main {
             flex: 1;
@@ -31676,7 +31602,7 @@ function v2(e = "xb-ebook-root") {
             display: grid;
             place-items: center;
             padding: 28px;
-            background: var(--xb-surface-overlay);
+            background: rgba(0, 0, 0, 0.62);
             backdrop-filter: blur(16px);
         }
         .xb-ebook-settings-dialog,
@@ -31686,9 +31612,9 @@ function v2(e = "xb-ebook-root") {
             display: grid;
             grid-template-rows: auto minmax(0, 1fr);
             overflow: hidden;
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.10);
             border-radius: 18px;
-            background: var(--xb-surface-dialog);
+            background: rgba(14, 17, 23, 0.96);
             box-shadow: var(--xb-shadow);
         }
         .xb-ebook-delete-dialog {
@@ -31702,7 +31628,7 @@ function v2(e = "xb-ebook-root") {
             justify-content: space-between;
             gap: 18px;
             padding: 22px 24px 16px;
-            border-bottom: 1px solid var(--xb-border);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
         .xb-ebook-settings-head h2,
         .xb-ebook-delete-head h2 {
@@ -31720,7 +31646,7 @@ function v2(e = "xb-ebook-root") {
         .xb-ebook-delete-note {
             margin: 0;
             padding: 13px 24px;
-            border-bottom: 1px solid var(--xb-border-soft);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
         }
         .xb-ebook-settings-body {
             min-height: 0;
@@ -31740,7 +31666,7 @@ function v2(e = "xb-ebook-root") {
             gap: 4px;
             padding: 13px 14px;
             border-radius: 12px;
-            background: var(--xb-surface-message);
+            background: rgba(255, 255, 255, 0.045);
             text-align: left;
         }
         .xb-delete-book-item strong { color: var(--xb-text-main); font-size: 14px; }
@@ -31755,7 +31681,7 @@ function v2(e = "xb-ebook-root") {
             gap: 6px;
             padding: 4px;
             border-radius: 14px;
-            background: var(--xb-surface-control-active);
+            background: rgba(255, 255, 255, 0.055);
         }
         .xb-ebook-settings-body .xb-assistant-config-tab {
             min-height: 34px;
@@ -31766,7 +31692,7 @@ function v2(e = "xb-ebook-root") {
             font-weight: 700;
         }
         .xb-ebook-settings-body .xb-assistant-config-tab.is-active {
-            background: var(--xb-surface-card);
+            background: rgba(255, 255, 255, 0.13);
             color: var(--xb-text-main);
         }
         .xb-ebook-settings-body .xb-assistant-config-page {
@@ -31793,11 +31719,11 @@ function v2(e = "xb-ebook-root") {
         .xb-ebook-settings-body .xb-assistant-config input,
         .xb-ebook-settings-body .xb-assistant-config select {
             width: 100%;
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(255, 255, 255, 0.10);
             border-radius: 12px;
             padding: 11px 12px;
             outline: none;
-            background: var(--xb-surface-input);
+            background: rgba(0, 0, 0, 0.26);
             color: var(--xb-text-main);
         }
         .xb-ebook-settings-body .xb-assistant-inline-input,
@@ -31831,12 +31757,12 @@ function v2(e = "xb-ebook-root") {
             border-radius: 999px;
         }
         .xb-assistant-save-button.is-success {
-            background: var(--xb-success-soft);
+            background: rgba(34, 197, 94, 0.22);
             color: #bbf7d0;
             border-color: rgba(34, 197, 94, 0.34);
         }
         .xb-assistant-save-button.is-error {
-            background: var(--xb-danger-soft);
+            background: rgba(244, 63, 94, 0.18);
             color: #fecdd3;
             border-color: rgba(244, 63, 94, 0.36);
         }
@@ -31845,7 +31771,7 @@ function v2(e = "xb-ebook-root") {
             width: 14px;
             height: 14px;
             margin-right: 6px;
-            border: 2px solid var(--xb-border-strong);
+            border: 2px solid rgba(255, 255, 255, 0.32);
             border-top-color: currentColor;
             border-radius: 50%;
             vertical-align: -2px;
@@ -31855,7 +31781,7 @@ function v2(e = "xb-ebook-root") {
 
         /* Reader */
         .xb-reader-screen {
-            background: var(--xb-surface-reader);
+            background: #151311;
             color: var(--xb-text-body);
         }
         .xb-reader-backlight {
@@ -31885,8 +31811,8 @@ function v2(e = "xb-ebook-root") {
             align-items: center;
             justify-content: space-between;
             padding: 38px 0;
-            border-right: 1px solid var(--xb-border-soft);
-            background: var(--xb-surface-reader-nav);
+            border-right: 1px solid rgba(255, 255, 255, 0.025);
+            background: rgba(9, 8, 7, 0.55);
             backdrop-filter: blur(8px);
         }
         .xb-reader-edge-actions {
@@ -31906,7 +31832,7 @@ function v2(e = "xb-ebook-root") {
         }
         .xb-reader-tts-toggle.is-active {
             color: var(--xb-text-main);
-            background: var(--xb-accent-soft);
+            background: rgba(143, 180, 189, 0.14);
         }
         .xb-reader-theme-toggle {
             width: auto;
@@ -31926,7 +31852,7 @@ function v2(e = "xb-ebook-root") {
             background: transparent;
         }
         .xb-reader-theme-toggle:hover:not(:disabled) {
-            background: var(--xb-hover-bg);
+            background: rgba(255, 255, 255, 0.07);
         }
         .xb-reader-progress {
             position: relative;
@@ -31934,7 +31860,7 @@ function v2(e = "xb-ebook-root") {
             height: 112px;
             overflow: hidden;
             border-radius: 999px;
-            background: var(--xb-border);
+            background: rgba(255, 255, 255, 0.07);
         }
         .xb-reader-progress span {
             position: absolute;
@@ -31959,10 +31885,10 @@ function v2(e = "xb-ebook-root") {
             min-height: 0;
             overflow: auto;
             padding: 56px 34px;
-            border-right: 1px solid var(--xb-border);
-            background: var(--xb-surface-reader-nav);
+            border-right: 1px solid rgba(233, 231, 227, 0.10);
+            background: rgba(15, 14, 12, 0.62);
             backdrop-filter: blur(18px);
-            box-shadow: var(--xb-shadow-reader-nav);
+            box-shadow: 20px 0 48px rgba(0, 0, 0, 0.26);
         }
         .xb-reader-index-toggle,
         .xb-reader-toc-scrim,
@@ -31978,7 +31904,7 @@ function v2(e = "xb-ebook-root") {
             padding: 0;
             border: 0;
             border-radius: 0;
-            background: var(--xb-surface-overlay);
+            background: rgba(0, 0, 0, 0.32);
             backdrop-filter: blur(2px);
         }
         .xb-reader-toc-handle {
@@ -31989,12 +31915,12 @@ function v2(e = "xb-ebook-root") {
             padding: 0;
             border: 0;
             border-radius: 999px;
-            background: var(--xb-border-strong);
+            background: rgba(255, 255, 255, 0.22);
         }
         .xb-reader-index-title {
             margin-bottom: 34px;
             padding-bottom: 18px;
-            border-bottom: 1px solid var(--xb-border);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.055);
             color: var(--xb-text-muted);
             font-family: var(--xb-font-mono);
             font-size: 12px;
@@ -32139,7 +32065,7 @@ function v2(e = "xb-ebook-root") {
         }
         .xb-reader-md blockquote {
             padding: 0 0 0 1.1rem;
-            border-left: 2px solid var(--xb-border-strong);
+            border-left: 2px solid rgba(143, 183, 202, 0.35);
             color: var(--xb-text-muted);
         }
         .xb-reader-md ul,
@@ -32149,7 +32075,7 @@ function v2(e = "xb-ebook-root") {
         }
         .xb-reader-md code {
             color: var(--xb-text-main);
-            background: var(--xb-accent-soft);
+            background: rgba(143, 183, 202, 0.10);
             border-radius: 4px;
             padding: 0.05rem 0.28rem;
             font-family: var(--xb-font-mono);
@@ -32175,13 +32101,13 @@ function v2(e = "xb-ebook-root") {
             max-height: min(72vh, 860px);
             margin: 0 auto;
             border-radius: 8px;
-            box-shadow: var(--xb-shadow-card-hover);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
         }
         .xb-reader-image-placeholder {
             min-height: 180px;
             display: grid;
             place-items: center;
-            border: 1px solid var(--xb-border);
+            border: 1px solid rgba(233, 231, 227, 0.16);
             border-radius: 8px;
             color: var(--xb-text-muted);
             font-family: var(--xb-font-mono);
@@ -32195,7 +32121,7 @@ function v2(e = "xb-ebook-root") {
             max-width: 720px;
             margin: 60px auto 0;
             padding-top: 24px;
-            border-top: 1px solid var(--xb-border);
+            border-top: 1px solid rgba(233, 231, 227, 0.14);
             display: flex;
             justify-content: space-between;
             gap: 12px;
@@ -32241,16 +32167,16 @@ function v2(e = "xb-ebook-root") {
             backdrop-filter: none;
         }
         .theme-dark .xb-sidebar {
-            background: var(--xb-surface-sidebar);
-            border-right-color: var(--xb-border-soft);
+            background: #171922;
+            border-right-color: rgba(184, 178, 166, 0.08);
         }
         .theme-dark .xb-studio-workbench,
         .theme-dark .xb-editor {
-            background: var(--xb-surface-editor);
+            background: #1c1f2a;
         }
         .theme-dark .xb-agent {
-            background: var(--xb-surface-agent);
-            border-left-color: var(--xb-border-soft);
+            background: #20232d;
+            border-left-color: rgba(184, 178, 166, 0.09);
         }
         .theme-dark.xb-studio-shell.focus-editor .xb-agent {
             opacity: 1;
@@ -32262,13 +32188,13 @@ function v2(e = "xb-ebook-root") {
             box-shadow: none;
         }
         .theme-dark .xb-workspace-controller {
-            background: var(--xb-surface-control);
-            border-color: var(--xb-border);
+            background: #222631;
+            border-color: rgba(184, 178, 166, 0.12);
             box-shadow: none;
         }
         .theme-dark .xb-editor-head {
-            background: var(--xb-surface-editor);
-            border-bottom: 1px solid var(--xb-border-soft);
+            background: #1c1f2a;
+            border-bottom: 1px solid rgba(184, 178, 166, 0.08);
         }
         .theme-dark .xb-agent-head,
         .theme-dark .xb-agent-form,
@@ -32278,7 +32204,7 @@ function v2(e = "xb-ebook-root") {
             border-color: rgba(184, 178, 166, 0.09);
         }
         .theme-dark .xb-agent-form {
-            background: var(--xb-surface-agent);
+            background: #20232d;
         }
         .theme-dark .xb-agent-compose-row,
         .theme-dark .xb-actions-panel,
@@ -32290,29 +32216,29 @@ function v2(e = "xb-ebook-root") {
         .theme-dark .xb-thought-block,
         .theme-dark .xb-tool-preface,
         .theme-dark .xb-tool {
-            border-color: var(--xb-border);
-            background: var(--xb-surface-message);
+            border-color: rgba(184, 178, 166, 0.11);
+            background: #282c38;
             color: var(--xb-text-main);
         }
         .theme-dark .xb-tool-payload {
-            border-top-color: var(--xb-border);
+            border-top-color: rgba(184, 178, 166, 0.10);
         }
         .theme-dark .xb-agent-compose-row:focus-within {
             border-color: rgba(143, 180, 189, 0.40);
-            background: var(--xb-surface-input-focus);
+            background: #2b3040;
             box-shadow: none;
         }
         .theme-dark .xb-msg-assistant {
             border-left-color: var(--xb-indigo);
-            background: var(--xb-surface-message-assistant);
+            background: #272b38;
         }
         .theme-dark .xb-msg-user {
-            background: var(--xb-surface-message-user);
+            background: #303342;
         }
         .theme-dark .xb-assistant-markdown pre,
         .theme-dark .xb-markdown-html-code {
-            border-color: var(--xb-border);
-            background: var(--xb-surface-code);
+            border-color: rgba(184, 178, 166, 0.10);
+            background: #191c25;
             color: var(--xb-text-body);
         }
         .theme-dark .xb-assistant-markdown strong,
@@ -32327,23 +32253,23 @@ function v2(e = "xb-ebook-root") {
             filter: none !important;
         }
         .theme-dark .xb-assistant-markdown code {
-            background: var(--xb-code-inline-bg);
+            background: rgba(255, 255, 255, 0.075);
             color: var(--xb-text-main);
         }
         .theme-dark .xb-file.is-active {
-            border-color: var(--xb-border);
-            background: var(--xb-surface-card);
+            border-color: rgba(184, 178, 166, 0.12);
+            background: #242834;
         }
         .theme-dark .xb-library-book {
-            border-color: var(--xb-border-soft);
-            background: var(--xb-surface-card);
+            border-color: rgba(184, 178, 166, 0.08);
+            background: #242834;
         }
         .theme-dark .xb-entry-action {
-            border-color: var(--xb-border-soft);
+            border-color: rgba(184, 178, 166, 0.08);
             background: transparent;
         }
         .theme-dark .xb-library-book:hover:not(:disabled) {
-            border-color: var(--xb-border-strong);
+            border-color: rgba(184, 178, 166, 0.16);
             box-shadow: none;
         }
         .theme-dark .xb-portal-theme {
@@ -32361,13 +32287,13 @@ function v2(e = "xb-ebook-root") {
         }
         .theme-dark .xb-reader-screen,
         .theme-dark.xb-reader-screen {
-            background: var(--xb-surface-reader);
+            background: #171922;
             -webkit-font-smoothing: antialiased;
             text-rendering: optimizeLegibility;
         }
         .theme-dark .xb-reader-edge,
         .theme-dark .xb-reader-nav {
-            background: var(--xb-surface-reader-nav);
+            background: #1c1f2a;
         }
         .theme-dark .xb-reader-paper {
             background: transparent;
@@ -32422,23 +32348,23 @@ function v2(e = "xb-ebook-root") {
             color: rgba(69, 55, 38, 0.72);
         }
         .theme-light .xb-sidebar {
-            border-right-color: var(--xb-border);
-            background: var(--xb-surface-sidebar);
+            border-right-color: rgba(87, 70, 48, 0.12);
+            background: #fff3df;
         }
         .theme-light .xb-icon-button,
         .theme-light .xb-glass-button,
         .theme-light .xb-home-actions button {
             border-color: var(--xb-line);
-            background: var(--xb-surface-control);
+            background: rgba(255, 253, 248, 0.82);
             color: var(--xb-text-main);
         }
         .theme-light .xb-workspace-controller {
             border-color: var(--xb-line);
-            background: var(--xb-surface-control);
-            box-shadow: var(--xb-shadow-card);
+            background: rgba(255, 253, 248, 0.86);
+            box-shadow: 0 8px 22px rgba(87, 70, 48, 0.08);
         }
         .theme-light .xb-layout-button.is-active {
-            background: var(--xb-surface-control-active);
+            background: rgba(87, 70, 48, 0.10);
         }
         .theme-light .xb-file.is-active,
         .theme-light .xb-library-empty,
@@ -32446,28 +32372,28 @@ function v2(e = "xb-ebook-root") {
         .theme-light .xb-actions-panel,
         .theme-light .xb-delete-book-item {
             border-color: var(--xb-line);
-            background: var(--xb-surface-message);
+            background: rgba(255, 253, 248, 0.78);
         }
         .theme-light .xb-library-book {
-            border-color: var(--xb-border);
-            background: var(--xb-surface-card);
-            box-shadow: var(--xb-shadow-card);
+            border-color: rgba(87, 70, 48, 0.12);
+            background: #fffdf8;
+            box-shadow: 0 18px 38px rgba(87, 70, 48, 0.10);
         }
         .theme-light .xb-library-book:hover:not(:disabled) {
-            border-color: var(--xb-border-strong);
-            box-shadow: var(--xb-shadow-card-hover);
+            border-color: rgba(87, 70, 48, 0.20);
+            box-shadow: 0 24px 46px rgba(87, 70, 48, 0.13);
         }
         .theme-light .xb-shelf-action {
-            border-color: var(--xb-border);
-            background: var(--xb-bg-glass);
+            border-color: rgba(87, 70, 48, 0.18);
+            background: rgba(255, 253, 248, 0.62);
             color: var(--xb-text-main);
         }
         .theme-light .xb-shelf-action-ring {
-            border-color: var(--xb-border);
-            background: var(--xb-surface-control-active);
+            border-color: rgba(87, 70, 48, 0.18);
+            background: rgba(87, 70, 48, 0.055);
         }
         .theme-light .xb-entry-action {
-            border-color: var(--xb-border);
+            border-color: rgba(87, 70, 48, 0.12);
             background: transparent;
         }
         .theme-light .xb-entry-action.is-studio:hover:not(:disabled) {
@@ -32479,23 +32405,23 @@ function v2(e = "xb-ebook-root") {
         .theme-light .xb-portal-close,
         .theme-light .xb-portal-theme {
             border-color: var(--xb-line);
-            background: var(--xb-surface-control);
+            background: rgba(255, 253, 248, 0.84);
             color: var(--xb-text-main);
         }
         .theme-light .xb-editor {
-            background: var(--xb-surface-editor);
-            border-right-color: var(--xb-border-soft);
+            background: #fffdf8;
+            border-right-color: rgba(87, 70, 48, 0.10);
         }
         .theme-light .xb-agent {
-            background: var(--xb-surface-agent);
-            border-left-color: var(--xb-border-soft);
-            box-shadow: var(--xb-shadow-panel);
+            background: #fff8ec;
+            border-left-color: rgba(87, 70, 48, 0.11);
+            box-shadow: -12px 0 30px rgba(87, 70, 48, 0.08);
         }
         .theme-light.xb-studio-shell.focus-agent .xb-agent {
-            box-shadow: var(--xb-shadow-panel-strong);
+            box-shadow: -18px 0 42px rgba(87, 70, 48, 0.12);
         }
         .theme-light .xb-editor-head {
-            background: var(--xb-editor-head-bg);
+            background: linear-gradient(180deg, rgba(255, 253, 248, 0.96), rgba(255, 253, 248, 0.78), transparent);
         }
         .theme-light .xb-agent-head,
         .theme-light .xb-agent-memory,
@@ -32508,7 +32434,7 @@ function v2(e = "xb-ebook-root") {
             border-color: var(--xb-line);
         }
         .theme-light .xb-agent-form {
-            background: linear-gradient(0deg, var(--xb-surface-agent) 74%, transparent);
+            background: linear-gradient(0deg, var(--xb-bg-agent) 74%, transparent);
         }
         .theme-light .xb-distillation-backdrop {
             background: rgba(255, 250, 240, 0.58);
@@ -32529,15 +32455,15 @@ function v2(e = "xb-ebook-root") {
         .theme-light .xb-tool-preface,
         .theme-light .xb-tool {
             border-color: var(--xb-line);
-            background: var(--xb-surface-message);
+            background: #fffdf8;
             color: var(--xb-text-main);
         }
         .theme-light .xb-tool-payload {
-            border-top-color: var(--xb-border);
+            border-top-color: rgba(87, 70, 48, 0.12);
         }
         .theme-light .xb-agent-compose-row:focus-within {
             border-color: rgba(61, 124, 131, 0.42);
-            background: var(--xb-surface-input-focus);
+            background: #fffdf8;
             box-shadow: 0 0 0 3px rgba(61, 124, 131, 0.10);
         }
         .theme-light .xb-msg-assistant {
@@ -32546,16 +32472,16 @@ function v2(e = "xb-ebook-root") {
         .theme-light .xb-msg.is-error {
             border-color: rgba(182, 77, 93, 0.35);
             color: #8d2338;
-            background: var(--xb-surface-error);
+            background: #fff5f6;
         }
         .theme-light .xb-assistant-markdown code {
-            background: var(--xb-code-inline-bg);
+            background: rgba(87, 70, 48, 0.08);
             color: #352d24;
         }
         .theme-light .xb-assistant-markdown pre,
         .theme-light .xb-markdown-html-code {
             border-color: var(--xb-line);
-            background: var(--xb-surface-code);
+            background: #f8f2e8;
             color: var(--xb-text-main);
         }
         .theme-light .xb-assistant-markdown blockquote {
@@ -32568,28 +32494,28 @@ function v2(e = "xb-ebook-root") {
             border-color: var(--xb-line);
         }
         .theme-light .xb-assistant-markdown th {
-            background: var(--xb-surface-control-active);
+            background: rgba(87, 70, 48, 0.06);
         }
         .theme-light .xb-ebook-settings-overlay,
         .theme-light .xb-ebook-delete-overlay {
-            background: var(--xb-surface-overlay);
+            background: rgba(255, 250, 240, 0.78);
         }
         .theme-light .xb-ebook-settings-dialog,
         .theme-light .xb-ebook-delete-dialog {
             border-color: var(--xb-line);
-            background: var(--xb-surface-dialog);
+            background: rgba(255, 253, 248, 0.98);
         }
         .theme-light .xb-ebook-settings-body .xb-assistant-config-tabs {
-            background: var(--xb-surface-control-active);
+            background: rgba(87, 70, 48, 0.06);
         }
         .theme-light .xb-ebook-settings-body .xb-assistant-config-tab.is-active {
-            background: var(--xb-surface-card);
+            background: #fffdf8;
             box-shadow: 0 1px 6px rgba(87, 70, 48, 0.08);
         }
         .theme-light .xb-ebook-settings-body .xb-assistant-config input,
         .theme-light .xb-ebook-settings-body .xb-assistant-config select {
             border-color: var(--xb-line);
-            background: var(--xb-surface-input);
+            background: #fffdf8;
             color: var(--xb-text-main);
         }
         .theme-light .xb-ebook-settings-body .xb-assistant-inline-status.is-success,
@@ -32601,31 +32527,31 @@ function v2(e = "xb-ebook-root") {
             color: #9f233d;
         }
         .theme-light .xb-reader-edge {
-            border-right-color: var(--xb-border);
-            background: var(--xb-surface-reader-nav);
+            border-right-color: rgba(87, 70, 48, 0.12);
+            background: rgba(255, 253, 248, 0.84);
         }
         .theme-light .xb-mobile-studio-topbar,
         .theme-light .xb-reader-toc-sheet,
         .theme-light.xb-studio-shell .xb-sidebar {
             border-color: var(--xb-line);
-            background: var(--xb-surface-mobile-bar);
-            box-shadow: var(--xb-shadow-sheet);
+            background: rgba(255, 248, 236, 0.96);
+            box-shadow: 0 -18px 46px rgba(87, 70, 48, 0.12);
         }
         .theme-light .xb-mobile-segment,
         .theme-light .xb-mobile-file-picker {
             border-color: var(--xb-line);
-            background: var(--xb-surface-control-subtle);
+            background: rgba(87, 70, 48, 0.055);
             color: var(--xb-text-main);
         }
         .theme-light .xb-mobile-segment-slider {
-            background: var(--xb-surface-control-active);
+            background: rgba(87, 70, 48, 0.12);
         }
         .theme-light .xb-reader-nav {
-            background: var(--xb-surface-reader-nav);
-            box-shadow: var(--xb-shadow-reader-nav);
+            background: rgba(255, 248, 236, 0.76);
+            box-shadow: 20px 0 42px rgba(87, 70, 48, 0.08);
         }
         .theme-light .xb-reader-progress {
-            background: var(--xb-border);
+            background: rgba(87, 70, 48, 0.14);
         }
         .theme-light .xb-reader-chapter:hover:not(:disabled) {
             color: var(--xb-text-main);
@@ -32686,7 +32612,7 @@ function v2(e = "xb-ebook-root") {
                 aspect-ratio: 3 / 4;
                 border-radius: 12px;
                 padding: 18px 14px 14px;
-                box-shadow: var(--xb-shadow-card);
+                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.20);
             }
             .xb-library-book:hover:not(:disabled) {
                 transform: translateY(-3px);
@@ -32738,7 +32664,7 @@ function v2(e = "xb-ebook-root") {
             .xb-entry-action {
                 min-height: 50vh;
                 border-right: 0;
-                border-top: 1px solid var(--xb-border-soft);
+                border-top: 1px solid rgba(255, 255, 255, 0.045);
             }
             .xb-entry-action strong { font-size: 48px; }
             .xb-entry-action {
@@ -32764,7 +32690,7 @@ function v2(e = "xb-ebook-root") {
                 flex: none;
                 padding: 16px 18px;
                 border-right: 0;
-                border-bottom: 1px solid var(--xb-border-soft);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04);
                 overflow: hidden;
             }
             .xb-sidebar .xb-title-row h1 {
@@ -32869,8 +32795,8 @@ function v2(e = "xb-ebook-root") {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                background: var(--xb-surface-mobile-bar-soft);
-                border-bottom: 1px solid var(--xb-border-soft);
+                background: rgba(23, 25, 34, 0.90);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
                 backdrop-filter: blur(18px);
             }
             .xb-mobile-agent-actions {
@@ -32905,8 +32831,8 @@ function v2(e = "xb-ebook-root") {
                 grid-template-columns: 1fr 1fr;
                 padding: 4px;
                 border-radius: 999px;
-                background: var(--xb-surface-control-active);
-                box-shadow: var(--xb-shadow-inset);
+                background: rgba(255, 255, 255, 0.055);
+                box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.28);
                 flex-shrink: 0;
             }
             .xb-mobile-segment-slider {
@@ -32916,7 +32842,7 @@ function v2(e = "xb-ebook-root") {
                 left: 4px;
                 width: calc(50% - 4px);
                 border-radius: 999px;
-                background: var(--xb-surface-control);
+                background: rgba(255, 255, 255, 0.14);
                 transition: transform 0.42s var(--xb-fluid);
             }
             .xb-studio-shell.focus-agent .xb-mobile-segment-slider {
@@ -32945,7 +32871,7 @@ function v2(e = "xb-ebook-root") {
                 padding: 0;
                 border: 0;
                 border-radius: 0;
-                background: var(--xb-surface-overlay);
+                background: rgba(0, 0, 0, 0.28);
                 backdrop-filter: blur(2px);
             }
             .xb-studio-shell.is-file-drawer-open .xb-mobile-file-drawer-scrim {
@@ -32962,10 +32888,10 @@ function v2(e = "xb-ebook-root") {
                 height: min(68vh, 620px);
                 padding: 0 18px calc(22px + env(safe-area-inset-bottom, 0px));
                 border: 0;
-                border-top: 1px solid var(--xb-border);
+                border-top: 1px solid rgba(255, 255, 255, 0.08);
                 border-radius: 24px 24px 0 0;
-                background: var(--xb-surface-mobile-bar);
-                box-shadow: var(--xb-shadow-sheet);
+                background: rgba(23, 25, 34, 0.96);
+                box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.42);
                 backdrop-filter: blur(20px);
                 transform: translateY(102%);
                 transition: transform 0.48s var(--xb-fluid);
@@ -32986,7 +32912,7 @@ function v2(e = "xb-ebook-root") {
                 padding: 0;
                 border: 0;
                 border-radius: 999px;
-                background: var(--xb-border-strong);
+                background: rgba(255, 255, 255, 0.22);
             }
             .xb-studio-shell .xb-sidebar .xb-brand {
                 display: none;
@@ -33057,7 +32983,7 @@ function v2(e = "xb-ebook-root") {
                 justify-content: center;
                 gap: 8px;
                 border-radius: 999px;
-                background: var(--xb-bg-glass);
+                background: rgba(255, 255, 255, 0.05);
                 color: var(--xb-text-main);
                 font-family: var(--xb-font-mono);
                 font-size: 12px;
@@ -33175,7 +33101,7 @@ function v2(e = "xb-ebook-root") {
                 flex-direction: row;
                 padding: 8px 18px calc(10px + env(safe-area-inset-bottom, 0px));
                 border-right: 0;
-                border-top: 1px solid var(--xb-border-soft);
+                border-top: 1px solid rgba(255, 255, 255, 0.05);
             }
             .xb-reader-edge-actions {
                 width: 100%;
@@ -33240,10 +33166,10 @@ function v2(e = "xb-ebook-root") {
                 display: flex;
                 flex-direction: column;
                 padding: 0 26px calc(24px + env(safe-area-inset-bottom, 0px));
-                border-top: 1px solid var(--xb-border);
+                border-top: 1px solid rgba(233, 231, 227, 0.14);
                 border-radius: 24px 24px 0 0;
-                background: var(--xb-surface-reader-sheet);
-                box-shadow: var(--xb-shadow-sheet);
+                background: rgba(21, 19, 17, 0.96);
+                box-shadow: 0 -18px 58px rgba(0, 0, 0, 0.48);
                 backdrop-filter: blur(20px);
                 transform: translateY(104%);
                 transition: transform 0.48s var(--xb-fluid);
@@ -33452,7 +33378,7 @@ function ks(e) {
   }
   setTimeout(e, 16)?.unref?.();
 }
-function rw() {
+function r0() {
   try {
     const e = ["mobile", "tablet"], t = globalThis.Bowser?.parse?.(globalThis.navigator?.userAgent || "")?.platform?.type;
     if (e.includes(t)) return !0;
@@ -33464,19 +33390,19 @@ function rw() {
     return !1;
   }
 }
-function x2(e) {
-  return e.key === "Enter" && !rw() && !e.isComposing && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey;
+function xL(e) {
+  return e.key === "Enter" && !r0() && !e.isComposing && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey;
 }
-function _2(e) {
+function _L(e) {
   return String(e.key || "").toLowerCase() === "s" && (e.ctrlKey || e.metaKey);
 }
-function w2(e, t, n) {
+function wL(e, t, n) {
   const r = e.querySelector("#xb-editor-meta");
   r && (r.textContent = `${n.isEditorDirty() ? "有未保存修改" : "已保存到书库"} · ${pf(t.editorContent || "")}`);
 }
 function wg(e) {
   const t = e.querySelector("#xb-compose-hint");
-  t && (t.textContent = rw() ? "Enter 换行 · 点击发送" : "Enter 发送 · Shift+Enter 换行");
+  t && (t.textContent = r0() ? "Enter 换行 · 点击发送" : "Enter 发送 · Shift+Enter 换行");
 }
 function Sg(e, t = 0) {
   const n = Number.parseFloat(e);
@@ -33490,11 +33416,11 @@ function au(e) {
   const s = Math.min(o, Math.max(r, i));
   t.style.height = `${s}px`, t.style.overflowY = i > o ? "auto" : "hidden";
 }
-function S2(e, t) {
+function SL(e, t) {
   const n = e.createElementNS("http://www.w3.org/2000/svg", "path");
   return n.setAttribute("d", t), n;
 }
-function T2(e, t = "dark") {
+function TL(e, t = "dark") {
   if (t === "light") {
     const o = e.createElement("span");
     return o.className = "xb-theme-glyph", o.setAttribute("aria-hidden", "true"), o.textContent = "☾", o;
@@ -33511,16 +33437,16 @@ function T2(e, t = "dark") {
     "M20 12h2",
     "m6.34 17.66-1.41 1.41",
     "m19.07 4.93-1.41 1.41"
-  ].forEach((o) => n.appendChild(S2(e, o))), n;
+  ].forEach((o) => n.appendChild(SL(e, o))), n;
 }
-function E2(e, t) {
+function EL(e, t) {
   const n = t.colorTheme === "light" ? "light" : "dark";
   e.querySelectorAll(".xb-ebook-shell, .xb-ebook-screen").forEach((o) => {
     o.classList.toggle("theme-light", n === "light"), o.classList.toggle("theme-dark", n !== "light");
   });
   const r = n === "light" ? "切换为深色视觉" : "切换为白底黑字";
   e.querySelectorAll("#xb-theme-toggle, [data-theme-toggle]").forEach((o) => {
-    o.replaceChildren(T2(o.ownerDocument || document, n)), o.setAttribute("title", r), o.setAttribute("aria-label", r);
+    o.replaceChildren(TL(o.ownerDocument || document, n)), o.setAttribute("title", r), o.setAttribute("aria-label", r);
   });
 }
 function Tg(e = [], t = "", n = !1) {
@@ -33531,7 +33457,7 @@ function lu(e, t) {
   return e?.closest?.(t) || null;
 }
 var Gc = "__xiaobaixEbookDelegatedBindings";
-function A2(e) {
+function AL(e) {
   const t = e?.[Gc];
   if (t) {
     try {
@@ -33541,9 +33467,9 @@ function A2(e) {
     e.removeEventListener?.("toggle", t.handleToggle, !0), e.removeEventListener?.("click", t.handleClick), e[Gc] = null;
   }
 }
-function C2(e, t = {}) {
+function CL(e, t = {}) {
   if (!e?.addEventListener) return;
-  A2(e);
+  AL(e);
   const n = typeof AbortController == "function" ? new AbortController() : null, r = n ? {
     capture: !0,
     signal: n.signal
@@ -33554,7 +33480,7 @@ function C2(e, t = {}) {
     handleClick: t.handleClick
   };
 }
-async function k2(e = "") {
+async function kL(e = "") {
   const t = String(e || "");
   if (!t) return !1;
   try {
@@ -33571,22 +33497,22 @@ async function k2(e = "") {
     return !1;
   }
 }
-function I2(e = {}) {
+function IL(e = {}) {
   return e && ["user", "assistant"].includes(e.role) && !e.streaming && String(e.content || "").trim() && !(Array.isArray(e.toolCalls) && e.toolCalls.length);
 }
-function P2(e = [], t = -1) {
+function PL(e = [], t = -1) {
   if (!Array.isArray(e) || t < 0 || e[t]?.role !== "user") return t + 1;
   let n = t + 1;
   for (; n < e.length && e[n]?.role !== "user"; ) n += 1;
   return n;
 }
-function R2(e = {}) {
+function RL(e = {}) {
   return !!(e.isDrawingChapter || !e.isBusy && /^book\/chapters\/.+\.md$/.test(String(e.selectedPath || "")) && e.drawStatus?.enabled && e.drawStatus?.ready && String(e.editorContent || "").replace(/\[ebook-image:[a-z0-9\-_]+\]/gi, "").trim());
 }
 function Eg(e, t = "") {
   return !!(e && e.isConnected !== !1 && String(e.dataset?.ebookImageSlot || "").trim() === t);
 }
-function M2(e, t) {
+function ML(e, t) {
   e.querySelectorAll("[data-ebook-image-slot]").forEach((n) => {
     const r = String(n.dataset.ebookImageSlot || "").trim();
     r && t.getDrawImage(r).then((o) => {
@@ -33608,7 +33534,7 @@ function M2(e, t) {
     });
   });
 }
-function N2(e = {}) {
+function NL(e = {}) {
   const { root: t, state: n, render: r, renderSettingsSurface: o, postToHost: i, bookController: s, agentRunner: u, persistConversation: l, clearConversation: d, showToast: p } = e;
   if (!t) return;
   t.querySelector("#xb-close")?.addEventListener("click", () => i("xb-ebook:close")), t.querySelector("#xb-library-link")?.addEventListener("click", () => {
@@ -33655,10 +33581,10 @@ function N2(e = {}) {
     $.addEventListener("click", () => {
       n.colorTheme = n.colorTheme === "light" ? "dark" : "light";
       try {
-        globalThis.localStorage?.setItem(g2, n.colorTheme);
+        globalThis.localStorage?.setItem(gL, n.colorTheme);
       } catch {
       }
-      E2(t, n), r();
+      EL(t, n), r();
     });
   }), t.querySelector("#xb-agent-open-settings")?.addEventListener("click", () => {
     n.isSettingsOpen = !0, n.configFormSyncPending = !0, o?.() || r();
@@ -33751,9 +33677,9 @@ function N2(e = {}) {
     const U = Number.parseInt($.dataset.messageIndex || "", 10), W = String($.dataset.messageAction || "").trim();
     if (!Number.isInteger(U) || U < 0 || !W || n.isBusy && W !== "cancel-edit") return;
     const ne = n.messages[U];
-    if (I2(ne)) {
+    if (IL(ne)) {
       if (W === "copy") {
-        const ge = await k2(ne.content);
+        const ge = await kL(ne.content);
         f(U, W, ge), p?.(ge ? "已复制整条消息" : "复制失败");
         return;
       }
@@ -33783,7 +33709,7 @@ function N2(e = {}) {
       }
       if (W === "delete") {
         if (n.isBusy) return;
-        ne.role === "user" ? n.messages.splice(U, P2(n.messages, U) - U) : n.messages.splice(U, 1), n.editingMessageIndex = -1, await l?.(n.book?.id), p?.("消息已删除"), r();
+        ne.role === "user" ? n.messages.splice(U, PL(n.messages, U) - U) : n.messages.splice(U, 1), n.editingMessageIndex = -1, await l?.(n.book?.id), p?.("消息已删除"), r();
         return;
       }
       if (W === "reroll") {
@@ -33792,7 +33718,7 @@ function N2(e = {}) {
       }
     }
   }
-  C2(t, {
+  CL(t, {
     handleToggle: ($) => {
       const U = $.target;
       if (U?.matches?.(".xb-tool-turn[data-tool-turn-key], .xb-thought-details[data-thought-key]")) {
@@ -33822,19 +33748,19 @@ function N2(e = {}) {
   });
   const g = t.querySelector("#xb-editor-text");
   g?.addEventListener("keydown", ($) => {
-    _2($) && ($.preventDefault(), s.saveCurrentFile());
+    _L($) && ($.preventDefault(), s.saveCurrentFile());
   }), g?.addEventListener("input", () => {
     n.editorContent = g.value;
     const $ = t.querySelector("#xb-save");
     $ && ($.disabled = n.isBusy || !s.isEditorDirty());
     const U = t.querySelector("#xb-draw-chapter");
-    U && (U.disabled = !R2(n)), w2(t, n, s);
+    U && (U.disabled = !RL(n)), wL(t, n, s);
   });
   const b = t.querySelector("#xb-agent-input");
   b?.addEventListener("input", () => {
     n.agentInputDraft = b.value, wg(t), au(t);
   }), b?.addEventListener("keydown", ($) => {
-    x2($) && ($.preventDefault(), t.querySelector("#xb-agent-form")?.requestSubmit());
+    xL($) && ($.preventDefault(), t.querySelector("#xb-agent-form")?.requestSubmit());
   }), wg(t), au(t), t.querySelector("#xb-agent-form")?.addEventListener("submit", ($) => {
     if ($.preventDefault(), n.isBusy) {
       u.cancelActiveRun();
@@ -33867,7 +33793,7 @@ function N2(e = {}) {
     n.agentScrollLockTop = Number.isFinite(U) ? Math.max(0, U) : null;
   }
   function G() {
-    if (!x || x.scrollTop > 64 || !i0(n, u2(n.messages || []))) return !1;
+    if (!x || x.scrollTop > 64 || !iw(n, uL(n.messages || []))) return !1;
     const $ = x.scrollHeight, U = x.scrollTop;
     return r(), ks(() => {
       const W = t.querySelector(".xb-agent-main");
@@ -33921,14 +33847,14 @@ function N2(e = {}) {
     }), z(), V(), J();
   }), T?.addEventListener("click", () => {
     n.agentAutoScroll = !0, n.agentScrollLockTop = null, P(x), z(), V(), J();
-  }), V(), M2(t, s);
+  }), V(), ML(t, s);
 }
-var D2 = 3e3, $2 = 1800, L2 = /^book\/chapters\/.+\.md$/, B2 = /\[ebook-image:[a-z0-9\-_]+\]/gi;
-function U2(e = "") {
-  return L2.test(String(e || ""));
+var DL = 3e3, $L = 1800, LL = /^book\/chapters\/.+\.md$/, BL = /\[ebook-image:[a-z0-9\-_]+\]/gi;
+function UL(e = "") {
+  return LL.test(String(e || ""));
 }
 function Ag(e = "") {
-  return String(e || "").replace(B2, "").trim();
+  return String(e || "").replace(BL, "").trim();
 }
 function Is(e, t) {
   const n = e?.querySelector?.(t);
@@ -33961,7 +33887,7 @@ function Ps(e, t, n = null, r = {}) {
     i.scrollTop = t.nearBottom ? i.scrollHeight : Math.min(t.scrollTop, i.scrollHeight);
   }
 }
-function F2(e) {
+function FL(e) {
   const t = e?.querySelector?.(".xb-agent-main"), n = e?.querySelector?.("#xb-agent-scroll-top"), r = e?.querySelector?.("#xb-agent-scroll-bottom");
   if (!t || !n || !r) return;
   const o = 80, i = Number(t.scrollTop || 0), s = t.scrollHeight - i - t.clientHeight;
@@ -33971,7 +33897,7 @@ function Dt(e = "") {
   const t = document.createElement("template");
   return t.innerHTML = String(e || "").trim(), t.content.firstElementChild || document.createTextNode("");
 }
-function O2(e, t = [], n = [], r = () => {
+function OL(e, t = [], n = [], r = () => {
 }) {
   const o = [];
   for (n.forEach((i, s) => {
@@ -33986,16 +33912,16 @@ function O2(e, t = [], n = [], r = () => {
 function Zo(e) {
   return Array.from(e?.children || []).filter((t) => t?.classList?.contains?.("xb-file") && t?.dataset?.path);
 }
-function q2(e, t = "") {
+function qL(e, t = "") {
   return Array.from(e?.children || []).find((n) => n?.classList?.contains?.("xb-file-group") && n?.dataset?.fileGroupKey === t) || null;
 }
-function G2(e, t = {}) {
+function GL(e, t = {}) {
   const n = Dt(t.scaffoldHtml);
   Zo(e).forEach((o) => n.appendChild(o));
   const r = Array.from(e.children || []).find((o) => o?.dataset?.fileGroupEmpty === "true");
   return r && n.appendChild(r), e.replaceWith(n), n;
 }
-function H2(e, t = {}) {
+function HL(e, t = {}) {
   if (!e) return;
   if (t.treeHtml) {
     const o = Dt(t.treeHtml), i = Array.from(e.children || []).find((s) => s?.classList?.contains?.("xb-file-tree"));
@@ -34023,11 +33949,11 @@ function H2(e, t = {}) {
     u && u !== s ? e.insertBefore(s, u) : u || e.appendChild(s);
   });
 }
-function V2(e = "req") {
+function VL(e = "req") {
   return `${e}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
-function K2(e = {}) {
-  const { rootId: t, hostBridge: n } = e, r = b2();
+function KL(e = {}) {
+  const { rootId: t, hostBridge: n } = e, r = bL();
   let o = null, i = null, s = [];
   const u = {
     fullRender: 0,
@@ -34044,10 +33970,10 @@ function K2(e = {}) {
     Object.prototype.hasOwnProperty.call(u, I) && (u[I] += 1);
   }
   function d(I = {}) {
-    return sL(r.config, I);
+    return s2(r.config, I);
   }
   function p(I = d()) {
-    return aL(I);
+    return a2(I);
   }
   function f(I = "") {
     r.toast = String(I || ""), $() || W(), r.toast && setTimeout(() => {
@@ -34060,7 +33986,7 @@ function K2(e = {}) {
   function m() {
     o && (clearTimeout(o), o = null), i && (clearTimeout(i), i = null);
   }
-  function y(I = $2) {
+  function y(I = $L) {
     i && clearTimeout(i), i = setTimeout(() => {
       i = null, r.configSave = {
         status: "idle",
@@ -34080,7 +34006,7 @@ function K2(e = {}) {
         requestId: I,
         error: "保存超时，请重试"
       }, Y() || W(), y());
-    }, D2), Y() || W();
+    }, DL), Y() || W();
   }
   function b(I, { ok: K, error: D = "" } = {}) {
     I && r.configSave.requestId && r.configSave.requestId !== I || (o && (clearTimeout(o), o = null), r.configSave = {
@@ -34090,13 +34016,13 @@ function K2(e = {}) {
     }, Y() || W(), y());
   }
   let _, v;
-  const x = xE({ state: r }), S = iL({
+  const x = xE({ state: r }), S = i2({
     state: r,
     render: () => {
       Y() || W();
     },
     showToast: f,
-    createRequestId: V2,
+    createRequestId: VL,
     describeError: h,
     saveConfig: async ({ requestId: I, config: K, payload: D }) => {
       g(I);
@@ -34142,7 +34068,7 @@ function K2(e = {}) {
     const K = I.querySelector(".xb-studio-shell"), D = I.querySelector(".xb-agent-main"), L = I.querySelector(".xb-agent-log");
     if (!K || !D || !L) return !1;
     const se = Is(I, ".xb-agent-main"), le = r.agentAutoScroll !== !1;
-    D.classList.toggle("is-busy", !!r.isBusy), s = O2(L, s, tw(r), (ye) => ye.querySelectorAll?.(".xb-msg-markdown, .xb-tool-preface-markdown").forEach((xe) => {
+    D.classList.toggle("is-busy", !!r.isBusy), s = OL(L, s, t0(r), (ye) => ye.querySelectorAll?.(".xb-msg-markdown, .xb-tool-preface-markdown").forEach((xe) => {
       ou(xe, {
         codeBlockClassName: "xb-assistant-codeblock",
         codeCopyClassName: "xb-assistant-code-copy"
@@ -34165,7 +34091,7 @@ function K2(e = {}) {
       defaultToBottom: le,
       preserveScrollTop: !le,
       overrideScrollTop: !le && Number.isFinite(r.agentScrollLockTop) ? r.agentScrollLockTop : void 0
-    }), F2(I), l("agentSurface"), !0;
+    }), FL(I), l("agentSurface"), !0;
   }
   function A() {
     const I = C();
@@ -34194,7 +34120,7 @@ function K2(e = {}) {
   function G(I) {
     const K = _.isEditorDirty(), D = I.querySelector("#xb-save"), L = I.querySelector("#xb-draw-chapter");
     if (D && (D.disabled = !(K && !r.isBusy)), !L) return;
-    const se = r.drawStatus || {}, le = U2(r.selectedPath), de = !!se.enabled && !!se.ready, Ee = !!(r.isDrawingChapter || !r.isBusy && le && de && Ag(r.editorContent)), ye = r.isDrawingChapter ? "停止当前章节配图" : le ? de ? Ag(r.editorContent) ? "为当前章节生成配图" : "当前章节没有正文" : "画图后端未启用" : "只有正文章节可以配图";
+    const se = r.drawStatus || {}, le = UL(r.selectedPath), de = !!se.enabled && !!se.ready, Ee = !!(r.isDrawingChapter || !r.isBusy && le && de && Ag(r.editorContent)), ye = r.isDrawingChapter ? "停止当前章节配图" : le ? de ? Ag(r.editorContent) ? "为当前章节生成配图" : "当前章节没有正文" : "画图后端未启用" : "只有正文章节可以配图";
     L.disabled = !Ee, L.textContent = r.isDrawingChapter ? "停止" : "配图", L.title = ye, L.setAttribute("aria-label", ye);
   }
   function V(I) {
@@ -34221,10 +34147,10 @@ function K2(e = {}) {
       Array.from(D.children).forEach((Ee) => {
         Ee?.classList?.contains?.("xb-file-group") || Ee.remove();
       }), L.groups.forEach((Ee, ye) => {
-        let xe = q2(D, Ee.key);
-        xe ? xe.dataset.fileStaticSignature !== Ee.staticSignature && (xe = G2(xe, Ee)) : xe = Dt(Ee.scaffoldHtml), xe.dataset.fileStaticSignature = Ee.staticSignature;
+        let xe = qL(D, Ee.key);
+        xe ? xe.dataset.fileStaticSignature !== Ee.staticSignature && (xe = GL(xe, Ee)) : xe = Dt(Ee.scaffoldHtml), xe.dataset.fileStaticSignature = Ee.staticSignature;
         const Ae = D.children[ye] || null;
-        Ae && Ae !== xe ? D.insertBefore(xe, Ae) : Ae || D.appendChild(xe), H2(xe, Ee);
+        Ae && Ae !== xe ? D.insertBefore(xe, Ae) : Ae || D.appendChild(xe), HL(xe, Ee);
       }), Array.from(D.children).forEach((Ee) => {
         Ee?.classList?.contains?.("xb-file-group") && !de.has(Ee.dataset.fileGroupKey || "") && Ee.remove();
       });
@@ -34242,7 +34168,7 @@ function K2(e = {}) {
     const K = I.querySelector("#xb-agent-settings-overlay");
     if (!r.isSettingsOpen)
       return K?.remove(), !0;
-    const D = Is(I, ".xb-ebook-settings-body"), L = T(I), se = !!K, le = Dt(nw(r));
+    const D = Is(I, ".xb-ebook-settings-body"), L = T(I), se = !!K, le = Dt(n0(r));
     return K ? K.replaceWith(le) : (I.querySelector(".xb-ebook-shell, .xb-ebook-screen") || I).appendChild(le), S.syncConfigToForm(I), r.configFormSyncPending = !1, S.bindSettingsPanelEvents(I), I.querySelector("#xb-agent-settings-close")?.addEventListener("click", () => {
       r.isSettingsOpen = !1, Y();
     }), se && D && (Ps(I, D, ".xb-ebook-settings-body", { defaultToBottom: !1 }), w(I, L)), !0;
@@ -34274,7 +34200,7 @@ function K2(e = {}) {
     if (!I) return;
     l("fullRender");
     const K = Is(I, ".xb-agent-main"), D = Is(I, ".xb-ebook-settings-body"), L = T(I), se = !!I.querySelector(".xb-ebook-settings-body");
-    I.innerHTML = m2({
+    I.innerHTML = mL({
       state: r,
       providerConfig: d(),
       dirty: _.isEditorDirty()
@@ -34283,7 +34209,7 @@ function K2(e = {}) {
         codeBlockClassName: "xb-assistant-codeblock",
         codeCopyClassName: "xb-assistant-code-copy"
       });
-    }), r.isSettingsOpen && (S.syncConfigToForm(I), r.configFormSyncPending = !1, S.bindSettingsPanelEvents(I)), N2({
+    }), r.isSettingsOpen && (S.syncConfigToForm(I), r.configFormSyncPending = !1, S.bindSettingsPanelEvents(I)), NL({
       root: I,
       state: r,
       render: W,
@@ -34342,7 +34268,7 @@ function K2(e = {}) {
     _.handleTtsState(I);
   }
   async function B() {
-    v2(t), await _.initializeBook(), r.status = "就绪", W(), n.postToHost("xb-ebook:frame-ready"), _.refreshDrawStatus({ renderAfter: !0 }), _.refreshTtsStatus({ renderAfter: !0 });
+    vL(t), await _.initializeBook(), r.status = "就绪", W(), n.postToHost("xb-ebook:frame-ready"), _.refreshDrawStatus({ renderAfter: !0 }), _.refreshTtsStatus({ renderAfter: !0 });
   }
   return {
     handleDrawProgress: E,
@@ -34353,10 +34279,10 @@ function K2(e = {}) {
     state: r
   };
 }
-function W2(e = "req") {
+function WL(e = "req") {
   return `${e}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
-function z2(e = {}) {
+function zL(e = {}) {
   const t = e.appSource || "xb-ebook-app", n = e.hostSource || "xb-ebook-host", r = Number(e.timeoutMs) || 3e4, o = /* @__PURE__ */ new Map();
   let i = null;
   function s(f, h = {}) {
@@ -34367,7 +34293,7 @@ function z2(e = {}) {
     }, window.location.origin);
   }
   function u(f, h = {}, m = {}) {
-    const y = W2("host");
+    const y = WL("host");
     return s(f, {
       ...h,
       requestId: y
@@ -34434,11 +34360,11 @@ function z2(e = {}) {
     dispose: p
   };
 }
-var ow = z2(), jo = K2({
-  rootId: gw,
-  hostBridge: ow
+var o0 = zL(), jo = KL({
+  rootId: g0,
+  hostBridge: o0
 });
-ow.start({
+o0.start({
   onConfig: jo.handleHostConfig,
   onOpenSettings: jo.handleOpenSettings,
   onDrawProgress: jo.handleDrawProgress,
