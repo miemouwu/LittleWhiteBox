@@ -98,6 +98,7 @@ test('Shared applyTextEdits reports multiple matches with line contexts unless r
 
     assert.equal(failed.ok, false);
     assert.equal(failed.results[0].error, 'multiple_matches');
+    assert.match(failed.results[0].suggestion, /expand oldString/);
     assert.equal(failed.results[0].matches.length, 3);
     assert.equal(failed.results[0].matches[0].line, 1);
     assert.match(failed.results[0].matches[1].context, /园里养着/);
@@ -119,6 +120,7 @@ test('Shared applyTextEdits protects later edits from matching newly inserted te
     assert.equal(result.partial, true);
     assert.equal(result.content, '他慢慢走过来。');
     assert.equal(result.results[1].error, 'old_string_matches_previous_new_string');
+    assert.match(result.results[1].suggestion, /Merge overlapping changes/);
 });
 
 test('Shared applyTextEdits reports not found, no changes, and adapts common punctuation', () => {
@@ -126,11 +128,13 @@ test('Shared applyTextEdits reports not found, no changes, and adapts common pun
         { oldString: '不存在', newString: '存在' },
     ]);
     assert.equal(missing.results[0].error, 'not_found');
+    assert.match(missing.results[0].suggestion, /Read the current file/);
 
     const noChange = applyTextEdits('原文', [
         { oldString: '原文', newString: '原文' },
     ]);
     assert.equal(noChange.results[0].error, 'no_changes');
+    assert.match(noChange.results[0].suggestion, /remove this edit/);
 
     const smart = applyTextEdits('她说：“回来，快点。”', [
         { oldString: '"回来,快点."', newString: '"别走,等我."' },
@@ -169,6 +173,7 @@ test('Shared applyTextEdits returns original content for empty edits', () => {
     assert.equal(result.ok, false);
     assert.equal(result.content, '原文');
     assert.equal(result.results[0].error, 'invalid_edits');
+    assert.match(result.results[0].suggestion, /non-empty edits array/);
 });
 
 test('Book tools reject paths outside the current book namespace', async () => {
@@ -455,8 +460,11 @@ test('Delegate prompt gives the reviewer a stable book-specific tool model', () 
     assert.match(EBOOK_DELEGATE_PROMPT, /不要用 Read 重复读取 `book\/outline\.md`/);
     assert.match(EBOOK_DELEGATE_PROMPT, /When reviewing a specific chapter, you must Read/);
     assert.match(EBOOK_DELEGATE_PROMPT, /book\/review-rules\.md` 是本书的固定审稿标准/);
-    assert.match(EBOOK_DELEGATE_PROMPT, /不能覆盖或替代 `book\/review-rules\.md`/);
     assert.match(EBOOK_DELEGATE_PROMPT, /不要另起一套标准/);
+    assert.match(EBOOK_DELEGATE_PROMPT, /为了保持分身独立性/);
+    assert.match(EBOOK_DELEGATE_PROMPT, /额外维度、重点清单、通过标准或临时偏好/);
+    assert.match(EBOOK_DELEGATE_PROMPT, /只当作定位范围或事实背景线索/);
+    assert.match(EBOOK_DELEGATE_PROMPT, /最终判定必须回到 `book\/review-rules\.md`/);
     assert.match(EBOOK_DELEGATE_PROMPT, /# 节奏优先审稿观念/);
     assert.match(EBOOK_DELEGATE_PROMPT, /节奏、叙事单位和人物生活感优先级高于文笔润色、标点/);
     assert.match(EBOOK_DELEGATE_PROMPT, /事件集团是叙事单位，章节只是字数和呼吸点的自然切割/);
@@ -512,7 +520,11 @@ test('Book action prompts rely on injected core story files', () => {
     assert.match(EBOOK_SYSTEM_PROMPT, /book\/volumes\/` is not stably injected/);
     assert.match(EBOOK_SYSTEM_PROMPT, /不要每章都问用户/);
     assert.match(EBOOK_SYSTEM_PROMPT, /按 `book\/review-rules\.md` 里的固定审稿规则/);
-    assert.match(EBOOK_SYSTEM_PROMPT, /不要临时另写一套审稿标准/);
+    assert.match(EBOOK_SYSTEM_PROMPT, /为了保持分身独立性/);
+    assert.match(EBOOK_SYSTEM_PROMPT, /只给审稿范围、文件路径、必要事实背景和输出形式/);
+    assert.match(EBOOK_SYSTEM_PROMPT, /不要临时另写审稿标准或牵引结论/);
+    assert.match(EBOOK_SYSTEM_PROMPT, /修改档直接按意见修，不要修完又反复送审/);
+    assert.match(EBOOK_SYSTEM_PROMPT, /只有打回、整章重写、重写后结构可能大变/);
     assert.doesNotMatch(EBOOK_SYSTEM_PROMPT, /章节功能表|章节目标|完成目标/);
     assert.match(outlinePrompt, /\[作品核心设定\]/);
     assert.match(outlinePrompt, /不要硬写完整大纲/);
@@ -623,7 +635,7 @@ test('Book agent automatically passes review context into DelegateRun', async ()
 
     const result = await runner.runDelegate({
         task: '审第一章。',
-        context: '本次重点看节奏。',
+        context: '章节路径：book/chapters/001.md。本次重点看节奏、人物动机和性场景功能。',
         deliverable: '列出问题和建议。',
     }, { controller: new AbortController(), bookId: state.book.id });
 
@@ -637,7 +649,11 @@ test('Book agent automatically passes review context into DelegateRun', async ()
     assert.match(seenUserPrompt, /\[创作记录\]/);
     assert.match(seenUserPrompt, /已经写完第一章草稿/);
     assert.match(seenUserPrompt, /\[主助手本次补充\]/);
-    assert.match(seenUserPrompt, /本次重点看节奏/);
+    assert.match(seenUserPrompt, /book\/chapters\/001\.md/);
+    assert.match(seenUserPrompt, /本次重点看节奏、人物动机和性场景功能/);
+    assert.match(seenUserPrompt, /\[Task\]\n审第一章。/);
+    assert.match(seenUserPrompt, /\[Expected deliverable\]\n列出问题和建议。/);
+    assert.doesNotMatch(seenUserPrompt, /\[审稿标准锁定\]/);
 });
 
 test('Book agent shows DelegateRun dispatch before result and keeps task in history', async () => {
@@ -5577,6 +5593,8 @@ test('Book prompt keeps assistant-style tool layers and recovery rules', () => {
     assert.match(EBOOK_SYSTEM_PROMPT, /### 状态与复盘/);
     assert.match(EBOOK_SYSTEM_PROMPT, /If a tool returns an error/);
     assert.match(EBOOK_SYSTEM_PROMPT, /Use Edit for small in-sentence or multi-spot local revisions/);
+    assert.match(EBOOK_SYSTEM_PROMPT, /Do not send several Edit calls for the same file in the same turn/);
+    assert.match(EBOOK_SYSTEM_PROMPT, /if edits overlap, merge them into one larger replacement/);
     assert.match(EBOOK_SYSTEM_PROMPT, /whole-chapter rewrites/);
     assert.match(EBOOK_SYSTEM_PROMPT, /RenameBook/);
     assert.match(EBOOK_SYSTEM_PROMPT, /DelegateRun/);
@@ -5592,6 +5610,8 @@ test('Book prompt keeps assistant-style tool layers and recovery rules', () => {
     const delegateDefinition = getEbookToolDefinitions()
         .find((definition) => definition.function?.name === EBOOK_TOOL_NAMES.DELEGATE_RUN);
     assert.match(String(delegateDefinition.function.description), /`task` is required/);
+    assert.match(String(delegateDefinition.function.parameters.properties.context.description), /known facts/);
+    assert.doesNotMatch(String(delegateDefinition.function.description), /constraints/);
     assert.match(String(delegateDefinition.function.description), /Do not use this as a writing or editing tool/);
 
     const planCreate = getEbookToolDefinitions()
@@ -5602,6 +5622,8 @@ test('Book prompt keeps assistant-style tool layers and recovery rules', () => {
     const edit = definitions.find((definition) => definition.function?.name === EBOOK_TOOL_NAMES.EDIT);
     assert.match(String(edit.function.description), /in-sentence, small-paragraph, or multi-spot local revisions/);
     assert.match(String(edit.function.description), /replaceAll/);
+    assert.match(String(edit.function.description), /Do not issue multiple Edit tool calls for the same file/);
+    assert.match(String(edit.function.description), /If two changes overlap, merge them into one replacement/);
     assert.equal(Object.hasOwn(edit.function.parameters.properties, 'filePath'), true);
     assert.equal(Object.hasOwn(edit.function.parameters.properties, 'edits'), true);
     assert.equal(
@@ -5651,6 +5673,7 @@ test('Book tool definitions teach exact parameters like assistant tools', () => 
     const edit = definitions.get(EBOOK_TOOL_NAMES.EDIT);
     assert.match(String(edit.description), /One call edits one file/);
     assert.match(String(edit.description), /edits array/);
+    assert.match(String(edit.description), /Combine same-file changes into one Edit call/);
     assert.equal(Object.hasOwn(edit.parameters.properties, 'path'), false);
     assert.match(String(edit.parameters.properties.filePath.description), /Target file path/);
     assert.equal(edit.parameters.properties.edits.items.required.includes('oldString'), true);

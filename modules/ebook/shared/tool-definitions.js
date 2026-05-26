@@ -171,6 +171,7 @@ export function getEbookToolDefinitions(options = {}) {
                     description: [
                         'Edit one current-book file by replacing original text fragments.',
                         'Use for in-sentence, small-paragraph, or multi-spot local revisions. One call edits one file; put multiple replacements in the edits array.',
+                        'Do not issue multiple Edit tool calls for the same file in one assistant turn. Combine same-file changes into one Edit call, or wait for the first result before editing that file again.',
                         '',
                         '## Matching Rules',
                         'oldString must be an exact fragment present in the file, including spaces and newlines.',
@@ -183,6 +184,7 @@ export function getEbookToolDefinitions(options = {}) {
                         '',
                         '## Notes',
                         'edits execute in order. Do not let a later oldString match text just inserted by an earlier newString.',
+                        'If two changes overlap, merge them into one replacement for the larger fragment instead of splitting them into separate edits.',
                         'Use Write for large prose blocks, whole sections, whole chapters, or complete new files.',
                     ].join('\n'),
                     parameters: {
@@ -381,14 +383,14 @@ export function getEbookToolDefinitions(options = {}) {
                         'Use for clear, independent, verifiable review tasks, continuity checks, source verification, or issue localization.',
                         'The delegate knows only the task, context, deliverable, automatically injected review context, and any book content it reads.',
                         'The delegate cannot write files, manage plans, or delegate further.',
-                        '`task` is required. Put paths, background, and constraints in `context`; put expected result shape in `deliverable`. Do not use this as a writing or editing tool.',
+                        '`task` is required. Put paths, factual background, and scope in `context`; put expected result shape in `deliverable`. Do not use this as a writing or editing tool.',
                     ].join('\n'),
                     parameters: {
                         type: 'object',
                         properties: {
                             task: { type: 'string', description: 'Concrete review or verification task.' },
-                            context: { type: 'string', description: 'Necessary background, paths to inspect, known facts, or constraints.' },
-                            deliverable: { type: 'string', description: 'Expected result format, checks, or evidence requirements.' },
+                            context: { type: 'string', description: 'Necessary background, paths to inspect, known facts, or scope.' },
+                            deliverable: { type: 'string', description: 'Expected result format or evidence requirements.' },
                         },
                         required: ['task'],
                         additionalProperties: false,

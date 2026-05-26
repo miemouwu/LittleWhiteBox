@@ -131,6 +131,10 @@ function buildFailure(error = '', message = '', extra = {}) {
     };
 }
 
+function buildEditFailure(error = '', message = '', suggestion = '', extra = {}) {
+    return buildFailure(error, message, suggestion ? { suggestion, ...extra } : extra);
+}
+
 export function applyTextEdits(content = '', edits = []) {
     let nextContent = String(content ?? '');
     const editList = Array.isArray(edits) ? edits : [];
@@ -142,7 +146,11 @@ export function applyTextEdits(content = '', edits = []) {
         return {
             ok: false,
             content: nextContent,
-            results: [buildFailure('invalid_edits', 'No edits provided')],
+            results: [buildEditFailure(
+                'invalid_edits',
+                'No edits provided',
+                'Provide a non-empty edits array. For same-file multi-spot changes, put all replacements in this one Edit call.',
+            )],
         };
     }
 
@@ -152,7 +160,11 @@ export function applyTextEdits(content = '', edits = []) {
         const replaceAll = !!edit.replaceAll;
 
         if (oldString === newString) {
-            results.push(buildFailure('no_changes', 'No changes to make'));
+            results.push(buildEditFailure(
+                'no_changes',
+                'No changes to make',
+                'Change newString or remove this edit item.',
+            ));
             return;
         }
 
@@ -161,16 +173,21 @@ export function applyTextEdits(content = '', edits = []) {
             previous.includes(oldString)
             || normalizeEquivalentText(previous).includes(normalizedOldString)
         ))) {
-            results.push(buildFailure(
+            results.push(buildEditFailure(
                 'old_string_matches_previous_new_string',
                 'old_string is a substring of a new_string from a previous edit.',
+                'This edit may match text inserted earlier in the same Edit call. Merge overlapping changes into one larger replacement, or read the updated file and run a later Edit.',
             ));
             return;
         }
 
         if (!oldString) {
             if (nextContent) {
-                results.push(buildFailure('empty_old_string', 'oldString is empty; provide text to replace'));
+                results.push(buildEditFailure(
+                    'empty_old_string',
+                    'oldString is empty; provide text to replace',
+                    'Use an empty oldString only to create an empty or missing file. For existing files, provide the exact current fragment to replace, or use Write for a full rewrite.',
+                ));
                 return;
             }
             nextContent = newString;
@@ -187,14 +204,19 @@ export function applyTextEdits(content = '', edits = []) {
 
         const ranges = findReplacementRanges(nextContent, oldString);
         if (!ranges.length) {
-            results.push(buildFailure('not_found', 'String to replace not found in file'));
+            results.push(buildEditFailure(
+                'not_found',
+                'String to replace not found in file',
+                'Read the current file and copy the exact current text into oldString. If this overlaps another same-file edit, merge them into one larger replacement; for large rewrites, use Write.',
+            ));
             return;
         }
 
         if (ranges.length > 1 && !replaceAll) {
-            results.push(buildFailure(
+            results.push(buildEditFailure(
                 'multiple_matches',
                 `找到 ${ranges.length} 处匹配，需要更多上下文或使用 replaceAll`,
+                'Use the returned line contexts to expand oldString with unique surrounding text, or set replaceAll: true only if every match should change.',
                 { matches: buildMatches(nextContent, ranges) },
             ));
             return;
