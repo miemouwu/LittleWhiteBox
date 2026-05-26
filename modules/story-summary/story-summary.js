@@ -14,13 +14,18 @@ import {
     extension_prompts,
     extension_prompt_types,
     extension_prompt_roles,
+    getRequestHeaders,
 } from "../../../../../../script.js";
 import { extensionFolderPath } from "../../core/constants.js";
 import { xbLog, CacheRegistry } from "../../core/debug-core.js";
 import { createModuleEvents } from "../../core/event-manager.js";
 import { postToIframe, isTrustedMessage } from "../../core/iframe-messaging.js";
 import { initAfterAiGate, notifyAfterAiHint, registerAfterAiHandler } from "../../core/after-ai-gate.js";
-import { getDefaultApiPrefix, getModelListCandidateUrls } from "../../shared/common/openai-url-utils.js";
+import { getDefaultApiPrefix, resolveApiBaseUrl } from "../../shared/common/openai-url-utils.js";
+import {
+    fetchHostOpenAICompatibleModels,
+    setHostChatCompletionsRequestHeadersProvider,
+} from "../../shared/host-llm/chat-completions/client.js";
 
 // config/store
 import {
@@ -121,7 +126,7 @@ const MODULE_ID = "storySummary";
 const iframePath = `${extensionFolderPath}/modules/story-summary/story-summary.html`;
 const VALID_SECTIONS = ["keywords", "events", "characters", "arcs", "facts"];
 const MESSAGE_EVENT = "message";
-const SUMMARY_MODEL_FETCH_PROVIDERS = new Set(["openai", "custom"]);
+const SUMMARY_MODEL_FETCH_PROVIDERS = new Set(["openai"]);
 const SUMMARY_MODEL_FETCH_TIMEOUT_MS = 5000;
 
 function compactRecallRuntimeStatsForLog(statsList = getRecallRuntimeStats()) {
@@ -145,20 +150,10 @@ function compactRecallRuntimeStatsForLog(statsList = getRecallRuntimeStats()) {
     }).join(" | ");
 }
 
-async function tryFetchSummaryModelIds(url, headers = {}, signal = null) {
-    try {
-        const res = await fetch(url, { method: "GET", headers, signal });
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data?.data?.map(item => item?.id).filter(Boolean) || null;
-    } catch (error) {
-        if (error?.name === "AbortError") throw error;
-        return null;
-    }
-}
-
 async function fetchSummaryModelsForUi(payload = {}) {
-    const provider = String(payload?.provider || "").trim().toLowerCase();
+    const provider = String(payload?.provider || "").trim().toLowerCase() === "custom"
+        ? "openai"
+        : String(payload?.provider || "").trim().toLowerCase();
     const baseUrl = String(payload?.url || "").trim();
     const apiKey = String(payload?.apiKey || "").trim();
 
@@ -172,25 +167,18 @@ async function fetchSummaryModelsForUi(payload = {}) {
         throw new Error("请先填写 API KEY");
     }
 
-    const headers = {
-        Authorization: `Bearer ${apiKey}`,
-        Accept: "application/json",
-    };
-
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), SUMMARY_MODEL_FETCH_TIMEOUT_MS);
+    const timeoutMs = Math.max(1000, Number(payload?.timeoutMs) || SUMMARY_MODEL_FETCH_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
-        for (const url of getModelListCandidateUrls(baseUrl, getDefaultApiPrefix(provider))) {
-            const models = await tryFetchSummaryModelIds(url, headers, controller.signal);
-            if (models?.length) {
-                return [...new Set(models)];
-            }
-        }
-
-        throw new Error("未获取到模型列表");
+        setHostChatCompletionsRequestHeadersProvider(() => getRequestHeaders());
+        return await fetchHostOpenAICompatibleModels({
+            baseUrl: resolveApiBaseUrl(baseUrl, getDefaultApiPrefix(provider)),
+            apiKey,
+        }, { signal: controller.signal });
     } catch (error) {
         if (error?.name === "AbortError") {
-            throw new Error("请求超时（>5s）");
+            throw new Error(`请求超时（>${Math.floor(timeoutMs / 1000)}s）`);
         }
         throw error;
     } finally {

@@ -79,18 +79,59 @@ function autoSizeAgentInput(root) {
     input.style.overflowY = contentHeight > maxHeight ? 'auto' : 'hidden';
 }
 
+function createSvgPath(doc, d) {
+    const path = doc.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    return path;
+}
+
+function createThemeIconNode(doc, colorTheme = 'dark') {
+    if (colorTheme === 'light') {
+        const span = doc.createElement('span');
+        span.className = 'xb-theme-glyph';
+        span.setAttribute('aria-hidden', 'true');
+        span.textContent = '☾';
+        return span;
+    }
+    const svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'xb-theme-icon');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('stroke-width', '1.75');
+    const circle = doc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', '12');
+    circle.setAttribute('cy', '12');
+    circle.setAttribute('r', '4');
+    svg.appendChild(circle);
+    [
+        'M12 2v2',
+        'M12 20v2',
+        'm4.93 4.93 1.41 1.41',
+        'm17.66 17.66 1.41 1.41',
+        'M2 12h2',
+        'M20 12h2',
+        'm6.34 17.66-1.41 1.41',
+        'm19.07 4.93-1.41 1.41',
+    ].forEach((d) => svg.appendChild(createSvgPath(doc, d)));
+    return svg;
+}
+
 function applyColorTheme(root, state) {
     const theme = state.colorTheme === 'light' ? 'light' : 'dark';
     root.querySelectorAll('.xb-ebook-shell, .xb-ebook-screen').forEach((node) => {
         node.classList.toggle('theme-light', theme === 'light');
         node.classList.toggle('theme-dark', theme !== 'light');
     });
-    const themeToggle = root.querySelector('#xb-theme-toggle');
-    if (!themeToggle) return;
     const title = theme === 'light' ? '切换为深色视觉' : '切换为白底黑字';
-    themeToggle.textContent = theme === 'light' ? '☾' : '☀';
-    themeToggle.setAttribute('title', title);
-    themeToggle.setAttribute('aria-label', title);
+    root.querySelectorAll('#xb-theme-toggle, [data-theme-toggle]').forEach((themeToggle) => {
+        themeToggle.replaceChildren(createThemeIconNode(themeToggle.ownerDocument || document, theme));
+        themeToggle.setAttribute('title', title);
+        themeToggle.setAttribute('aria-label', title);
+    });
 }
 
 function updateOpenKeyList(list = [], key = '', open = false) {

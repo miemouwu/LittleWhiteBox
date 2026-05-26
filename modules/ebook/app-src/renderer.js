@@ -763,9 +763,29 @@ function renderLibraryShelfActions(state = {}, bookCount = 0) {
 function renderExitIcon() {
     return `
         <svg class="xb-exit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M11 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h6"></path>
-            <path d="M13 8l4 4-4 4"></path>
-            <path d="M7 12h10"></path>
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <path d="M16 17l5-5-5-5"></path>
+            <path d="M21 12H9"></path>
+        </svg>
+    `;
+}
+
+export function renderThemeToggleIcon(colorTheme = 'dark') {
+    const isLight = colorTheme === 'light';
+    if (isLight) {
+        return '<span class="xb-theme-glyph" aria-hidden="true">☾</span>';
+    }
+    return `
+        <svg class="xb-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2"></path>
+            <path d="M12 20v2"></path>
+            <path d="m4.93 4.93 1.41 1.41"></path>
+            <path d="m17.66 17.66 1.41 1.41"></path>
+            <path d="M2 12h2"></path>
+            <path d="M20 12h2"></path>
+            <path d="m6.34 17.66-1.41 1.41"></path>
+            <path d="m19.07 4.93-1.41 1.41"></path>
         </svg>
     `;
 }
@@ -774,7 +794,7 @@ function renderLibraryShell(options = {}) {
     const state = options.state || {};
     const bookCount = Array.isArray(state.books) ? state.books.length : 0;
     const themeClass = state.colorTheme === 'light' ? 'theme-light' : 'theme-dark';
-    const themeToggleLabel = state.colorTheme === 'light' ? '☾' : '☀';
+    const themeToggleIcon = renderThemeToggleIcon(state.colorTheme);
     const themeToggleTitle = state.colorTheme === 'light' ? '切换为深色视觉' : '切换为白底黑字';
     return `
         <div class="xb-ebook-screen xb-library-screen ${escapeHtml(themeClass)}${state.isDeleteBookOpen ? ' is-delete-mode' : ''}">
@@ -786,7 +806,7 @@ function renderLibraryShell(options = {}) {
                     <div class="xb-archive-meta">${bookCount ? `${bookCount} 本书稿 · 本地书架` : '本地书架 · 等待第一本书稿'}</div>
                 </div>
                 <div class="xb-global-actions">
-                    <button id="xb-theme-toggle" class="xb-glass-button xb-theme-button" type="button" title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${escapeHtml(themeToggleLabel)}</button>
+                    <button id="xb-theme-toggle" class="xb-glass-button xb-theme-button" type="button" title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${themeToggleIcon}</button>
                     <button id="xb-close" class="xb-glass-button xb-exit-button" type="button" title="退出电纸书" aria-label="退出电纸书">${renderExitIcon()}</button>
                 </div>
             </header>
@@ -805,13 +825,13 @@ function renderLibraryShell(options = {}) {
 function renderBookEntryShell(options = {}) {
     const state = options.state || {};
     const themeClass = state.colorTheme === 'light' ? 'theme-light' : 'theme-dark';
-    const themeToggleLabel = state.colorTheme === 'light' ? '☾' : '☀';
+    const themeToggleIcon = renderThemeToggleIcon(state.colorTheme);
     const themeToggleTitle = state.colorTheme === 'light' ? '切换为深色视觉' : '切换为白底黑字';
     return `
         <div class="xb-ebook-screen xb-entry-screen ${escapeHtml(themeClass)}">
             <div class="xb-ambient-aurora"></div>
             <button class="xb-portal-close" id="xb-library-link" title="返回书架" aria-label="返回书架">×</button>
-            <button class="xb-portal-theme" id="xb-theme-toggle" type="button" title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${escapeHtml(themeToggleLabel)}</button>
+            <button class="xb-portal-theme" id="xb-theme-toggle" type="button" title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${themeToggleIcon}</button>
             <main class="xb-entry-portal" aria-label="书本入口">
                 <section class="xb-entry-actions">
                     <button class="xb-entry-action is-studio" data-entry-action="studio">
@@ -1362,7 +1382,7 @@ function renderStudioShell(options = {}) {
         ? state.studioLayout
         : 'balanced';
     const themeClass = state.colorTheme === 'light' ? 'theme-light' : 'theme-dark';
-    const themeToggleLabel = state.colorTheme === 'light' ? '☾' : '☀';
+    const themeToggleIcon = renderThemeToggleIcon(state.colorTheme);
     const themeToggleTitle = state.colorTheme === 'light' ? '切换为深色视觉' : '切换为白底黑字';
     const drawStatus = state.drawStatus || {};
     const drawIsChapter = isChapterPath(state.selectedPath);
@@ -1396,7 +1416,7 @@ function renderStudioShell(options = {}) {
                 </div>
                 <div class="xb-mobile-agent-actions">
                     <button type="button" class="xb-mobile-agent-action" data-entry-link title="返回书本入口" aria-label="返回书本入口">↩</button>
-                    <button type="button" class="xb-mobile-agent-action" data-theme-toggle title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${escapeHtml(themeToggleLabel)}</button>
+                    <button type="button" class="xb-mobile-agent-action" data-theme-toggle title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${themeToggleIcon}</button>
                     <button type="button" class="xb-mobile-agent-action" id="xb-agent-close-mobile" title="退出电纸书" aria-label="退出电纸书">${renderExitIcon()}</button>
                 </div>
             </header>
@@ -1446,7 +1466,7 @@ function renderStudioShell(options = {}) {
                     <header class="xb-agent-head">
                         <div class="xb-agent-head-main">
                             <div class="xb-agent-global-actions">
-                                <button id="xb-theme-toggle" type="button" title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${escapeHtml(themeToggleLabel)}</button>
+                                <button id="xb-theme-toggle" type="button" title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${themeToggleIcon}</button>
                                 <button id="xb-entry-link" type="button" data-entry-link title="返回书本入口" aria-label="返回书本入口">↩</button>
                                 <button id="xb-agent-close" class="xb-exit-button" type="button" title="退出电纸书" aria-label="退出电纸书">${renderExitIcon()}</button>
                             </div>
@@ -1551,7 +1571,7 @@ function renderReaderShell(options = {}) {
     const content = active?.content || '';
     const chapterProgress = hasChapters ? Math.round(((index + 1) / chapters.length) * 100) : 0;
     const themeClass = state.colorTheme === 'light' ? 'theme-light' : 'theme-dark';
-    const themeToggleLabel = state.colorTheme === 'light' ? '☾' : '☀';
+    const themeToggleIcon = renderThemeToggleIcon(state.colorTheme);
     const themeToggleTitle = state.colorTheme === 'light' ? '切换为深色视觉' : '切换为白底黑字';
     const ttsStatus = state.readerTtsStatus || {};
     const ttsPlayback = state.readerTtsPlayback || {};
@@ -1576,7 +1596,7 @@ function renderReaderShell(options = {}) {
                     <button class="xb-reader-edge-button" id="xb-entry-link" title="返回入口" aria-label="返回入口">←</button>
                     <button class="xb-reader-edge-button xb-reader-index-toggle" id="xb-reader-index-toggle" type="button" title="目录" aria-label="目录">☰</button>
                     <button class="xb-reader-edge-button xb-reader-tts-toggle${ttsActive ? ' is-active' : ''}" id="xb-reader-tts-toggle" type="button" title="${escapeHtml(ttsTitle)}" aria-label="${escapeHtml(ttsTitle)}" ${ttsDisabledAttr}>${escapeHtml(ttsLabel)}</button>
-                    <button class="xb-reader-edge-button xb-reader-theme-toggle" id="xb-theme-toggle" type="button" title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${escapeHtml(themeToggleLabel)}</button>
+                    <button class="xb-reader-edge-button xb-reader-theme-toggle" id="xb-theme-toggle" type="button" title="${escapeHtml(themeToggleTitle)}" aria-label="${escapeHtml(themeToggleTitle)}">${themeToggleIcon}</button>
                 </div>
                 <div class="xb-reader-progress" title="${escapeHtml(progress)}" style="--xb-reader-progress:${chapterProgress}%"><span></span></div>
             </nav>

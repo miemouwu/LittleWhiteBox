@@ -204,8 +204,7 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             gap: 12px;
         }
         .xb-glass-button,
-        .xb-home-actions button,
-        #xb-close {
+        .xb-home-actions button {
             min-height: 40px;
             padding: 0 18px;
             border-radius: 999px;
@@ -215,15 +214,42 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             font-weight: 600;
         }
         .xb-exit-button {
+            width: 40px;
             min-width: 40px;
-            padding: 0 11px;
-            display: inline-grid;
-            place-items: center;
+            height: 40px;
+            min-height: 40px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             line-height: 0;
+        }
+        #xb-close.xb-exit-button {
+            width: 40px;
+            min-width: 40px;
+            height: 40px;
+            min-height: 40px;
+            padding: 0;
         }
         .xb-exit-icon {
             width: 18px;
             height: 18px;
+            display: block;
+        }
+        .xb-theme-icon {
+            width: 17px;
+            height: 17px;
+            display: block;
+            color: currentColor;
+        }
+        .xb-theme-glyph {
+            display: block;
+            color: currentColor;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 18px;
+            font-weight: 400;
+            line-height: 1;
+            transform: translateY(-0.5px);
         }
         .xb-danger-button { color: var(--xb-danger); }
         .xb-danger-button:hover:not(:disabled) {
@@ -804,8 +830,10 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         #xb-theme-toggle {
             min-width: 34px;
             padding: 0 10px;
-            font-size: 15px;
-            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 0;
         }
         #xb-save:not(:disabled) {
             color: var(--xb-cyan);
@@ -2512,8 +2540,7 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
         }
         .theme-light .xb-icon-button,
         .theme-light .xb-glass-button,
-        .theme-light .xb-home-actions button,
-        .theme-light #xb-close {
+        .theme-light .xb-home-actions button {
             border-color: var(--xb-line);
             background: rgba(255, 253, 248, 0.82);
             color: var(--xb-text-main);
@@ -3418,8 +3445,7 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
                 letter-spacing: 0.12em;
             }
             .xb-glass-button,
-            .xb-home-actions button,
-            #xb-close {
+            .xb-home-actions button {
                 min-height: 36px;
                 padding: 0 12px;
             }
@@ -3432,6 +3458,13 @@ export function injectEbookStyles(rootId = 'xb-ebook-root') {
             .xb-global-actions button {
                 width: auto;
                 min-width: 48px;
+            }
+            .xb-global-actions #xb-close.xb-exit-button {
+                width: 36px;
+                min-width: 36px;
+                height: 36px;
+                min-height: 36px;
+                padding: 0;
             }
             .xb-library-grid {
                 grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));

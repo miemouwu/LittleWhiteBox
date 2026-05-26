@@ -480,6 +480,10 @@ function normalizeSummaryPanelConfig(rawConfig = null) {
         vector: normalizeVectorConfig(rawConfig.vector || null),
     };
 
+    if (String(result.api.provider || "").toLowerCase() === "custom") {
+        result.api.provider = "openai";
+    }
+
     if (result.trigger.timing === "manual") {
         result.trigger.timing = defaults.trigger.timing;
         result.trigger.enabled = false;

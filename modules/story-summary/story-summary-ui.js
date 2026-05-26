@@ -132,8 +132,7 @@
         st: { url: '', needKey: false, canFetch: false },
         openai: { url: 'https://api.openai.com', needKey: true, canFetch: true },
         google: { url: 'https://generativelanguage.googleapis.com', needKey: true, canFetch: false },
-        claude: { url: 'https://api.anthropic.com', needKey: true, canFetch: false },
-        custom: { url: '', needKey: true, canFetch: true }
+        claude: { url: 'https://api.anthropic.com', needKey: true, canFetch: false }
     };
     const VECTOR_PROVIDER_DEFAULTS = {
         siliconflow: { url: 'https://api.siliconflow.cn/v1', needKey: true, canFetch: true },
@@ -492,6 +491,7 @@
             if (s) {
                 const p = JSON.parse(s);
                 Object.assign(config.api, p.api || {});
+                normalizeSummaryApiConfigUI(config.api);
                 config.api.modelCache = [];
                 Object.assign(config.gen, p.gen || {});
                 Object.assign(config.trigger, p.trigger || {});
@@ -512,6 +512,7 @@
         const currentApiKey = String(config.api?.key || '').trim();
         const currentInputKey = String($('api-key')?.value || '').trim();
         Object.assign(config.api, cfg.api || {});
+        normalizeSummaryApiConfigUI(config.api);
         if (!String(config.api.key || '').trim() && (currentInputKey || currentApiKey)) {
             config.api.key = currentInputKey || currentApiKey;
         }
@@ -530,6 +531,16 @@
         normalizeTriggerConfig();
         syncVectorBoundaryControl(config.vector?.enabled, config.ui.hideSummarized);
         localStorage.setItem('summary_panel_config', JSON.stringify(config));
+    }
+
+    function normalizeSummaryApiConfigUI(apiCfg = {}) {
+        if (String(apiCfg.provider || '').toLowerCase() === 'custom') {
+            apiCfg.provider = 'openai';
+        }
+        if (!PROVIDER_DEFAULTS[apiCfg.provider]) {
+            apiCfg.provider = 'st';
+        }
+        return apiCfg;
     }
 
     function applyBuiltInSummaryPrompts(prompts) {
@@ -1074,7 +1085,7 @@
     // ═══════════════════════════════════════════════════════════════════════════
 
     function updateProviderUI(provider) {
-        const pv = PROVIDER_DEFAULTS[provider] || PROVIDER_DEFAULTS.custom;
+        const pv = PROVIDER_DEFAULTS[provider] || PROVIDER_DEFAULTS.openai;
         const isSt = provider === 'st';
         const hasModelCache = modelListFetchedThisIframe && Array.isArray(config.api.modelCache) && config.api.modelCache.length > 0;
 
@@ -2457,7 +2468,7 @@
 
         // API provider change
         $('api-provider').onchange = e => {
-            const pv = PROVIDER_DEFAULTS[e.target.value];
+            const pv = PROVIDER_DEFAULTS[e.target.value] || PROVIDER_DEFAULTS.openai;
             $('api-url').value = '';
             modelListFetchedThisIframe = false;
             if (!pv.canFetch) config.api.modelCache = [];

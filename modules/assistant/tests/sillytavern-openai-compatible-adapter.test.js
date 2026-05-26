@@ -630,6 +630,43 @@ test('host OpenAI-compatible model pull posts to SillyTavern status endpoint', a
     }
 });
 
+test('host OpenAI-compatible model pull preserves explicit v3 reverse proxy URLs', async () => {
+    const originalFetch = globalThis.fetch;
+    const requests = [];
+    globalThis.fetch = async (url, options = {}) => {
+        requests.push({
+            url: String(url),
+            method: options.method,
+            body: JSON.parse(String(options.body || '{}')),
+        });
+        return createJsonResponse({
+            data: [
+                { id: 'volcengine-model' },
+            ],
+        });
+    };
+
+    try {
+        const models = await fetchHostOpenAICompatibleModels({
+            baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+            apiKey: 'test-key',
+        });
+
+        assert.deepEqual(requests, [{
+            url: HOST_CHAT_COMPLETIONS_STATUS_ENDPOINT,
+            method: 'POST',
+            body: {
+                chat_completion_source: 'openai',
+                reverse_proxy: 'https://ark.cn-beijing.volces.com/api/v3',
+                proxy_password: 'test-key',
+            },
+        }]);
+        assert.deepEqual(models, ['volcengine-model']);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
 test('host Google model pull posts LittleWhiteBox key through SillyTavern status endpoint', async () => {
     const originalFetch = globalThis.fetch;
     const requests = [];
