@@ -43,22 +43,50 @@ async function getHandle() {
 
 // ---- 全局总楼层数 ----------------------------------------------------------
 
+// 临时诊断：把真机 windowInfo() / 宿主 API 的真实结构弹出来一次，便于定位
+// （确认无误后可移除）。
+let _diagShown = false;
+async function diagOnce() {
+    if (_diagShown) return;
+    _diagShown = true;
+    const report = {};
+    try {
+        const tt = window.__TAURITAVERN__;
+        report.ttKeys = tt ? Object.keys(tt) : null;
+        report.apiKeys = tt?.api ? Object.keys(tt.api) : null;
+        report.chatKeys = tt?.api?.chat ? Object.keys(tt.api.chat) : null;
+        report.currentKeys = tt?.api?.chat?.current ? Object.keys(tt.api.chat.current) : null;
+        report.windowInfo = await tt?.api?.chat?.current?.windowInfo?.();
+    } catch (e) {
+        report.error = String(e?.message || e);
+    }
+    const msg = "host-history 诊断: " + JSON.stringify(report);
+    try { (globalThis.toastr || window.toastr)?.info?.(msg, "host-history", { timeOut: 30000 }); } catch { /* noop */ }
+    try { console.warn("[host-history diag]", msg); } catch { /* noop */ }
+}
+
 /**
  * 返回全局总楼层数（绝对）。
  * 标准 ST：等于 getContext().chat.length。
- * TauriTavern(windowed)：等于 windowInfo().totalCount。
+ * TauriTavern：等于 windowInfo().totalCount（只要拿得到合法值，不依赖 mode 字段名）。
  * @returns {Promise<number>}
  */
 export async function getGlobalChatLength() {
     if (!isTauriTavern()) {
         return getContext()?.chat?.length ?? 0;
     }
+    diagOnce();
     try {
         const info = await hostChatApi()?.current?.windowInfo?.();
-        if (info?.mode === "windowed") {
-            return Number(info.totalCount) || 0;
+        // 不再依赖 info.mode 的具体字符串：只要 totalCount 是合法正数就用它。
+        // 这样 mode 取值与文档不一致时也能正确拿到全局总数。
+        const total = Number(info?.totalCount);
+        if (Number.isFinite(total) && total > 0) {
+            return total;
         }
-        // mode === 'off'：未启用窗口化，窗口即全量
+        // 兜底：windowLength / 当前窗口长度
+        const wlen = Number(info?.windowLength);
+        if (Number.isFinite(wlen) && wlen > 0) return wlen;
         return getContext()?.chat?.length ?? 0;
     } catch {
         // 宿主 API 异常时退化为窗口长度，避免硬崩

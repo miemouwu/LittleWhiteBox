@@ -154,7 +154,13 @@ async function main() {
     // mode:'off' → 窗口即全量，回退 chat.length
     globalThis.window = { __TAURITAVERN__: makeWindowedHost(windowChat, 'off') };
     __setCtx({ chat: windowChat, chatId: 'off' });
-    eq("mode='off' 回退到 getContext().chat.length", await getGlobalChatLength(), WINDOW);
+    eq("mode='off' 仍按 totalCount 返回", await getGlobalChatLength(), WINDOW);
+
+    // ★ 回归：mode 字段值与文档不一致（真机可能不是 'windowed'），
+    //   只要 totalCount 合法就必须用它，而不是回退到窗口长度。
+    globalThis.window = { __TAURITAVERN__: makeWindowedHost(fullChat, 'paged') };
+    __setCtx({ chat: windowChat, chatId: 'weird-mode' });
+    eq("mode 非 'windowed' 也用 totalCount(450)", await getGlobalChatLength(), TOTAL);
 
     // 宿主无 history API → getMessageRange 退化为窗口切片
     globalThis.window = { __TAURITAVERN__: { ready: Promise.resolve(), api: { chat: { current: { handle: () => ({}) } } } } };
