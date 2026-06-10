@@ -1980,13 +1980,12 @@ function mergeEditedFactsWithTimestamps(existingFacts, editedFacts, floorHint = 
     return merged;
 }
 
-function openPanelForMessage(mesId) {
+async function openPanelForMessage(mesId) {
     createOverlay();
     showOverlay();
 
-    const { chat } = getContext();
     const store = getSummaryStore();
-    const totalFloors = chat.length;
+    const totalFloors = await getGlobalChatLength();
 
     sendFrameBaseData(store, totalFloors);
     sendFrameFullData(store, totalFloors);
@@ -2217,8 +2216,7 @@ async function autoRunSummaryWithRetry(targetMesId, configForRun) {
 }
 
 async function updateFrameStatsAfterSummary(store) {
-    const { chat } = getContext();
-    const totalFloors = Array.isArray(chat) ? chat.length : 0;
+    const totalFloors = await getGlobalChatLength();
     await sendFrameBaseData(store, totalFloors);
 }
 
@@ -2488,12 +2486,12 @@ async function handleFrameMessage(event) {
                 await executeSlashCommand("/echo severity=warning 当前有任务运行中，暂时不能清理总结数据");
                 break;
             }
-            const { chat, chatId } = getContext();
+            const { chatId } = getContext();
             cancelPendingEventEditSync();
             await clearSummaryData(chatId);
             invalidateLexicalIndex();
             await clearHideState();
-            const totalFloors = Array.isArray(chat) ? chat.length : 0;
+            const totalFloors = await getGlobalChatLength();
             const store = getSummaryStore();
             await sendFrameBaseData(store, totalFloors);
             sendFrameFullData(store, totalFloors);
@@ -2507,7 +2505,7 @@ async function handleFrameMessage(event) {
                 break;
             }
 
-            const { chat, chatId } = getContext();
+            const { chatId } = getContext();
             if (!chatId) break;
 
             const currentStore = getSummaryStore();
@@ -2529,7 +2527,7 @@ async function handleFrameMessage(event) {
                     }
                 }
             }
-            const totalFloors = Array.isArray(chat) ? chat.length : 0;
+            const totalFloors = await getGlobalChatLength();
             const nextStore = getSummaryStore();
             await sendFrameBaseData(nextStore, totalFloors);
             sendFrameFullData(nextStore, totalFloors);
@@ -2606,9 +2604,8 @@ async function handleFrameMessage(event) {
                 if (getHideUiSettings().hideSummarized) {
                     await applyHideState();
                 }
-                const { chat } = getContext();
                 const store = getSummaryStore();
-                await sendFrameBaseData(store, Array.isArray(chat) ? chat.length : 0);
+                await sendFrameBaseData(store, await getGlobalChatLength());
             })();
             break;
         }
@@ -2620,9 +2617,8 @@ async function handleFrameMessage(event) {
                 if (getHideUiSettings().hideSummarized) {
                     await applyHideState({ reset: true });
                 }
-                const { chat } = getContext();
                 const store = getSummaryStore();
-                await sendFrameBaseData(store, Array.isArray(chat) ? chat.length : 0);
+                await sendFrameBaseData(store, await getGlobalChatLength());
             })();
             break;
         }
@@ -2662,9 +2658,8 @@ async function handleFrameMessage(event) {
                         await applyHideState({ reset: !!previousVectorConfig?.enabled });
                     }
                     {
-                        const { chat } = getContext();
                         const store = getSummaryStore();
-                        await sendFrameBaseData(store, Array.isArray(chat) ? chat.length : 0);
+                        await sendFrameBaseData(store, await getGlobalChatLength());
                     }
                 } catch (e) {
                     xbLog.error(MODULE_ID, "保存面板配置失败", e);
@@ -2740,7 +2735,7 @@ async function handleChatChanged() {
     activeChatId = getContext().chatId || null;
     logRecallRuntimeCheckpoint("chatChanged:before-retain", `chat=${activeChatId || "-"} length=${Array.isArray(chat) ? chat.length : 0}`);
     await retainRecallRuntimeOnly(activeChatId);
-    const newLength = Array.isArray(chat) ? chat.length : 0;
+    const newLength = await getGlobalChatLength();
 
     await rollbackSummaryIfNeeded();
     initButtonsForAll();
