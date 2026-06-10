@@ -27,6 +27,7 @@ import { extractAtomsForRound, cancelBatchExtraction, resetBatchExtractionCancel
 import { getVectorConfig } from '../../data/config.js';
 import { getEngineFingerprint } from '../utils/embedder.js';
 import { filterText } from '../utils/text-filter.js';
+import { forEachMessage } from '../../compat/host-history.js';
 
 const MODULE_ID = 'state-integration';
 
@@ -60,15 +61,12 @@ export function initStateIntegration() {
 // ============================================================================
 
 export async function getAnchorStats() {
-    const { chat } = getContext();
-    if (!chat?.length) {
-        return { extracted: 0, total: 0, pending: 0, empty: 0, fail: 0 };
-    }
-
-    // 统计 AI 楼层
+    // 统计 AI 楼层（全量历史，穿越 TauriTavern 窗口边界）
     const aiFloors = [];
-    for (let i = 0; i < chat.length; i++) {
-        if (!chat[i]?.is_user) aiFloors.push(i);
+    await forEachMessage((msg, abs) => { if (!msg?.is_user) aiFloors.push(abs); });
+
+    if (!aiFloors.length) {
+        return { extracted: 0, total: 0, pending: 0, empty: 0, fail: 0 };
     }
 
     let ok = 0;

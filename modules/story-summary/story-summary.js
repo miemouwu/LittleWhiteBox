@@ -9,6 +9,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { getContext } from "../../../../../extensions.js";
+import { getGlobalChatLength, getMessageRange } from "./compat/host-history.js";
 import {
     event_types,
     extension_prompts,
@@ -546,8 +547,13 @@ async function handleAnchorGenerate() {
             return;
         }
 
-        const { chatId, chat } = getContext();
-        if (!chatId || !chat?.length) return;
+        const { chatId } = getContext();
+        if (!chatId) return;
+
+        const totalFloors = await getGlobalChatLength();
+        if (!totalFloors) return;
+        // 全量历史（穿越 TauriTavern 窗口边界），按绝对索引对齐
+        const chat = await getMessageRange(0, totalFloors - 1);
 
         postToFrame({ type: "ANCHOR_GEN_PROGRESS", current: 0, total: 1, message: "分析中..." });
 
@@ -643,8 +649,13 @@ async function handleGenerateVectors(vectorCfg) {
             return;
         }
 
-        const { chatId, chat } = getContext();
-        if (!chatId || !chat?.length) return;
+        const { chatId } = getContext();
+        if (!chatId) return;
+
+        const total = await getGlobalChatLength();
+        if (!total) return;
+        // 全量历史（穿越 TauriTavern 窗口边界），按绝对索引对齐
+        const chat = await getMessageRange(0, total - 1);
 
         if (!vectorCfg.embeddingApi?.key) {
             postToFrame({ type: "VECTOR_ONLINE_STATUS", status: "error", message: "请配置 Embedding API Key" });
@@ -866,9 +877,14 @@ async function maybeRunDelayedVectorMaintenance(scheduledChatId = null) {
         return;
     }
 
-    const { chatId, chat } = getContext();
+    const { chatId } = getContext();
     const targetChatId = scheduledChatId || chatId;
-    if (!targetChatId || !chatId || targetChatId !== chatId || !chat?.length) return;
+    if (!targetChatId || !chatId || targetChatId !== chatId) return;
+
+    const total = await getGlobalChatLength();
+    if (!total) return;
+    // 全量历史（穿越 TauriTavern 窗口边界），供 L0 增量提取覆盖窗口外楼层
+    const chat = await getMessageRange(0, total - 1);
 
     if (isHostGenerating() || guard.isAnyRunning('summary', 'anchor', 'vector')) {
         scheduleAutoL0Backfill(AUTO_L0_BACKFILL_DELAY_MS, targetChatId);
@@ -1174,11 +1190,13 @@ async function checkVectorIntegrityAndWarn() {
     const now = Date.now();
     if (now - lastVectorWarningAt < VECTOR_WARNING_COOLDOWN_MS) return;
 
-    const { chat, chatId } = getContext();
-    if (!chatId || !chat?.length) return;
+    const { chatId } = getContext();
+    if (!chatId) return;
+
+    const totalFloors = await getGlobalChatLength();
+    if (!totalFloors) return;
 
     const store = getSummaryStore();
-    const totalFloors = chat.length;
     const totalEvents = store?.json?.events?.length || 0;
 
     if (totalEvents === 0) return;
@@ -1783,10 +1801,11 @@ async function importSummaryMemoryPackage(rawText) {
     }
 
     const importedJson = extractSummaryImportJson(parsed);
-    const { chatId, chat } = getContext();
+    const { chatId } = getContext();
     if (!chatId) {
         throw new Error("当前没有打开聊天");
     }
+    const totalFloors = await getGlobalChatLength();
 
     await clearAllAtomsAndVectors(chatId);
     await clearAllChunks(chatId);
@@ -1802,7 +1821,7 @@ async function importSummaryMemoryPackage(rawText) {
     }
 
     store.json = importedJson;
-    const importBoundary = (Array.isArray(chat) ? chat.length : 0) - 1;
+    const importBoundary = totalFloors - 1;
     if (importBoundary >= 0) {
         applyImportedSummaryBoundary(store, importBoundary);
     } else {
@@ -1819,7 +1838,6 @@ async function importSummaryMemoryPackage(rawText) {
     scheduleLexicalWarmup();
 
     await clearHideState();
-    const totalFloors = Array.isArray(chat) ? chat.length : 0;
     await sendFrameBaseData(store, totalFloors);
     sendFrameFullData(store, totalFloors);
     await sendAnchorStatsToFrame();
@@ -2145,10 +2163,11 @@ async function maybeAutoRunSummary(reason) {
 
     const store = getSummaryStore();
     const lastSummarized = store?.lastSummarizedMesId ?? -1;
-    const pending = chat.length - lastSummarized - 1;
+    const total = await getGlobalChatLength();
+    const pending = total - lastSummarized - 1;
     if (pending < (trig.interval || 1)) return;
 
-    await autoRunSummaryWithRetry(chat.length - 1, { api: cfgAll.api, gen: cfgAll.gen, trigger: trig });
+    await autoRunSummaryWithRetry(total - 1, { api: cfgAll.api, gen: cfgAll.gen, trigger: trig });
 }
 
 async function autoRunSummaryWithRetry(targetMesId, configForRun) {
@@ -2244,8 +2263,7 @@ async function handleFrameMessage(event) {
             break;
 
         case "REQUEST_GENERATE": {
-            const ctx = getContext();
-            currentMesId = (ctx.chat?.length ?? 1) - 1;
+            currentMesId = (await getGlobalChatLength()) - 1;
             handleManualGenerate(currentMesId, data.config || {});
             break;
         }
@@ -2758,8 +2776,8 @@ async function handleChatChanged() {
 
 async function handleMessageDeleted(scheduledChatId) {
     if (isChatStale(scheduledChatId)) return;
-    const { chat, chatId } = getContext();
-    const newLength = chat?.length || 0;
+    const { chatId } = getContext();
+    const newLength = await getGlobalChatLength();
 
     const didRollback = await rollbackSummaryIfNeeded();
     await syncOnMessageDeleted(chatId, newLength);
@@ -2781,8 +2799,8 @@ async function handleMessageDeleted(scheduledChatId) {
 
 async function handleMessageSwiped(scheduledChatId) {
     if (isChatStale(scheduledChatId)) return;
-    const { chat, chatId } = getContext();
-    const lastFloor = (chat?.length || 1) - 1;
+    const { chatId } = getContext();
+    const lastFloor = (await getGlobalChatLength() || 1) - 1;
 
     await syncOnMessageSwiped(chatId, lastFloor);
 
@@ -2803,11 +2821,11 @@ async function handleMessageSwiped(scheduledChatId) {
 
 async function handleMessageReceived(scheduledChatId, targetMesId = null) {
     if (isChatStale(scheduledChatId)) return;
-    const { chat, chatId } = getContext();
-    const lastFloor = (chat?.length || 1) - 1;
+    const { chatId } = getContext();
+    const lastFloor = (await getGlobalChatLength() || 1) - 1;
     const floor = Number.isFinite(targetMesId) ? Number(targetMesId) : lastFloor;
     if (floor < 0 || floor > lastFloor) return;
-    const message = chat?.[floor];
+    const message = (await getMessageRange(floor, floor))[0];
     if (!message || message.is_user) return;
     const vectorConfig = getVectorConfig();
 
@@ -3004,16 +3022,19 @@ function isChatStale(scheduledChatId) {
     return chatId !== scheduledChatId;
 }
 
-function notifyStorySummaryAfterAi(data, source) {
-    const { chatId, chat } = getContext();
-    if (!chatId || !Array.isArray(chat) || !chat.length) return;
+async function notifyStorySummaryAfterAi(data, source) {
+    const { chatId } = getContext();
+    if (!chatId) return;
+
+    const total = await getGlobalChatLength();
+    if (!total) return;
 
     const messageId = source === "generation_ended"
-        ? (chat.length - 1)
-        : (typeof data === "number" ? data : data?.messageId ?? data?.mesId ?? (chat.length - 1));
-    if (!Number.isFinite(messageId) || messageId < 0) return;
+        ? (total - 1)
+        : (typeof data === "number" ? data : data?.messageId ?? data?.mesId ?? (total - 1));
+    if (!Number.isFinite(messageId) || messageId < 0 || messageId >= total) return;
 
-    const message = chat[messageId];
+    const message = (await getMessageRange(messageId, messageId))[0];
     if (!message || message.is_user) return;
 
     notifyAfterAiHint({

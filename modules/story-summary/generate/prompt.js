@@ -21,6 +21,7 @@ import { getMeta } from "../vector/storage/chunk-store.js";
 import { getStateAtoms } from "../vector/storage/state-store.js";
 import { getEngineFingerprint } from "../vector/utils/embedder.js";
 import { buildTrustedCharacters } from "../vector/retrieval/entity-lexicon.js";
+import { getGlobalChatLength } from "../compat/host-history.js";
 
 // Metrics
 import { formatMetricsLog, detectIssues } from "../vector/retrieval/metrics.js";
@@ -1360,7 +1361,6 @@ export async function buildVectorPromptText(excludeLastAi = false, hooks = {}) {
         return { text: "", logText: "" };
     }
 
-    const { chat } = getContext();
     const store = getSummaryStore();
 
     if (!store?.json) {
@@ -1369,7 +1369,7 @@ export async function buildVectorPromptText(excludeLastAi = false, hooks = {}) {
 
     const allEvents = store.json.events || [];
     const lastIdx = store.lastSummarizedMesId ?? 0;
-    const length = chat?.length || 0;
+    const length = await getGlobalChatLength();
 
     if (lastIdx >= length) {
         return { text: "", logText: "" };

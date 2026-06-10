@@ -6,6 +6,7 @@ import { xbLog } from "../../../core/debug-core.js";
 import { getSummaryStore, saveSummaryStore, addSummarySnapshot, mergeNewData, getFacts } from "../data/store.js";
 import { generateSummary, parseSummaryJson } from "./llm.js";
 import { filterText } from "../vector/utils/text-filter.js";
+import { getGlobalChatLength, getMessageRange } from "../compat/host-history.js";
 
 const MODULE_ID = 'summaryGenerator';
 const SUMMARY_SESSION_ID = 'xb9';
@@ -166,22 +167,23 @@ export function getNextEventId(store) {
     return maxId + 1;
 }
 
-export function buildIncrementalSlice(targetMesId, lastSummarizedMesId, maxPerRun = 100) {
-    const { chat, name1, name2 } = getContext();
+export async function buildIncrementalSlice(targetMesId, lastSummarizedMesId, maxPerRun = 100) {
+    const { name1, name2 } = getContext();
+    const total = await getGlobalChatLength();
 
     const start = Math.max(0, (lastSummarizedMesId ?? -1) + 1);
-    const rawEnd = Math.min(targetMesId, chat.length - 1);
+    const rawEnd = Math.min(targetMesId, total - 1);
     const end = Math.min(rawEnd, start + maxPerRun - 1);
 
     if (start > end) return { text: "", count: 0, range: "", endMesId: -1 };
 
     const userLabel = name1 || '用户';
     const charLabel = name2 || '角色';
-    const slice = chat.slice(start, end + 1);
+    const slice = await getMessageRange(start, end);
 
     const text = slice.map((m, i) => {
-        const speaker = m.name || (m.is_user ? userLabel : charLabel);
-        const filteredMessage = filterText(m.mes || "");
+        const speaker = m?.name || (m?.is_user ? userLabel : charLabel);
+        const filteredMessage = filterText(m?.mes || "");
         return `#${start + i + 1} 【${speaker}】\n${filteredMessage}`;
     }).join('\n\n');
 
@@ -198,7 +200,7 @@ export async function runSummaryGeneration(mesId, config, callbacks = {}) {
     const store = getSummaryStore();
     const lastSummarized = store?.lastSummarizedMesId ?? -1;
     const maxPerRun = config.trigger?.maxPerRun || 100;
-    const slice = buildIncrementalSlice(mesId, lastSummarized, maxPerRun);
+    const slice = await buildIncrementalSlice(mesId, lastSummarized, maxPerRun);
 
     if (slice.count === 0) {
         onStatus?.("没有新的对话需要总结");

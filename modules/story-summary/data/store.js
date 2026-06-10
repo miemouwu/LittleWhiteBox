@@ -6,6 +6,7 @@ import { chat_metadata } from "../../../../../../../script.js";
 import { EXT_ID } from "../../../core/constants.js";
 import { xbLog } from "../../../core/debug-core.js";
 import { clearEventVectors, deleteEventVectorsByIds } from "../vector/storage/chunk-store.js";
+import { getGlobalChatLength } from "../compat/host-history.js";
 
 const MODULE_ID = 'summaryStore';
 const FACTS_LIMIT_PER_SUBJECT = 10;
@@ -602,8 +603,8 @@ export function mergeNewData(oldJson, parsed, endMesId) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function rollbackSummaryIfNeeded() {
-    const { chat, chatId } = getContext();
-    const currentLength = Array.isArray(chat) ? chat.length : 0;
+    const { chatId } = getContext();
+    const currentLength = await getGlobalChatLength();
     const store = getSummaryStore();
 
     if (!store || store.lastSummarizedMesId == null || store.lastSummarizedMesId < 0) {

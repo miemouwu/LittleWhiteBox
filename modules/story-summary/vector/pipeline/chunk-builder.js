@@ -19,6 +19,7 @@ import {
 import { embed, getEngineFingerprint } from '../utils/embedder.js';
 import { xbLog } from '../../../../core/debug-core.js';
 import { filterText } from '../utils/text-filter.js';
+import { getGlobalChatLength, getMessageRange } from '../../compat/host-history.js';
 
 const MODULE_ID = 'chunk-builder';
 
@@ -152,13 +153,13 @@ export function chunkMessage(floor, message, maxTokens = CHUNK_MAX_TOKENS) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function getChunkBuildStatus() {
-    const { chat, chatId } = getContext();
+    const { chatId } = getContext();
     if (!chatId) {
         return { totalFloors: 0, builtFloors: 0, pending: 0 };
     }
 
     const meta = await getMeta(chatId);
-    const totalFloors = chat?.length || 0;
+    const totalFloors = await getGlobalChatLength();
     const builtFloors = meta.lastChunkFloor + 1;
 
     return {
@@ -176,8 +177,15 @@ export async function getChunkBuildStatus() {
 export async function buildAllChunks(options = {}) {
     const { onProgress, shouldCancel, vectorConfig } = options;
 
-    const { chat, chatId } = getContext();
-    if (!chatId || !chat?.length) {
+    const { chatId } = getContext();
+    if (!chatId) {
+        return { built: 0, errors: 0 };
+    }
+
+    // 全量历史（穿越 TauriTavern 窗口边界），按绝对索引对齐
+    const total = await getGlobalChatLength();
+    const chat = await getMessageRange(0, total - 1);
+    if (!chat.length) {
         return { built: 0, errors: 0 };
     }
 
@@ -250,8 +258,15 @@ export async function buildAllChunks(options = {}) {
 export async function buildIncrementalChunks(options = {}) {
     const { vectorConfig } = options;
 
-    const { chat, chatId } = getContext();
-    if (!chatId || !chat?.length) {
+    const { chatId } = getContext();
+    if (!chatId) {
+        return { built: 0 };
+    }
+
+    // 全量历史（穿越 TauriTavern 窗口边界），按绝对索引对齐
+    const total = await getGlobalChatLength();
+    const chat = await getMessageRange(0, total - 1);
+    if (!chat.length) {
         return { built: 0 };
     }
 
