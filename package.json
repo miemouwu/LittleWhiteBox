@@ -11,6 +11,7 @@
         "build:ebook": "vite build --config vite.ebook.config.mjs",
         "build:fourth-wall": "vite build --config vite.fourth-wall.config.mjs",
         "test:story-summary:runtime": "node scripts/story-summary-runtime-check.mjs",
+        "test:story-summary:host-history": "node scripts/host-history-test/run.mjs",
         "test:story-summary:replay": "node scripts/story-summary-replay-runner.mjs",
         "test:story-summary:bootstrap": "node scripts/story-summary-replay-runner.mjs bootstrap",
         "test:story-summary:recall": "node scripts/story-summary-replay-runner.mjs recall-only",
