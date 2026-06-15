@@ -49,6 +49,7 @@ import {
     getRollbackOnceTargetEndMesId,
     extractRelationshipsFromFacts,
 } from "./data/store.js";
+import { resolveInjectionBoundary, computeInjectionDepth, toWindowLocalHideRange, desiredWindowHideFlags } from "./data/injection-geometry.js";
 
 // prompt text builder
 import {
@@ -423,19 +424,26 @@ async function unhideAllMessages() {
 
 function applyHideRangeInMemory(range) {
     const { chat } = getContext();
-    if (!Array.isArray(chat) || !range) return 0;
+    if (!Array.isArray(chat)) return 0;
 
+    // 反「隐藏累积」：按边界【对齐整个窗口】，而不是只加不减。
+    // 本地下标 ≤ range.end 的隐藏；> end 的（最近 keep-visible 楼层）取消隐藏。
+    // 老的只加逻辑会让旧 is_system 标记在窗口滑动中把最近楼层也盖住 → 楼层漂移。
+    const desired = desiredWindowHideFlags(chat.length, range);
     let changed = 0;
-    for (let messageId = range.start; messageId <= range.end; messageId++) {
+    for (let messageId = 0; messageId < chat.length; messageId++) {
         const message = chat[messageId];
-        if (!message || message.is_system === true) continue;
+        if (!message) continue;
 
-        message.is_system = true;
+        const shouldHide = desired[messageId];
+        if (!!message.is_system === shouldHide) continue;
+
+        message.is_system = shouldHide;
         changed++;
 
         const messageBlock = $(`.mes[mesid="${messageId}"]`);
         if (messageBlock.length) {
-            messageBlock.attr("is_system", "true");
+            messageBlock.attr("is_system", String(shouldHide));
         }
     }
 
@@ -1998,27 +2006,32 @@ async function openPanelForMessage(mesId) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Hide/Unhide
 // - 非向量：boundary = lastSummarizedMesId
-// - 向量：boundary = meta.lastChunkFloor（若为 -1 或关闭向量边界隐藏，则回退到 lastSummarizedMesId）
+// - 向量：boundary = max(lastChunkFloor, lastSummarizedMesId)
+//   （向量滞后时回落到已总结楼层；用户显式关闭「向量边界隐藏」时仍用 lastSummarizedMesId）
+//   与 injectStorySummary 的注入边界保持一致。
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function getHideBoundaryFloor(store) {
+    const lastSummarized = store?.lastSummarizedMesId ?? -1;
     // 没有总结时，不隐藏
-    if (store?.lastSummarizedMesId == null || store.lastSummarizedMesId < 0) {
+    if (lastSummarized < 0) {
         return -1;
     }
 
     const vectorCfg = getVectorConfig();
     if (!vectorCfg?.enabled || getHideUiSettings().useVectorBoundary === false) {
-        return store?.lastSummarizedMesId ?? -1;
+        return lastSummarized;
     }
 
     const { chatId } = getContext();
-    if (!chatId) return store?.lastSummarizedMesId ?? -1;
+    if (!chatId) return lastSummarized;
 
     const meta = await getMeta(chatId);
-    const v = meta?.lastChunkFloor ?? -1;
-    if (v >= 0) return v;
-    return store?.lastSummarizedMesId ?? -1;
+    return resolveInjectionBoundary({
+        vectorEnabled: true,
+        lastChunkFloor: meta?.lastChunkFloor ?? -1,
+        lastSummarizedMesId: lastSummarized,
+    });
 }
 
 async function applyHideState({ reset = true } = {}) {
@@ -2033,16 +2046,30 @@ async function applyHideState({ reset = true } = {}) {
     const range = calcHideRange(boundary, ui.keepVisibleCount);
     if (!range) return;
 
+    // TauriTavern 窗口化：calcHideRange 给的是【全局楼层】区间，但 /hide 与 chat[] 走【窗口本地下标】。
+    // 必须先换算成本地下标，否则全局区间（如 0-110）会覆盖整个窗口，把最近楼层全部隐藏。
+    // 标准 ST 下窗口=全量，此换算为恒等变换，行为不变。
+    const localRange = toWindowLocalHideRange(
+        range,
+        await getGlobalChatLength(),
+        getContext()?.chat?.length ?? 0,
+    );
+
     if (reset) {
         // 仅在隐藏范围可能缩小时清理历史残留；普通后台维护只补 hide，避免短暂全展开。
+        // 先全量 unhide（按窗口本地下标），清掉残留，再按本地区间重新 hide。
         await unhideAllMessages();
-        await executeSlashCommand(`/hide ${range.start}-${range.end}`);
+        if (localRange) {
+            await executeSlashCommand(`/hide ${localRange.start}-${localRange.end}`);
+        }
         return;
     }
 
-    const changed = applyHideRangeInMemory(range);
+    // 不在此提前 return：localRange 为 null 表示窗口内应全部可见，仍要对齐（取消残留隐藏）。
+    const changed = applyHideRangeInMemory(localRange);
     if (changed > 0) {
-        xbLog.info(MODULE_ID, `后台隐藏已同步到当前聊天状态：${range.start}-${range.end} changed=${changed}`);
+        const desc = localRange ? `${localRange.start}-${localRange.end}` : "全部可见";
+        xbLog.info(MODULE_ID, `后台隐藏已对齐窗口：${desc} changed=${changed}`);
     }
 }
 
@@ -2925,8 +2952,11 @@ async function handleGenerationStarted(type, _params, isDryRun) {
     lastSentUserMessage = null;
     lastSentTimestamp = 0;
 
-    const { chat, chatId } = getContext();
-    const chatLen = Array.isArray(chat) ? chat.length : 0;
+    const { chatId } = getContext();
+    // 全局总楼层数（穿越 TauriTavern 窗口边界）：边界与注入深度都按【绝对楼层】计算，
+    // 绝不能用被窗口截断的 getContext().chat.length（否则 depth 塌成 minDepth，
+    // 记忆被怼到对话最底部）。
+    const chatLen = await getGlobalChatLength();
     if (chatLen === 0) {
         logTiming('empty_chat');
         return;
@@ -2934,18 +2964,15 @@ async function handleGenerationStarted(type, _params, isDryRun) {
 
     const store = getSummaryStore();
 
-    // 确定注入边界
-    // - 向量开：meta.lastChunkFloor（若无则回退 lastSummarizedMesId）
-    // - 向量关：lastSummarizedMesId
-    let boundary = -1;
+    // 确定注入边界：向量滞后时取「向量楼层」与「已总结楼层」的较大者，
+    // 保证注入的记忆永远不旧于文本总结（见 data/injection-geometry.js）。
     const T_Boundary = performance.now();
-    if (vectorCfg?.enabled) {
-        const meta = chatId ? await getMeta(chatId) : null;
-        boundary = meta?.lastChunkFloor ?? -1;
-        if (boundary < 0) boundary = store?.lastSummarizedMesId ?? -1;
-    } else {
-        boundary = store?.lastSummarizedMesId ?? -1;
-    }
+    const meta = (vectorCfg?.enabled && chatId) ? await getMeta(chatId) : null;
+    let boundary = resolveInjectionBoundary({
+        vectorEnabled: !!vectorCfg?.enabled,
+        lastChunkFloor: meta?.lastChunkFloor ?? -1,
+        lastSummarizedMesId: store?.lastSummarizedMesId ?? -1,
+    });
     if (!vectorCfg?.enabled && boundary < 0 && store?.pendingImportBoundary && store?.json) {
         boundary = chatLen - 1;
     }
@@ -2955,9 +2982,9 @@ async function handleGenerationStarted(type, _params, isDryRun) {
         return;
     }
 
-    // 计算深度：倒序插入，从末尾往前数
-    // 最小为 MIN_INJECTION_DEPTH，避免插入太靠近底部
-    const depth = Math.max(MIN_INJECTION_DEPTH, chatLen - boundary - 1);
+    // 计算深度：倒序插入，从末尾往前数（用全局总楼层数；窗口与全量共享同一末楼，
+    // 所以无论生成走窗口化还是全量 chat，记忆都落在同一绝对位置）。
+    const depth = computeInjectionDepth({ totalFloors: chatLen, boundary, minDepth: MIN_INJECTION_DEPTH });
     if (depth < 0) {
         logTiming('invalid_depth');
         return;
