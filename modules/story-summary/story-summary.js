@@ -19,6 +19,7 @@ import {
 } from "../../../../../../script.js";
 import { extensionFolderPath } from "../../core/constants.js";
 import { xbLog, CacheRegistry } from "../../core/debug-core.js";
+import { writeTtMobileLog } from "../../core/tt-log-sink.js";
 import { createModuleEvents } from "../../core/event-manager.js";
 import { postToIframe, isTrustedMessage } from "../../core/iframe-messaging.js";
 import { initAfterAiGate, notifyAfterAiHint, registerAfterAiHandler } from "../../core/after-ai-gate.js";
@@ -905,6 +906,19 @@ async function maybeRunDelayedVectorMaintenance(scheduledChatId = null) {
     const chunkStatus = await getChunkBuildStatus();
     const hasL0Work = stats.pending > 0 || (stats.retryableFail || 0) > 0;
     const hasL1Work = chunkStatus.pending > 0;
+    void writeTtMobileLog({
+        level: 'debug',
+        event: 'lwb.vector.maintenance.check',
+        detail: {
+            totalMessages: total,
+            l0Pending: stats.pending,
+            l0Fail: stats.fail,
+            l0RetryableFail: stats.retryableFail || 0,
+            l1Pending: chunkStatus.pending,
+            hasL0Work,
+            hasL1Work,
+        },
+    });
 
     if (!hasL0Work && !hasL1Work) {
         clearVectorMaintenance(chatId);

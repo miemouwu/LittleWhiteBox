@@ -218,7 +218,16 @@ async function main() {
         const stateOut = await buildBundle(path.join(here, 'entry-state-integration.mjs'), 'bundle-state-integration.mjs');
         const state = await import(`${pathToFileURL(stateOut).href}?t=${Date.now()}`);
         globalThis.localStorage = makeLocalStorage();
+        const ttLogEntries = [];
         globalThis.window = { __TAURITAVERN__: makeWindowedHost(fullChat, 'windowed') };
+        globalThis.window.__TAURITAVERN__.api.dev = {
+            mobile: {
+                async logEntry(entry) {
+                    ttLogEntries.push(entry);
+                    return { ok: true };
+                },
+            },
+        };
         state.__setCtx({
             chat: windowChat,
             chatId: 'tt-l0',
@@ -251,6 +260,12 @@ async function main() {
         eq('真实 incrementalExtractAtoms: floor 401 使用全局前一楼 400 作为 user 消息',
             lastInput,
             { floor: 401, user: 'msg-400', ai: 'msg-401' });
+        check('真实 incrementalExtractAtoms: TT log stream 记录窗口历史展开',
+            ttLogEntries.some(entry => entry?.event === 'lwb.l0.absolute-chat-expanded'
+                && entry?.detail?.windowLength === WINDOW
+                && entry?.detail?.totalCount === TOTAL
+                && entry?.detail?.loadedLength === TOTAL),
+            `logs=${JSON.stringify(ttLogEntries)}`);
     } catch (e) {
         console.log(`  ⚠ SKIP（真实 L0 模块依赖无法在本环境加载）：${e?.message || e}`);
     }

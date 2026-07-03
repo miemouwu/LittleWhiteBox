@@ -6,6 +6,7 @@
 
 import { getContext } from '../../../../../../../extensions.js';
 import { xbLog } from '../../../../core/debug-core.js';
+import { writeTtMobileLog } from '../../../../core/tt-log-sink.js';
 import {
     saveStateAtoms,
     saveStateVectors,
@@ -152,6 +153,15 @@ async function resolveAbsoluteChat(chat) {
     }
 
     xbLog.info(MODULE_ID, `L0 输入从窗口历史展开: window=${input.length}, total=${total}, loaded=${full.length}`);
+    void writeTtMobileLog({
+        level: 'info',
+        event: 'lwb.l0.absolute-chat-expanded',
+        detail: {
+            windowLength: input.length,
+            totalCount: total,
+            loadedLength: full.length,
+        },
+    });
     return full;
 }
 
@@ -230,6 +240,17 @@ async function incrementalExtractAtomsInner(chatId, chat, onProgress, options = 
     const concurrency = Math.max(1, Math.min(50, Number(vectorCfg?.l0Concurrency) || DEFAULT_CONCURRENCY));
 
     xbLog.info(MODULE_ID, `增量 L0 提取：pending=${pendingPairs.length}, concurrency=${concurrency}`);
+    void writeTtMobileLog({
+        level: 'info',
+        event: 'lwb.l0.extract.start',
+        detail: {
+            pending: pendingPairs.length,
+            concurrency,
+            maxFloors: Number.isFinite(maxFloors) ? maxFloors : 'Infinity',
+            preferredCount: preferredFloors.length,
+            failRetryLimit: Number.isFinite(failRetryLimit) ? failRetryLimit : 'Infinity',
+        },
+    });
 
     let completed = 0;
     let failed = 0;
@@ -275,10 +296,21 @@ async function incrementalExtractAtomsInner(chatId, chat, onProgress, options = 
         } catch (e) {
             if (extractionCancelled) return;
 
+            const reason = String(e?.message || e).replace(/\s+/g, ' ').slice(0, 120);
+            const attempts = (prev?.attempts || 0) + 1;
             setL0FloorStatus(floor, {
                 status: 'fail',
-                attempts: (prev?.attempts || 0) + 1,
-                reason: String(e?.message || e).replace(/\s+/g, ' ').slice(0, 120),
+                attempts,
+                reason,
+            });
+            void writeTtMobileLog({
+                level: 'warn',
+                event: 'lwb.l0.extract.floor-fail',
+                detail: {
+                    floor,
+                    attempts,
+                    reason,
+                },
             });
             failed++;
         } finally {
@@ -331,6 +363,17 @@ async function incrementalExtractAtomsInner(chatId, chat, onProgress, options = 
     }
 
     xbLog.info(MODULE_ID, `L0 ${extractionCancelled ? '已取消' : '完成'}：atoms=${builtAtoms}, completed=${completed}/${total}, failed=${failed}`);
+    void writeTtMobileLog({
+        level: failed > 0 ? 'warn' : 'info',
+        event: 'lwb.l0.extract.finish',
+        detail: {
+            builtAtoms,
+            completed,
+            total,
+            failed,
+            cancelled: extractionCancelled,
+        },
+    });
     return { built: builtAtoms, cancelled: extractionCancelled };
 }
 
