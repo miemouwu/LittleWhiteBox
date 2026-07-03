@@ -27,7 +27,7 @@ import { extractAtomsForRound, cancelBatchExtraction, resetBatchExtractionCancel
 import { getVectorConfig } from '../../data/config.js';
 import { getEngineFingerprint } from '../utils/embedder.js';
 import { filterText } from '../utils/text-filter.js';
-import { forEachMessage } from '../../compat/host-history.js';
+import { forEachMessage, getGlobalChatLength, getMessageRange } from '../../compat/host-history.js';
 
 const MODULE_ID = 'state-integration';
 
@@ -125,6 +125,30 @@ function buildRAggregateText(atom) {
     return joined.length > R_AGG_MAX_CHARS ? joined.slice(0, R_AGG_MAX_CHARS) : joined;
 }
 
+async function resolveAbsoluteChat(chat) {
+    const input = Array.isArray(chat) ? chat : [];
+    if (!input.length) return input;
+
+    let total = 0;
+    try {
+        total = await getGlobalChatLength();
+    } catch {
+        total = input.length;
+    }
+
+    if (!Number.isFinite(total) || total <= input.length) {
+        return input;
+    }
+
+    const full = await getMessageRange(0, total - 1);
+    if (!Array.isArray(full) || full.length < total) {
+        return input;
+    }
+
+    xbLog.info(MODULE_ID, `L0 输入从窗口历史展开: window=${input.length}, total=${total}, loaded=${full.length}`);
+    return full;
+}
+
 export async function incrementalExtractAtoms(chatId, chat, onProgress, options = {}) {
     beginL0MetadataBatch('incrementalExtractAtoms');
     try {
@@ -146,39 +170,42 @@ async function incrementalExtractAtomsInner(chatId, chat, onProgress, options = 
     extractionCancelled = false;
     resetBatchExtractionCancel();
 
+    const absoluteChat = await resolveAbsoluteChat(chat);
+    if (!absoluteChat.length) return { built: 0, cancelled: false };
+
     const pendingPairs = [];
     const queuedFloors = new Set();
 
-    const tryQueueFloor = (i) => {
-        const msg = chat[i];
-        if (!msg || msg.is_user || queuedFloors.has(i)) return;
+    const tryQueueFloor = (floor) => {
+        const msg = absoluteChat[floor];
+        if (!msg || msg.is_user || queuedFloors.has(floor)) return;
 
-        const st = getL0FloorStatus(i);
+        const st = getL0FloorStatus(floor);
         // ★ 只跳过 ok 和 empty，fail 的可以重试
         if (st?.status === 'ok' || st?.status === 'empty') {
             return;
         }
 
-        const userMsg = (i > 0 && chat[i - 1]?.is_user) ? chat[i - 1] : null;
+        const userMsg = (floor > 0 && absoluteChat[floor - 1]?.is_user) ? absoluteChat[floor - 1] : null;
         const inputText = buildL0InputText(userMsg, msg);
 
         if (!inputText) {
-            setL0FloorStatus(i, { status: 'empty', reason: 'filtered_empty', atoms: 0 });
+            setL0FloorStatus(floor, { status: 'empty', reason: 'filtered_empty', atoms: 0 });
             return;
         }
 
-        pendingPairs.push({ userMsg, aiMsg: msg, aiFloor: i });
-        queuedFloors.add(i);
+        pendingPairs.push({ userMsg, aiMsg: msg, aiFloor: floor });
+        queuedFloors.add(floor);
     };
 
     for (const rawFloor of preferredFloors) {
         const floor = Number(rawFloor);
-        if (!Number.isFinite(floor) || floor < 0 || floor >= chat.length) continue;
+        if (!Number.isFinite(floor) || floor < 0 || floor >= absoluteChat.length) continue;
         tryQueueFloor(floor);
     }
 
-    for (let i = 0; i < chat.length; i++) {
-        tryQueueFloor(i);
+    for (let floor = 0; floor < absoluteChat.length; floor++) {
+        tryQueueFloor(floor);
     }
 
     // 限制单次提取楼层数（自动触发时使用）

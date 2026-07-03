@@ -18,6 +18,8 @@ const rootDir = path.resolve(here, '..', '..');
 const replayShims = path.join(rootDir, 'scripts', 'story-summary-replay', 'shims');
 const shimExtensions = path.join(here, 'shim-extensions.mjs');
 const shimOpenai = path.join(here, 'shim-openai.mjs');
+const shimAtomExtraction = path.join(here, 'shim-atom-extraction.mjs');
+const shimSiliconflow = path.join(here, 'shim-siliconflow.mjs');
 const shimScript = path.join(replayShims, 'script.js');
 const shimUtils = path.join(replayShims, 'utils.js');
 const cacheDir = path.join(rootDir, 'node_modules', '.cache', 'host-history-test');
@@ -76,7 +78,27 @@ function aliasPlugin() {
             b.onResolve({ filter: /extensions\.js$/ }, (a) => (a.importer ? { path: shimExtensions } : null));
             b.onResolve({ filter: /script\.js$/ }, (a) => (a.importer ? { path: shimScript } : null));
             b.onResolve({ filter: /openai\.js$/ }, (a) => (a.importer ? { path: shimOpenai } : null));
+            b.onResolve({ filter: /atom-extraction\.js$/ }, (a) => (a.importer ? { path: shimAtomExtraction } : null));
+            b.onResolve({ filter: /siliconflow\.js$/ }, (a) => (a.importer ? { path: shimSiliconflow } : null));
             b.onResolve({ filter: /utils\.js$/ }, (a) => (a.importer && a.importer.includes('server-storage.js') ? { path: shimUtils } : null));
+        },
+    };
+}
+
+function makeLocalStorage() {
+    const store = new Map();
+    return {
+        getItem(key) {
+            return store.has(String(key)) ? store.get(String(key)) : null;
+        },
+        setItem(key, value) {
+            store.set(String(key), String(value));
+        },
+        removeItem(key) {
+            store.delete(String(key));
+        },
+        clear() {
+            store.clear();
         },
     };
 }
@@ -188,6 +210,49 @@ async function main() {
         check('切片正文不含窗口内末楼 msg-449（超出 maxPerRun）', !slice.text.includes('msg-449'));
     } catch (e) {
         console.log(`  ⚠ SKIP（真实模块依赖无法在本环境加载）：${e?.message || e}`);
+    }
+
+    // ========================================================================
+    console.log('\n[E] 端到端：真实 L0 state integration 在窗口化下使用绝对楼层号');
+    try {
+        const stateOut = await buildBundle(path.join(here, 'entry-state-integration.mjs'), 'bundle-state-integration.mjs');
+        const state = await import(`${pathToFileURL(stateOut).href}?t=${Date.now()}`);
+        globalThis.localStorage = makeLocalStorage();
+        globalThis.window = { __TAURITAVERN__: makeWindowedHost(fullChat, 'windowed') };
+        state.__setCtx({
+            chat: windowChat,
+            chatId: 'tt-l0',
+            name1: '用户',
+            name2: '角色',
+        });
+        state.__setChatMetadata({ extensions: {} });
+        state.resetExtractionShim();
+        globalThis.localStorage.setItem('summary_panel_config', JSON.stringify({
+            vector: {
+                enabled: true,
+                l0Concurrency: 1,
+                l0Api: { key: 'sk-test' },
+                embeddingApi: { key: 'sk-test' },
+            },
+        }));
+
+        await state.clearAllAtomsAndVectors('tt-l0');
+        const result = await state.incrementalExtractAtoms('tt-l0', windowChat, null, {
+            maxFloors: 1,
+            preferredFloors: [401],
+        });
+        const atoms = state.getStateAtoms();
+        const status401 = state.getL0FloorStatus(401);
+        const lastInput = state.getLastExtractionInput();
+
+        eq('真实 incrementalExtractAtoms: preferred 全局楼层 401 可从窗口外命中',
+            [result.built, atoms.length, atoms[0]?.floor, status401?.status],
+            [1, 1, 401, 'ok']);
+        eq('真实 incrementalExtractAtoms: floor 401 使用全局前一楼 400 作为 user 消息',
+            lastInput,
+            { floor: 401, user: 'msg-400', ai: 'msg-401' });
+    } catch (e) {
+        console.log(`  ⚠ SKIP（真实 L0 模块依赖无法在本环境加载）：${e?.message || e}`);
     }
 
     // ========================================================================
