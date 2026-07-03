@@ -903,7 +903,7 @@ async function maybeRunDelayedVectorMaintenance(scheduledChatId = null) {
 
     const stats = await getAnchorStats();
     const chunkStatus = await getChunkBuildStatus();
-    const hasL0Work = stats.pending > 0;
+    const hasL0Work = stats.pending > 0 || (stats.retryableFail || 0) > 0;
     const hasL1Work = chunkStatus.pending > 0;
 
     if (!hasL0Work && !hasL1Work) {
@@ -943,6 +943,7 @@ async function maybeRunDelayedVectorMaintenance(scheduledChatId = null) {
             l0Result = await incrementalExtractAtoms(chatId, chat, null, {
                 maxFloors: 20,
                 preferredFloors,
+                failRetryLimit: 3,
             });
             if (l0Result?.cancelled) return;
         }

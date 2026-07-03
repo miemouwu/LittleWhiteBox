@@ -36,6 +36,7 @@ const DEFAULT_CONCURRENCY = 10;
 const STAGGER_DELAY = 15;
 const DEBUG_CONCURRENCY = true;
 const R_AGG_MAX_CHARS = 256;
+const AUTO_FAIL_RETRY_LIMIT = 3;
 
 let initialized = false;
 let extractionCancelled = false;
@@ -66,19 +67,23 @@ export async function getAnchorStats() {
     await forEachMessage((msg, abs) => { if (!msg?.is_user) aiFloors.push(abs); });
 
     if (!aiFloors.length) {
-        return { extracted: 0, total: 0, pending: 0, empty: 0, fail: 0 };
+        return { extracted: 0, total: 0, pending: 0, empty: 0, fail: 0, retryableFail: 0 };
     }
 
     let ok = 0;
     let empty = 0;
     let fail = 0;
+    let retryableFail = 0;
 
     for (const f of aiFloors) {
         const s = getL0FloorStatus(f);
         if (!s) continue;
         if (s.status === 'ok') ok++;
         else if (s.status === 'empty') empty++;
-        else if (s.status === 'fail') fail++;
+        else if (s.status === 'fail') {
+            fail++;
+            if ((Number(s.attempts) || 0) < AUTO_FAIL_RETRY_LIMIT) retryableFail++;
+        }
     }
 
     const total = aiFloors.length;
@@ -90,7 +95,8 @@ export async function getAnchorStats() {
         total,
         pending,
         empty,
-        fail
+        fail,
+        retryableFail
     };
 }
 
@@ -159,7 +165,7 @@ export async function incrementalExtractAtoms(chatId, chat, onProgress, options 
 }
 
 async function incrementalExtractAtomsInner(chatId, chat, onProgress, options = {}) {
-    const { maxFloors = Infinity, preferredFloors = [] } = options;
+    const { maxFloors = Infinity, preferredFloors = [], failRetryLimit = Infinity } = options;
     if (!chatId || !chat?.length) return { built: 0, cancelled: false };
 
     const vectorCfg = getVectorConfig();
@@ -183,6 +189,9 @@ async function incrementalExtractAtomsInner(chatId, chat, onProgress, options = 
         const st = getL0FloorStatus(floor);
         // ★ 只跳过 ok 和 empty，fail 的可以重试
         if (st?.status === 'ok' || st?.status === 'empty') {
+            return;
+        }
+        if (st?.status === 'fail' && (Number(st.attempts) || 0) >= failRetryLimit) {
             return;
         }
 

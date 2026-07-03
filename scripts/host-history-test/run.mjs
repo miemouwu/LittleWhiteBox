@@ -256,6 +256,69 @@ async function main() {
     }
 
     // ========================================================================
+    console.log('\n[F] 端到端：L0 fail 状态保留自动维护重试信号');
+    try {
+        const stateOut = await buildBundle(path.join(here, 'entry-state-integration.mjs'), 'bundle-state-integration-retry.mjs');
+        const state = await import(`${pathToFileURL(stateOut).href}?t=${Date.now()}`);
+        delete globalThis.window;
+        const smallChat = Array.from({ length: 10 }, (_, i) => ({
+            mes: `small-${i}`,
+            is_user: i % 2 === 0,
+            name: i % 2 === 0 ? '用户' : '角色',
+        }));
+        state.__setCtx({ chat: smallChat, chatId: 'retry-stats', name1: '用户', name2: '角色' });
+        state.__setChatMetadata({ extensions: {} });
+        state.setL0FloorStatus(1, { status: 'ok', atoms: 1 });
+        state.setL0FloorStatus(3, { status: 'empty', atoms: 0 });
+        state.setL0FloorStatus(5, { status: 'fail', attempts: 1, reason: 'llm_failed' });
+        state.setL0FloorStatus(7, { status: 'fail', attempts: 3, reason: 'llm_failed' });
+
+        const stats = await state.getAnchorStats();
+        eq('真实 getAnchorStats: fail 单独计数且仅未达上限的 fail 可自动重试',
+            {
+                total: stats.total,
+                extracted: stats.extracted,
+                pending: stats.pending,
+                fail: stats.fail,
+                retryableFail: stats.retryableFail,
+            },
+            {
+                total: 5,
+                extracted: 2,
+                pending: 1,
+                fail: 2,
+                retryableFail: 1,
+            });
+
+        state.resetExtractionShim();
+        const retryResult = await state.incrementalExtractAtoms('retry-stats', smallChat, null, {
+            maxFloors: 10,
+            failRetryLimit: 3,
+        });
+        eq('真实 incrementalExtractAtoms: 自动模式跳过已达上限的 fail，只重试未达上限楼层',
+            [
+                retryResult.built,
+                state.getL0FloorStatus(5)?.status,
+                {
+                    status: state.getL0FloorStatus(7)?.status,
+                    attempts: state.getL0FloorStatus(7)?.attempts,
+                    reason: state.getL0FloorStatus(7)?.reason,
+                },
+                state.getL0FloorStatus(9)?.status,
+                state.getLastExtractionInput(),
+            ],
+            [
+                2,
+                'ok',
+                { status: 'fail', attempts: 3, reason: 'llm_failed' },
+                'ok',
+                { floor: 9, user: 'small-8', ai: 'small-9' },
+            ]);
+    } catch (e) {
+        console.log(`  ⚠ SKIP（真实 L0 stats 模块依赖无法在本环境加载）：${e?.message || e}`);
+    }
+
+    // ========================================================================
     console.log(`\n结果：${passed} 通过，${failures.length} 失败`);
     if (failures.length) {
         console.log('\nFAILED:');
