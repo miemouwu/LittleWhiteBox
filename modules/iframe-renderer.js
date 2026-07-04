@@ -7,6 +7,7 @@ import { executeSlashCommand } from "../core/slash-command.js";
 import { default_user_avatar, default_avatar } from "../../../../../script.js";
 import { getIframeBaseScript, getWrapperScript } from "../core/wrapper-inline.js";
 import { postToIframe, getIframeTargetOrigin, getTrustedOrigin } from "../core/iframe-messaging.js";
+import { protectMessageInlineInteractions } from "./message-interaction-guard.js";
 const MODULE_ID = 'iframeRenderer';
 const events = createModuleEvents(MODULE_ID);
 
@@ -466,6 +467,7 @@ export function processCodeBlocks(messageElement, forceFinal = true) {
     if (settings.renderEnabled === false) return;
     
     try {
+        protectMessageInlineInteractions(messageElement);
         const codeBlocks = messageElement.querySelectorAll('pre > code');
         const ctx = getContext();
         const lastId = ctx.chat?.length - 1;
