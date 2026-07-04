@@ -6,7 +6,7 @@ import { chat_metadata } from "../../../../../../../script.js";
 import { EXT_ID } from "../../../core/constants.js";
 import { xbLog } from "../../../core/debug-core.js";
 import { clearEventVectors, deleteEventVectorsByIds } from "../vector/storage/chunk-store.js";
-import { getGlobalChatLength } from "../compat/host-history.js";
+import { getAuthoritativeGlobalChatLength } from "../compat/host-history.js";
 
 const MODULE_ID = 'summaryStore';
 const FACTS_LIMIT_PER_SUBJECT = 10;
@@ -604,7 +604,11 @@ export function mergeNewData(oldJson, parsed, endMesId) {
 
 export async function rollbackSummaryIfNeeded() {
     const { chatId } = getContext();
-    const currentLength = await getGlobalChatLength();
+    const currentLength = await getAuthoritativeGlobalChatLength();
+    if (currentLength == null) {
+        xbLog.warn(MODULE_ID, '跳过总结回滚：无法取得权威全局楼层数');
+        return false;
+    }
     const store = getSummaryStore();
 
     if (!store || store.lastSummarizedMesId == null || store.lastSummarizedMesId < 0) {

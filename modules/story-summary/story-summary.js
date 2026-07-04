@@ -9,7 +9,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { getContext } from "../../../../../extensions.js";
-import { getGlobalChatLength, getMessageRange } from "./compat/host-history.js";
+import { getAuthoritativeGlobalChatLength, getGlobalChatLength, getMessageRange } from "./compat/host-history.js";
 import {
     event_types,
     extension_prompts,
@@ -51,6 +51,7 @@ import {
     extractRelationshipsFromFacts,
 } from "./data/store.js";
 import { resolveInjectionBoundary, computeInjectionDepth, toWindowLocalHideRange, desiredWindowHideFlags } from "./data/injection-geometry.js";
+import { resolveVectorMaintenanceAfterRun } from "./data/vector-maintenance-policy.js";
 
 // prompt text builder
 import {
@@ -904,8 +905,13 @@ async function maybeRunDelayedVectorMaintenance(scheduledChatId = null) {
 
     const stats = await getAnchorStats();
     const chunkStatus = await getChunkBuildStatus();
-    const hasL0Work = stats.pending > 0 || (stats.retryableFail || 0) > 0;
-    const hasL1Work = chunkStatus.pending > 0;
+    const workState = resolveVectorMaintenanceAfterRun({
+        l0Pending: stats.pending,
+        l0RetryableFail: stats.retryableFail || 0,
+        l1Pending: chunkStatus.pending,
+    });
+    const hasL0Work = workState.hasL0Work;
+    const hasL1Work = workState.hasL1Work;
     void writeTtMobileLog({
         level: 'debug',
         event: 'lwb.vector.maintenance.check',
@@ -920,7 +926,7 @@ async function maybeRunDelayedVectorMaintenance(scheduledChatId = null) {
         },
     });
 
-    if (!hasL0Work && !hasL1Work) {
+    if (workState.shouldClearQueue) {
         clearVectorMaintenance(chatId);
         return;
     }
@@ -969,7 +975,35 @@ async function maybeRunDelayedVectorMaintenance(scheduledChatId = null) {
 
         await sendAnchorStatsToFrame();
         await sendVectorStatsToFrame();
-        clearVectorMaintenance(chatId);
+
+        const [nextStats, nextChunkStatus] = await Promise.all([
+            getAnchorStats(),
+            getChunkBuildStatus(),
+        ]);
+        const nextWorkState = resolveVectorMaintenanceAfterRun({
+            l0Pending: nextStats.pending,
+            l0RetryableFail: nextStats.retryableFail || 0,
+            l1Pending: nextChunkStatus.pending,
+        });
+
+        if (nextWorkState.shouldContinue) {
+            if (nextWorkState.hasL0Work) {
+                rememberVectorMaintenance(chatId, null, 'continue');
+            }
+            scheduleAutoL0Backfill(AUTO_L0_BACKFILL_DELAY_MS, chatId);
+            void writeTtMobileLog({
+                level: 'info',
+                event: 'lwb.vector.maintenance.continue',
+                detail: {
+                    l0Pending: nextStats.pending,
+                    l0Fail: nextStats.fail,
+                    l0RetryableFail: nextStats.retryableFail || 0,
+                    l1Pending: nextChunkStatus.pending,
+                },
+            });
+        } else {
+            clearVectorMaintenance(chatId);
+        }
 
         xbLog.info(MODULE_ID, `延迟向量维护完成 l0=${l0Result?.built || 0} l1=${chunkResult.built || 0}`);
     } catch (e) {
@@ -2814,7 +2848,16 @@ async function handleChatChanged() {
 async function handleMessageDeleted(scheduledChatId) {
     if (isChatStale(scheduledChatId)) return;
     const { chatId } = getContext();
-    const newLength = await getGlobalChatLength();
+    const newLength = await getAuthoritativeGlobalChatLength();
+    if (newLength == null) {
+        xbLog.warn(MODULE_ID, '跳过消息删除后的向量清理：无法取得权威全局楼层数');
+        void writeTtMobileLog({
+            level: 'warn',
+            event: 'lwb.vector.destructive-boundary-skip',
+            detail: { action: 'message_deleted', reason: 'authoritative_length_unavailable' },
+        });
+        return;
+    }
 
     const didRollback = await rollbackSummaryIfNeeded();
     await syncOnMessageDeleted(chatId, newLength);
@@ -2837,7 +2880,17 @@ async function handleMessageDeleted(scheduledChatId) {
 async function handleMessageSwiped(scheduledChatId) {
     if (isChatStale(scheduledChatId)) return;
     const { chatId } = getContext();
-    const lastFloor = (await getGlobalChatLength() || 1) - 1;
+    const totalFloors = await getAuthoritativeGlobalChatLength();
+    if (totalFloors == null) {
+        xbLog.warn(MODULE_ID, '跳过 swipe 后的向量清理：无法取得权威全局楼层数');
+        void writeTtMobileLog({
+            level: 'warn',
+            event: 'lwb.vector.destructive-boundary-skip',
+            detail: { action: 'message_swiped', reason: 'authoritative_length_unavailable' },
+        });
+        return;
+    }
+    const lastFloor = Math.max(0, totalFloors - 1);
 
     await syncOnMessageSwiped(chatId, lastFloor);
 

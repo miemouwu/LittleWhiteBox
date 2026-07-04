@@ -117,7 +117,7 @@ async function buildBundle(entry, name) {
 async function main() {
     const outfile = await buildBundle(path.join(here, 'entry.mjs'), 'bundle.mjs');
     const m = await import(`${pathToFileURL(outfile).href}?t=${Date.now()}`);
-    const { getGlobalChatLength, getMessageRange, forEachMessage, isTauriTavern, __setCtx } = m;
+    const { getAuthoritativeGlobalChatLength, getGlobalChatLength, getMessageRange, forEachMessage, isTauriTavern, __setCtx } = m;
 
     // ========================================================================
     console.log('\n[A] 标准 SillyTavern（无 window.__TAURITAVERN__）—— 必须与直接操作 chat 等价');
@@ -193,6 +193,13 @@ async function main() {
     globalThis.window = { __TAURITAVERN__: { ready: Promise.resolve(), api: { chat: { current: { windowInfo: async () => { throw new Error('boom'); } } } } } };
     __setCtx({ chat: windowChat, chatId: 'err' });
     eq('windowInfo 异常时安全降级', await getGlobalChatLength(), WINDOW);
+    eq('权威总楼层在 windowInfo 异常时返回 null，避免破坏性清理误用窗口长度', await getAuthoritativeGlobalChatLength(), null);
+
+    // windowInfo 不含合法 totalCount → 普通读取可降级，破坏性边界必须拒绝降级。
+    globalThis.window = { __TAURITAVERN__: { ready: Promise.resolve(), api: { chat: { current: { windowInfo: async () => ({ windowLength: WINDOW }) } } } } };
+    __setCtx({ chat: windowChat, chatId: 'invalid-total' });
+    eq('windowInfo 缺 totalCount 时普通总长安全降级', await getGlobalChatLength(), WINDOW);
+    eq('windowInfo 缺 totalCount 时权威总长返回 null', await getAuthoritativeGlobalChatLength(), null);
 
     // ========================================================================
     console.log('\n[D] 端到端：真实 buildIncrementalSlice（generator.js）在窗口化下续上窗口外历史');

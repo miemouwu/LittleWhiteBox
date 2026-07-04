@@ -76,22 +76,45 @@ export async function getGlobalChatLength() {
         return getContext()?.chat?.length ?? 0;
     }
     diagOnce();
+    const authoritative = await getAuthoritativeGlobalChatLength();
+    if (authoritative != null) {
+        return authoritative;
+    }
+    try {
+        const info = await hostChatApi()?.current?.windowInfo?.();
+        // 兜底：windowLength / 当前窗口长度。只用于非破坏性读取。
+        const wlen = Number(info?.windowLength);
+        if (Number.isFinite(wlen) && wlen > 0) return wlen;
+        return getContext()?.chat?.length ?? 0;
+    } catch {
+        // 宿主 API 异常时退化为窗口长度，避免硬崩。删除/回滚等破坏性路径
+        // 必须使用 getAuthoritativeGlobalChatLength()，不能使用本函数的降级值。
+        return getContext()?.chat?.length ?? 0;
+    }
+}
+
+/**
+ * 返回可用于删除/回滚边界的权威全局楼层数。
+ * TauriTavern 窗口化下绝不能把窗口长度当作删除边界，否则会误删窗口外索引。
+ *
+ * @returns {Promise<number|null>} 标准 ST 返回 chat.length；TT 下只有 totalCount 合法时返回数字。
+ */
+export async function getAuthoritativeGlobalChatLength() {
+    if (!isTauriTavern()) {
+        return getContext()?.chat?.length ?? 0;
+    }
     try {
         const info = await hostChatApi()?.current?.windowInfo?.();
         // 不再依赖 info.mode 的具体字符串：只要 totalCount 是合法正数就用它。
         // 这样 mode 取值与文档不一致时也能正确拿到全局总数。
         const total = Number(info?.totalCount);
-        if (Number.isFinite(total) && total > 0) {
+        if (Number.isFinite(total) && total >= 0) {
             return total;
         }
-        // 兜底：windowLength / 当前窗口长度
-        const wlen = Number(info?.windowLength);
-        if (Number.isFinite(wlen) && wlen > 0) return wlen;
-        return getContext()?.chat?.length ?? 0;
     } catch {
-        // 宿主 API 异常时退化为窗口长度，避免硬崩
-        return getContext()?.chat?.length ?? 0;
+        // noop
     }
+    return null;
 }
 
 // ---- 按绝对索引区间取消息 --------------------------------------------------
