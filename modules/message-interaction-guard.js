@@ -1,14 +1,6 @@
 const MESSAGE_INLINE_INTERACTIVE_SELECTOR = [
     'summary',
     'details',
-    'button',
-    'input',
-    'textarea',
-    'select',
-    'label',
-    'a',
-    '[role="button"]',
-    '[contenteditable="true"]',
     '.xiaobaix-iframe-wrapper',
     '.xiaobaix-iframe',
 ].join(', ');

@@ -22,9 +22,10 @@ test('message interaction guard stops native details summary clicks from opening
     assert.equal(shouldStopMessageEditPropagation(targetMatching('details')), true);
 });
 
-test('message interaction guard stops form control clicks but leaves plain message text alone', () => {
-    assert.equal(shouldStopMessageEditPropagation(targetMatching('button')), true);
-    assert.equal(shouldStopMessageEditPropagation(targetMatching('textarea')), true);
+test('message interaction guard leaves action buttons available for card generation flows', () => {
+    assert.equal(shouldStopMessageEditPropagation(targetMatching('button')), false);
+    assert.equal(shouldStopMessageEditPropagation(targetMatching('[role="button"]')), false);
+    assert.equal(shouldStopMessageEditPropagation(targetMatching('a')), false);
     assert.equal(shouldStopMessageEditPropagation(targetMatching('.plain-message-text')), false);
 });
 
