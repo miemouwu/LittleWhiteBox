@@ -7,7 +7,11 @@ import { executeSlashCommand } from "../core/slash-command.js";
 import { default_user_avatar, default_avatar } from "../../../../../script.js";
 import { getIframeBaseScript, getWrapperScript } from "../core/wrapper-inline.js";
 import { postToIframe, getIframeTargetOrigin, getTrustedOrigin } from "../core/iframe-messaging.js";
-import { protectMessageInlineInteractions } from "./message-interaction-guard.js";
+import {
+    cleanupMessageInteractionCaptureGuard,
+    installMessageInteractionCaptureGuard,
+    protectMessageInlineInteractions,
+} from "./message-interaction-guard.js";
 const MODULE_ID = 'iframeRenderer';
 const events = createModuleEvents(MODULE_ID);
 
@@ -649,6 +653,7 @@ export function initRenderer() {
     if (!settings.enabled) return;
     
     try { xbLog.info(MODULE_ID, 'initRenderer'); } catch {}
+    installMessageInteractionCaptureGuard();
     
     if (settings.renderEnabled !== false) {
         ensureHideCodeStyle(true);
@@ -747,6 +752,7 @@ export function initRenderer() {
 export function cleanupRenderer() {
     try { xbLog.info(MODULE_ID, 'cleanupRenderer'); } catch {}
     events.cleanup();
+    cleanupMessageInteractionCaptureGuard();
     if (messageListenerBound) {
         window.removeEventListener('message', handleIframeMessage);
         messageListenerBound = false;
