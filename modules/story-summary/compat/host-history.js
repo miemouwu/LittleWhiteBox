@@ -33,6 +33,12 @@ function hostChatApi() {
     return window.__TAURITAVERN__?.api?.chat ?? null;
 }
 
+export async function getTauriTavernWindowInfo() {
+    if (!isTauriTavern()) return null;
+    await (window.__TAURITAVERN__.ready ?? window.__TAURITAVERN_MAIN_READY__);
+    return await hostChatApi()?.current?.windowInfo?.();
+}
+
 // 不缓存 handle：current.handle() 是轻量访问器，切换聊天后旧 handle 可能失效，
 // 每次取最新的最稳妥。
 async function getHandle() {
@@ -84,7 +90,7 @@ export async function getGlobalChatLength() {
         return authoritative;
     }
     try {
-        const info = await hostChatApi()?.current?.windowInfo?.();
+        const info = await getTauriTavernWindowInfo();
         // 兜底：windowLength / 当前窗口长度。只用于非破坏性读取。
         const wlen = Number(info?.windowLength);
         if (Number.isFinite(wlen) && wlen > 0) return wlen;
@@ -107,7 +113,7 @@ export async function getAuthoritativeGlobalChatLength() {
         return getContext()?.chat?.length ?? 0;
     }
     try {
-        const info = await hostChatApi()?.current?.windowInfo?.();
+        const info = await getTauriTavernWindowInfo();
         // 不再依赖 info.mode 的具体字符串：只要 totalCount 是合法正数就用它。
         // 这样 mode 取值与文档不一致时也能正确拿到全局总数。
         const total = Number(info?.totalCount);

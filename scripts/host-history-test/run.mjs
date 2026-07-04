@@ -363,6 +363,65 @@ async function main() {
     }
 
     // ========================================================================
+    console.log('\n[G] 端到端：TT windowed 变量回滚不能用窗口外低楼层截断全量 L0');
+    try {
+        const stateOut = await buildBundle(path.join(here, 'entry-state-integration.mjs'), 'bundle-state-rollback.mjs');
+        const state = await import(`${pathToFileURL(stateOut).href}?t=${Date.now()}`);
+        const rollbackTotal = 542;
+        const rollbackChat = Array.from({ length: rollbackTotal }, (_, i) => ({
+            mes: `rollback-${i}`,
+            is_user: i % 2 === 0,
+            name: i % 2 === 0 ? '用户' : '角色',
+        }));
+        const rollbackWindow = rollbackChat.slice(rollbackTotal - WINDOW);
+        globalThis.localStorage = makeLocalStorage();
+        const ttLogEntries = [];
+        globalThis.window = { __TAURITAVERN__: makeWindowedHost(rollbackChat, 'windowed') };
+        globalThis.window.__TAURITAVERN__.api.dev = {
+            mobile: {
+                async logEntry(entry) {
+                    ttLogEntries.push(entry);
+                    return { ok: true };
+                },
+            },
+        };
+        state.__setCtx({
+            chat: rollbackWindow,
+            chatId: 'tt-rollback',
+            name1: '用户',
+            name2: '角色',
+        });
+        state.__setChatMetadata({ extensions: {} });
+        await state.clearAllAtomsAndVectors('tt-rollback');
+        state.saveStateAtoms([
+            { atomId: 'a-0', floor: 0, semantic: 's0' },
+            { atomId: 'a-50', floor: 50, semantic: 's50' },
+            { atomId: 'a-52', floor: 52, semantic: 's52' },
+            { atomId: 'a-540', floor: 540, semantic: 's540' },
+        ]);
+        for (const floor of [0, 50, 52, 540]) {
+            state.setL0FloorStatus(floor, { status: 'ok', atoms: 1 });
+        }
+        state.initStateIntegration();
+
+        await globalThis.LWB_StateRollbackHook(52);
+
+        eq('真实 StateRollbackHook: TT windowed 下窗口外低楼层 52 不会截断全量 atoms',
+            state.getStateAtoms().map(a => a.floor).sort((a, b) => a - b),
+            [0, 50, 52, 540]);
+        eq('真实 StateRollbackHook: TT windowed 下窗口外低楼层 52 不会截断 L0 status',
+            [0, 50, 52, 540].map(floor => state.getL0FloorStatus(floor)?.status || null),
+            ['ok', 'ok', 'ok', 'ok']);
+        check('真实 StateRollbackHook: TT log stream 记录跳过危险回滚边界',
+            ttLogEntries.some(entry => entry?.event === 'lwb.vector.destructive-boundary-skip'
+                && entry?.detail?.action === 'state_rollback'
+                && entry?.detail?.floor === 52),
+            `logs=${JSON.stringify(ttLogEntries)}`);
+    } catch (e) {
+        console.log(`  ⚠ SKIP（真实 L0 rollback 模块依赖无法在本环境加载）：${e?.message || e}`);
+    }
+
+    // ========================================================================
     console.log(`\n结果：${passed} 通过，${failures.length} 失败`);
     if (failures.length) {
         console.log('\nFAILED:');

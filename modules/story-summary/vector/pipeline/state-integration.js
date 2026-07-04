@@ -28,7 +28,7 @@ import { extractAtomsForRound, cancelBatchExtraction, resetBatchExtractionCancel
 import { getVectorConfig } from '../../data/config.js';
 import { getEngineFingerprint } from '../utils/embedder.js';
 import { filterText } from '../utils/text-filter.js';
-import { forEachMessage, getGlobalChatLength, getMessageRange } from '../../compat/host-history.js';
+import { forEachMessage, getGlobalChatLength, getMessageRange, getTauriTavernWindowInfo } from '../../compat/host-history.js';
 
 const MODULE_ID = 'state-integration';
 
@@ -465,21 +465,118 @@ export async function clearAllAtomsAndVectors(chatId) {
 // ============================================================================
 
 async function handleStateRollback(floor) {
-    xbLog.info(MODULE_ID, `收到回滚请求: floor >= ${floor}`);
+    const boundary = await resolveStateRollbackFloor(floor);
+    if (!boundary.floorValid) {
+        xbLog.warn(MODULE_ID, `跳过回滚请求：${boundary.reason}, floor=${floor}`);
+        void writeTtMobileLog({
+            level: 'warn',
+            event: 'lwb.vector.destructive-boundary-skip',
+            detail: {
+                action: 'state_rollback',
+                floor: Number(floor),
+                reason: boundary.reason,
+                windowInfo: boundary.windowInfo || null,
+                contextChatLength: boundary.contextChatLength,
+            },
+        });
+        return;
+    }
+
+    xbLog.info(MODULE_ID, `收到回滚请求: floor >= ${floor}, resolved >= ${boundary.floor}`);
+    void writeTtMobileLog({
+        level: 'info',
+        event: 'lwb.vector.destructive-boundary',
+        detail: {
+            action: 'state_rollback',
+            requestedFloor: Number(floor),
+            resolvedFloor: boundary.floor,
+            source: boundary.source,
+            windowInfo: boundary.windowInfo || null,
+            contextChatLength: boundary.contextChatLength,
+        },
+    });
 
     const { chatId } = getContext();
 
     beginL0MetadataBatch('stateRollback');
     try {
-        deleteStateAtomsFromFloor(floor);
-        deleteL0IndexFromFloor(floor);
+        deleteStateAtomsFromFloor(boundary.floor);
+        deleteL0IndexFromFloor(boundary.floor);
 
         if (chatId) {
-            await deleteStateVectorsFromFloor(chatId, floor);
+            await deleteStateVectorsFromFloor(chatId, boundary.floor);
         }
     } finally {
         endL0MetadataBatch('stateRollback');
     }
+}
+
+async function resolveStateRollbackFloor(rawFloor) {
+    const floor = Number(rawFloor);
+    if (!Number.isFinite(floor) || floor < 0) {
+        return {
+            floorValid: false,
+            reason: 'invalid_floor',
+            contextChatLength: getContext()?.chat?.length ?? 0,
+        };
+    }
+
+    const contextChatLength = getContext()?.chat?.length ?? 0;
+    let windowInfo = null;
+    try {
+        windowInfo = await getTauriTavernWindowInfo();
+    } catch {
+        windowInfo = null;
+    }
+
+    const totalCount = Number(windowInfo?.totalCount);
+    const windowStartIndex = Number(windowInfo?.windowStartIndex);
+    const windowLength = Number(windowInfo?.windowLength);
+    const hasWindowedHost = Number.isFinite(totalCount)
+        && Number.isFinite(windowStartIndex)
+        && windowStartIndex > 0
+        && totalCount > contextChatLength;
+
+    if (!hasWindowedHost) {
+        return {
+            floorValid: true,
+            floor: Math.trunc(floor),
+            source: 'absolute',
+            windowInfo,
+            contextChatLength,
+        };
+    }
+
+    if (floor >= windowStartIndex) {
+        return {
+            floorValid: true,
+            floor: Math.trunc(floor),
+            source: 'absolute',
+            windowInfo,
+            contextChatLength,
+        };
+    }
+
+    const localLength = Number.isFinite(windowLength) && windowLength > 0
+        ? windowLength
+        : contextChatLength;
+
+    if (floor >= 0 && floor < localLength) {
+        return {
+            floorValid: true,
+            floor: Math.trunc(windowStartIndex + floor),
+            source: 'window-local',
+            windowInfo,
+            contextChatLength,
+        };
+    }
+
+    return {
+        floorValid: false,
+        reason: 'ambiguous_windowed_floor',
+        windowInfo,
+        contextChatLength,
+    };
 }
 
 // ============================================================================
