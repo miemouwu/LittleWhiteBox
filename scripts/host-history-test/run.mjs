@@ -137,11 +137,33 @@ async function main() {
     // ========================================================================
     console.log('\n[B] TauriTavern windowed —— getContext().chat 只含最后 50 楼，仍要读到完整历史');
     globalThis.window = { __TAURITAVERN__: makeWindowedHost(fullChat, 'windowed') };
+    const hostHistoryToastCalls = [];
+    const hostHistoryMobileLogEntries = [];
+    globalThis.toastr = {
+        info(...args) {
+            hostHistoryToastCalls.push(args);
+        },
+    };
+    globalThis.window.__TAURITAVERN__.api.dev = {
+        mobile: {
+            async logEntry(entry) {
+                hostHistoryMobileLogEntries.push(entry);
+                return { ok: true };
+            },
+        },
+    };
     __setCtx({ chat: windowChat, chatId: 'tt' }); // 模拟窗口截断：getContext().chat 只有 50 条
 
     check('isTauriTavern()=true', isTauriTavern() === true);
     eq('窗口确实被截断（getContext().chat.length=50）', windowChat.length, WINDOW);
     eq('getGlobalChatLength = totalCount(450)，非窗口长度', await getGlobalChatLength(), TOTAL);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    eq('host-history 诊断不再弹出 toastr', hostHistoryToastCalls.length, 0);
+    check('host-history 诊断写入 TT mobile log stream',
+        hostHistoryMobileLogEntries.some(entry => entry?.event === 'lwb.host-history.diag'
+            && entry?.detail?.windowInfo?.totalCount === TOTAL
+            && entry?.detail?.windowInfo?.windowLength === WINDOW),
+        `logs=${JSON.stringify(hostHistoryMobileLogEntries)}`);
 
     // 读窗口外的早期楼层（floor 0..9 完全在窗口[400..449]之外）
     eq('getMessageRange(0,9) 读到窗口外早期楼层', await getMessageRange(0, 9), fullChat.slice(0, 10));

@@ -19,6 +19,7 @@
 // ============================================================================
 
 import { getContext } from "../../../../../../extensions.js";
+import { writeTtMobileLog } from "../../../core/tt-log-sink.js";
 
 const PAGE_LIMIT = 200; // 单页拉取条数；移动端用 history.beforePages 可进一步降 IPC
 
@@ -43,8 +44,7 @@ async function getHandle() {
 
 // ---- 全局总楼层数 ----------------------------------------------------------
 
-// 临时诊断：把真机 windowInfo() / 宿主 API 的真实结构弹出来一次，便于定位
-// （确认无误后可移除）。
+// 真机诊断：只写入 TT mobile log / console，不打扰聊天 UI。
 let _diagShown = false;
 async function diagOnce() {
     if (_diagShown) return;
@@ -60,9 +60,12 @@ async function diagOnce() {
     } catch (e) {
         report.error = String(e?.message || e);
     }
-    const msg = "host-history 诊断: " + JSON.stringify(report);
-    try { (globalThis.toastr || window.toastr)?.info?.(msg, "host-history", { timeOut: 30000 }); } catch { /* noop */ }
-    try { console.warn("[host-history diag]", msg); } catch { /* noop */ }
+    void writeTtMobileLog({
+        level: 'info',
+        event: 'lwb.host-history.diag',
+        detail: report,
+    });
+    try { console.warn("[host-history diag]", report); } catch { /* noop */ }
 }
 
 /**
